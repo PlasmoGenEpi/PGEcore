@@ -9,67 +9,8 @@ library(iterators)
 library(parallel)
 library(rngtools)
 
+
 create_FEM_input <- function(input_path, output_path) {
-    input_data <- read.csv(input_path, na.strings = "NA")
-    # Change 2 to 0.5 for het calls
-    input_data[input_data == 2] <- 0.5
-    # Change all to numeric values
-    # input_data[, -1] <- sapply(input_data[, -1], as.numeric)
-    # Change missing data to 99
-    input_data[is.na(input_data)] <- 99
-    write.table(input_data, file = output_path, sep = "\t", quote = FALSE, row.names = FALSE)
-}
-amino_acids <- read.csv("codon-table-grouped.csv")
-rownames(amino_acids) <- amino_acids$codon
-create_random_dataset <- function(){
-  targets <- c("csp", "gama", "protein_x")
-  target_positions <- list(c(72, 81), c(300, 27, 309), c(13))
-  normal_AA <- list(c("ATC", "GCG"), c("ATG", "CTC", "AGC"), c("CCC"))
-  
-  samples <- c("Sample 1", "Sample 2", "Sample 3")
-  random_dataset <- data.frame(sample_id=c("A"), 
-                               target=c("A"), 
-                               position=c("A"), 
-                               codon=c("A"), 
-                               AA=c("A"))
-  for(sample in rep(samples,2)){
-    for(target_ix in 1:length(target_positions)){
-      target_position <- target_positions[[target_ix]]
-      normal_AA_target <- normal_AA[[target_ix]]
-      for(target_position_ix in 1:length(target_position)){
-        randomize <- FALSE
-        if(runif(1) < 0.1){
-          randomize <- TRUE
-        }
-        skip <- FALSE
-        if(runif(1)<0.){
-          skip <- TRUE
-        }
-        if(randomize){
-          codon_ix <- sample(x=1:64, size=1)
-          codon <- amino_acids[codon_ix, 2]
-        }
-        else{
-          codon <- normal_AA_target[target_position_ix]
-        }
-        print(codon)
-        letter <- amino_acids[codon, 1] 
-        print(target_position[[target_position_ix]])
-        if(!skip){
-          random_dataset[nrow(random_dataset)+1,] <- c(sample, targets[target_ix], 
-                                                       target_position[target_position_ix],codon, letter)
-        
-        }
-      }
-    }
-  }
-  random_dataset <- random_dataset[random_dataset$sample_id != "A",]
-  return(random_dataset)
-}
-
-test_dataset <- create_random_dataset()
-
-create_FEM_input_STANDARDIZED <- function(input_path, output_path) {
   if(input_path == "random")
   {
     input_data <- create_random_dataset()
@@ -117,7 +58,7 @@ sample_mat <- create_FEM_input_STANDARDIZED("random", tmp_file_path)
 run_FreqEstimationModel <- function(input_data_path, output_dir) {
     # TODO: If missing data fill with 99
     tmp_file_path <- file.path(output_dir, "tmp_formatted_output_fem.txt")
-    create_FEM_input_STANDARDIZED("random", tmp_file_path)
+    create_FEM_input("random", tmp_file_path)
     data_summary <- list()
     data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
     data_summary$Data <- as.matrix(data_summary$Data)
@@ -223,7 +164,7 @@ run_FreqEstimationModel <- function(input_data_path, output_dir) {
 }
 
 output_dir <- "output"
-input_dir <- "example_input.csv"
+input_dir <- "test_dataset.csv"
 fem_results <- run_FreqEstimationModel(input_dir, output_dir)
 fem_plsf <- fem_results$plsf_table
 write.csv(fem_plsf, file.path(output_dir, "plsf_table_STANDARDIZED.csv"))
