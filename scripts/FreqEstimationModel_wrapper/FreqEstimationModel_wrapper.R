@@ -1,5 +1,3 @@
-setwd("C:/Users/zoeor/OneDrive/Documents/Life/Collaboration with Dr. Wesolowski/")
-
 library(tibble)
 library(dplyr)
 library(FreqEstimationModel)
@@ -8,17 +6,81 @@ library(doMC)
 library(iterators)
 library(parallel)
 library(rngtools)
+library(validate)
+library(magrittr)
+library(stringr)
+library(optparse)
 
-# Create a function-readable input for the FreqEstimationModel
-#
-# Takes a csv file in the form of the other pipeline inputs and returns an object
-# that is readable to the FEM model
-#
-# @param input_path character string
-# @param output_path character string
-# @returns matrix
-create_FEM_input <- function(input_path, output_path) {
+# Parse arguments ------------------------------------------------------
+opts <- list(
+  make_option(
+    "--aa_calls", 
+    help = str_c(
+      "TSV containing amino acid calls, with the columns: specimen_id, ", 
+      "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa"
+    )
+  ), 
+  make_option(
+    "--coi", 
+    help = str_c(
+      "TSV containing COI for each specimen, with the columns: specimen_id, ", 
+      "coi"
+    )
+  ), 
+  make_option("--seed", type = "integer", help = "Random number seed"), 
+  make_option(
+    "--mlaf", 
+    help = str_c(
+      "TSV containing multilocus allele frequencies, with the columns: ", 
+      "variant, freq, total"
+    )
+  )
+)
+arg <- parse_args(OptionParser(option_list = opts))
+
+#' Reformat amino acid calls into the form required by FEM
+#'
+#' Takes the path of TSV file of amino acid calls, reads it into a 
+#' tibble, and reformats that tibble into the form needed by FEM.
+#'
+#' @param input_path Path of TSV file with amino acid calls. It should 
+#'   have character columns for specimen_id, target_id, gene_id, 
+#'   ref_codon, ref_aa, codon, and aa. It should have an integer 
+#'   aa_position column. There should be no explicit missing data.
+#' 
+#' @return Matrix of frequencies for each multi-locus genotype.
+create_FEM_input <- function(input_path) {
   input_data <- read.csv(input_path, na.strings = "NA")
+  
+  # Validate input format
+  rules <- validate::validator(
+    is.character(specimen_id), 
+    is.character(target_id), 
+    is.character(gene_id), 
+    is.integer(aa_position), 
+    is.character(ref_codon), 
+    is.character(ref_aa), 
+    is.character(codon), 
+    is.character(aa), 
+    ! is.na(specimen_id), 
+    ! is.na(target_id), 
+    ! is.na(gene_id), 
+    ! is.na(aa_position), 
+    ! is.na(ref_codon), 
+    ! is.na(ref_aa), 
+    ! is.na(codon), 
+    ! is.na(aa)
+  )
+  fails <- validate::confront(input_data, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input input_data failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
   
   input_data$unique_targets <- paste(input_data$target, input_data$position)
   unique_targets <- unique(input_data$unique_targets)
