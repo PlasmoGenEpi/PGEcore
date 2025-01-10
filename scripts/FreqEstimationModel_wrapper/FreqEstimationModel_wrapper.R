@@ -9,15 +9,14 @@ library(iterators)
 library(parallel)
 library(rngtools)
 
-#Create a function-readable input for the FreqEstimationModel
+# Create a function-readable input for the FreqEstimationModel
 #
+# Takes a csv file in the form of the other pipeline inputs and returns an object
+# that is readable to the FEM model
 #
-#
-#
-#
-#
-#
-#
+# @param input_path character string
+# @param output_path character string
+# @returns matrix
 create_FEM_input <- function(input_path, output_path) {
   input_data <- read.csv(input_path, na.strings = "NA")
   
