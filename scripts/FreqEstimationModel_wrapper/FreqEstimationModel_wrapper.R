@@ -9,13 +9,17 @@ library(iterators)
 library(parallel)
 library(rngtools)
 
-
+#Create a function-readable input for the FreqEstimationModel
+#
+#
+#
+#
+#
+#
+#
+#
 create_FEM_input <- function(input_path, output_path) {
-  if(input_path == "random")
-  {
-    input_data <- create_random_dataset()
-  }
-  else {input_data <- read.csv(input_path, na.strings = "NA")}
+  input_data <- read.csv(input_path, na.strings = "NA")
   
   input_data$unique_targets <- paste(input_data$target, input_data$position)
   unique_targets <- unique(input_data$unique_targets)
@@ -44,24 +48,18 @@ create_FEM_input <- function(input_path, output_path) {
     
     }
   }
-  sample_matrix <- cbind(unique(input_data$sample_id), sample_matrix)
-  print(sample_matrix)
-  write.table(sample_matrix, file = output_path, sep = "\t", quote = FALSE, row.names = FALSE)
   return(sample_matrix)
-  
-  
 }
-tmp_file_path <- file.path(output_dir, "tmp_formatted_output_fem.txt")
-sample_mat <- create_FEM_input_STANDARDIZED("random", tmp_file_path)
  
 
 run_FreqEstimationModel <- function(input_data_path, output_dir) {
     # TODO: If missing data fill with 99
     tmp_file_path <- file.path(output_dir, "tmp_formatted_output_fem.txt")
-    create_FEM_input("random", tmp_file_path)
+    sample_matrix <- create_FEM_input(input_data_path, tmp_file_path)
     data_summary <- list()
-    data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
-    data_summary$Data <- as.matrix(data_summary$Data)
+    #data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
+    #data_summary$Data <- as.matrix(data_summary$Data)
+    data_summary$Data <- sample_matrix
     runtime <- system.time({
         thinning_interval <- 1 # Number of iterations per chain that are not saved
         no_traces_preburnin <- 10000 # For more traces but manageable pdf plots, don't exceed 10k and increase thinning interval instead
