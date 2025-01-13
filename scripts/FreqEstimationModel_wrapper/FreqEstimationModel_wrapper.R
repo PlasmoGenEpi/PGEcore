@@ -38,6 +38,13 @@ opts <- list(
 )
 arg <- parse_args(OptionParser(option_list = opts))
 
+calculate_COI <- function(coi_path){
+  COI_table <- read.csv(coi_path, sep="\t")
+  vals <- COI_table$coi
+  avg_val <- mean(vals)
+  return(avg_val)
+}
+
 #' Reformat amino acid calls into the form required by FEM
 #'
 #' Takes the path of TSV file of amino acid calls, reads it into a 
@@ -49,9 +56,8 @@ arg <- parse_args(OptionParser(option_list = opts))
 #'   aa_position column. There should be no explicit missing data.
 #' 
 #' @return Matrix of frequencies for each multi-locus genotype.
-create_FEM_input <- function(input_path) {
-  input_data <- read.csv(input_path, na.strings = "NA")
-  
+create_FEM_input <- function(input_path, group_id) {
+  input_data <- read.csv(input_path, na.strings = "NA", sep="\t")
   # Validate input format
   rules <- validate::validator(
     is.character(specimen_id), 
@@ -82,29 +88,37 @@ create_FEM_input <- function(input_path) {
     )
   }
   
-  input_data$unique_targets <- paste(input_data$target, input_data$position)
+  input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position)
+  groups <- groups[groups$group_id == group_id,]
+  group_targets <- paste(groups$gene_id, groups$aa_position)
+  group_input_data <- input_data[input_data$unique_targets %in% group_targets,]
+  input_data <- group_input_data
+  print(input_data)
+  
   unique_targets <- unique(input_data$unique_targets)
-  unique_sample_ids <- unique(input_data$sample_id)
+  unique_sample_ids <- unique(input_data$specimen_id)
   
   sample_matrix <- matrix(99,  nrow=length(unique_sample_ids), ncol=length(unique_targets))
   colnames(sample_matrix) <- unique_targets
   rownames(sample_matrix) <- unique_sample_ids
   
-  for(sample in input_data$sample_id){
-    cut_df <- input_data[input_data$sample_id==sample,]
+ 
+  
+  for(sample in input_data$specimen_id){
+    cut_df <- input_data[input_data$specimen_id==sample,]
     for(unique_target in unique_targets){
-      print(paste("Testing sample", sample, "at target", unique_target))
       cut_cut_df <- cut_df[cut_df$unique_targets==unique_target,]
-      print(cut_cut_df)
       nvals <- 99
       nvals <- length(unique(cut_cut_df$codon)) ## DO WE CARE ABOUT SILENT MUTANTS?
-      print(unique(cut_cut_df$AA))
-      print(paste("nvals", nvals))
       if (nvals >= 2){
         sample_matrix[sample, unique_target] <- 0.5
       }
       if (nvals == 1){
-        sample_matrix[sample, unique_target] <- 1
+        if (cut_cut_df[1, "ref_aa"]==cut_cut_df[1, "aa"]){
+          val <- 0
+        }
+        else {val <- 1}
+        sample_matrix[sample, unique_target] <- val
       }
     
     }
@@ -113,10 +127,8 @@ create_FEM_input <- function(input_path) {
 }
  
 
-run_FreqEstimationModel <- function(input_data_path, output_dir) {
-    # TODO: If missing data fill with 99
-    tmp_file_path <- file.path(output_dir, "tmp_formatted_output_fem.txt")
-    sample_matrix <- create_FEM_input(input_data_path, tmp_file_path)
+run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
+    sample_matrix <- create_FEM_input(input_data_path, group)
     data_summary <- list()
     #data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
     #data_summary$Data <- as.matrix(data_summary$Data)
@@ -146,7 +158,8 @@ run_FreqEstimationModel <- function(input_data_path, output_dir) {
             moi_prior <- "Poisson" # Choose between 'Uniform', 'Poisson', 'Geometric' or 'nBinomial'
         }
         moi_max <- 8 # Maximum MOI regarded as possible by the model (I haven't tested beyond 20)
-        moi_hyperparameter <- 3 # Specify population-average MOI (parameter of the prior on the MOI)
+        #### ALFRED 
+        moi_hyperparameter <- COI # Specify population-average MOI (parameter of the prior on the MOI)
         moi_size_hyperparameter <- 0.5 # Only applies if moi_prior == 'nBinomial' (hyperparameter for the prior on the MOI if the prior is the negative Binomial)
         moi_prior_min2 <- NULL # Specify the lower bound for the MOI per individual
         moi_initial <- NULL # If null, the initial vector of MOIs is set internally, otherwise set to input moi_initial
@@ -171,7 +184,7 @@ run_FreqEstimationModel <- function(input_data_path, output_dir) {
             frequency_hyperparameter = frequency_hyperparameter,
             frequency_initial = frequency_initial
         )
-        seed <- 1 # For reproducibility
+        seed <- 1 # For reproducibility #ALFRED
         set.seed(seed)
 
         # Run MCMC - works up to here
@@ -213,7 +226,6 @@ run_FreqEstimationModel <- function(input_data_path, output_dir) {
     sequence_column <- data.frame(sequence = rownames(pop_freq), stringsAsFactors = FALSE)
     pop_freq <- cbind(sequence_column, pop_freq)
     rownames(pop_freq) <- NULL
-    file.remove(tmp_file_path)
     return(
         list(
             plsf_table = pop_freq,
@@ -222,8 +234,25 @@ run_FreqEstimationModel <- function(input_data_path, output_dir) {
     )
 }
 
+format_output <- function(pop_freq){
+  
+}
+COI <- calculate_COI("example_coi_table.tsv")
+## ARG_PARSE
+#COI <- arg$coi
+
+groups <- read.csv("example_loci_groups.tsv", sep="\t)
+
+test_sample_mat <- create_FEM_input(input_dir, "pfdhfr_pfdhps")
+
 output_dir <- "output"
-input_dir <- "test_dataset.csv"
-fem_results <- run_FreqEstimationModel(input_dir, output_dir)
-fem_plsf <- fem_results$plsf_table
-write.csv(fem_plsf, file.path(output_dir, "plsf_table_STANDARDIZED.csv"))
+input_dir <- "example_amino_acid_calls.tsv"
+
+for(group in unique(groups$group_id)){
+  #will be one output file
+  fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir)
+  fem_plsf <- fem_results$plsf_table
+  file_name <- paste("plsf_table_group_", group, ".csv", sep="")
+  write.csv(fem_plsf, file.path(output_dir, file_name))
+}
+
