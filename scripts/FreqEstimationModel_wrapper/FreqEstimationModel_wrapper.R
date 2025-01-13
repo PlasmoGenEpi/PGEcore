@@ -50,6 +50,19 @@ read_groups <- function(groups_path){
   return(group_table)
 }
 
+#TODO fix this function
+check_biallelic <- function(input_data){
+  mutants <- input_data[input_data$ref_aa != input_data$aa,]
+  print(mutants)
+  bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)]
+  print(paste('Dropped', bad_targets))
+  only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
+  alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,]
+  return(list(
+    only_biallelic,
+    alt_calls))
+}
+
 #' Reformat amino acid calls into the form required by FEM
 #'
 #' Takes the path of TSV file of amino acid calls, reads it into a 
@@ -98,8 +111,10 @@ create_FEM_input <- function(input_path, group_id) {
   group_targets <- paste(groups$gene_id, groups$aa_position, sep=";")
   group_input_data <- input_data[input_data$unique_targets %in% group_targets,]
   input_data <- group_input_data
-  print(input_data)
-  
+  data_list <- check_biallelic(input_data)
+  input_data <- data_list[[1]]
+  alt_alleles <- data_list[[2]]
+
   unique_targets <- unique(input_data$unique_targets)
   unique_sample_ids <- unique(input_data$specimen_id)
   
@@ -128,13 +143,16 @@ create_FEM_input <- function(input_path, group_id) {
     
     }
   }
-  return(sample_matrix)
+  return(list(
+    sample_matrix,
+    alt_alleles))
 }
  
 
 run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
-    sample_matrix <- create_FEM_input(input_data_path, group)
-    sample_matrix <- test_sample_mat
+    sample_matrix_list <- create_FEM_input(input_data_path, group)
+    sample_matrix <- sample_matrix_list[[1]]
+    alt_alleles <- sample_matrix_list[[2]]
     data_summary <- list()
     #data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
     #data_summary$Data <- as.matrix(data_summary$Data)
@@ -241,38 +259,34 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
         list(
             plsf_table = pop_freq,
             runtime = runtime,
-            names = processed_data_list[["markerID"]]
+            names = processed_data_list[["markerID"]],
+            alt_allele = alt_alleles
         )
     )
 }
-read_names <- function(chars, names){
-  print(paste('chars', chars))
+read_names <- function(chars, names, alt_alleles){
   name <- ""
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
   for(char in chars_split){
-    print(char_ix)
-    print(paste("char", char))
     if(char==1){
       #gene;position;aa:gene;position;aa
       formatted_name <- gsub(" ", ";", name)
-      name <- paste(formatted_name, names[char_ix], sep=":")
+      alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
+      alt_current <- alt_current[1, "aa"]
+      name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=";"), sep=":")
     }
     char_ix <- char_ix + 1
   }
-  print(name)
+  name <- sub('.', '', name)
   return(name)
 }
 format_output <- function(pop_freq_list){
-  print('starting')
   input_list <- pop_freq_list[[1]]
-  print('step 1')
   names <- pop_freq_list[[3]]
-  print('step 2')
+  alt_alleles <- pop_freq_list[[4]]
   
-  input_list$name <- lapply(input_list$sequence, read_names, names)
-  print('step 3')
-  print(input_list)
+  input_list$name <- lapply(input_list$sequence, read_names, names, alt_alleles)
   return(input_list)
 }
 COI <- calculate_COI("example_coi_table.tsv")
@@ -298,12 +312,11 @@ for(group in unique(groups$group_id)){
   #will be one output file
   fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir)
   fem_plsf <- format_output(fem_results)
-  print('step 4')
   fem_plsf$group <- group
-  print("step 5")
   overall_output <- rbind(overall_output, fem_plsf)
   
   #TODO add the 101 parsing to seq level
 }
-write.csv(overall_output, file.path(output_dir, "plsf_table_grouped.csv"))
+overall_output <- apply(overall_output,2,as.character)
+write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"))
 
