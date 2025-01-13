@@ -45,6 +45,11 @@ calculate_COI <- function(coi_path){
   return(avg_val)
 }
 
+read_groups <- function(groups_path){
+  group_table <- read.csv(groups_path, sep="\t")
+  return(group_table)
+}
+
 #' Reformat amino acid calls into the form required by FEM
 #'
 #' Takes the path of TSV file of amino acid calls, reads it into a 
@@ -88,9 +93,9 @@ create_FEM_input <- function(input_path, group_id) {
     )
   }
   
-  input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position)
+  input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position, sep=";")
   groups <- groups[groups$group_id == group_id,]
-  group_targets <- paste(groups$gene_id, groups$aa_position)
+  group_targets <- paste(groups$gene_id, groups$aa_position, sep=";")
   group_input_data <- input_data[input_data$unique_targets %in% group_targets,]
   input_data <- group_input_data
   print(input_data)
@@ -129,6 +134,7 @@ create_FEM_input <- function(input_path, group_id) {
 
 run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
     sample_matrix <- create_FEM_input(input_data_path, group)
+    sample_matrix <- test_sample_mat
     data_summary <- list()
     #data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
     #data_summary$Data <- as.matrix(data_summary$Data)
@@ -178,13 +184,18 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
             augment_missing_data,
             moi_prior_min2
         )
+        
+        test_process <- preprocess_data(data_summary, FALSE, FALSE, TRUE, FALSE)
+        
         frequency_hyperparameter <- rep(1, processed_data_list$no_haplotypes) # The Parameter vector for the Dirichlet prior on the frequency vector
         frequency_initial <- NULL # If null, external_frequency_initial set internally, otherwise set to input external_frequency_initial
         frequency_list <- list(
             frequency_hyperparameter = frequency_hyperparameter,
             frequency_initial = frequency_initial
         )
-        seed <- 1 # For reproducibility #ALFRED
+        seed <- 1 # For reproducibility 
+        ## ARG_PARSE
+        # seed <- arg$seed
         set.seed(seed)
 
         # Run MCMC - works up to here
@@ -229,30 +240,70 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
     return(
         list(
             plsf_table = pop_freq,
-            runtime = runtime
+            runtime = runtime,
+            names = processed_data_list[["markerID"]]
         )
     )
 }
-
-format_output <- function(pop_freq){
+read_names <- function(chars, names){
+  print(paste('chars', chars))
+  name <- ""
+  char_ix <- 1
+  chars_split <- strsplit(chars, "")[[1]]
+  for(char in chars_split){
+    print(char_ix)
+    print(paste("char", char))
+    if(char==1){
+      #gene;position;aa:gene;position;aa
+      formatted_name <- gsub(" ", ";", name)
+      name <- paste(formatted_name, names[char_ix], sep=":")
+    }
+    char_ix <- char_ix + 1
+  }
+  print(name)
+  return(name)
+}
+format_output <- function(pop_freq_list){
+  print('starting')
+  input_list <- pop_freq_list[[1]]
+  print('step 1')
+  names <- pop_freq_list[[3]]
+  print('step 2')
   
+  input_list$name <- lapply(input_list$sequence, read_names, names)
+  print('step 3')
+  print(input_list)
+  return(input_list)
 }
 COI <- calculate_COI("example_coi_table.tsv")
 ## ARG_PARSE
 #COI <- arg$coi
 
-groups <- read.csv("example_loci_groups.tsv", sep="\t)
+groups <- read_groups("example_loci_groups.tsv")
+## ARG_PARSE
+#group <- arg$group
+##TODO add arg parsing for groups
 
 test_sample_mat <- create_FEM_input(input_dir, "pfdhfr_pfdhps")
 
+
 output_dir <- "output"
 input_dir <- "example_amino_acid_calls.tsv"
+## ARG_PARSE
+#input_dir <- arg$aa_calls
 
+overall_output <- data.frame("sequence"=c(),	"fem_mean_frequency"=c(),	"fem_median_frequency"=c(),
+                             "fem_CI2.5%"=c(),	"fem_CI97.5%"=c())
 for(group in unique(groups$group_id)){
   #will be one output file
   fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir)
-  fem_plsf <- fem_results$plsf_table
-  file_name <- paste("plsf_table_group_", group, ".csv", sep="")
-  write.csv(fem_plsf, file.path(output_dir, file_name))
+  fem_plsf <- format_output(fem_results)
+  print('step 4')
+  fem_plsf$group <- group
+  print("step 5")
+  overall_output <- rbind(overall_output, fem_plsf)
+  
+  #TODO add the 101 parsing to seq level
 }
+write.csv(overall_output, file.path(output_dir, "plsf_table_grouped.csv"))
 
