@@ -227,6 +227,52 @@ opts = list(
 arg <- parse_args(OptionParser(option_list = opts))
 
 # moire_wrapper functions ------------------------------------------------------
+
+#' Create Moire Input Object
+#'
+#' This function reads input data, validates its format, and constructs a Moire input object 
+#' containing data and parameters required for downstream analysis.
+#'
+#' @param input_path Character. Path to the input data file (CSV format, tab-separated).
+#' @param allow_relatedness Logical. Whether to allow relatedness in the analysis.
+#' @param burnin Numeric. Number of burn-in iterations for the MCMC algorithm.
+#' @param samples_per_chain Numeric. Number of samples per chain in the MCMC algorithm.
+#' @param verbose Logical. Whether to display detailed messages during execution.
+#' @param eps_pos_alpha Numeric. Alpha parameter for the positive error rate prior.
+#' @param eps_pos_beta Numeric. Beta parameter for the positive error rate prior.
+#' @param eps_neg_alpha Numeric. Alpha parameter for the negative error rate prior.
+#' @param eps_neg_beta Numeric. Beta parameter for the negative error rate prior.
+#' @param r_alpha Numeric. Alpha parameter for the relatedness prior.
+#' @param r_beta Numeric. Beta parameter for the relatedness prior.
+#' @param mean_coi_shape Numeric. Shape parameter for the COI distribution prior.
+#' @param mean_coi_scale Numeric. Scale parameter for the COI distribution prior.
+#' @param max_eps_pos Numeric. Maximum allowable positive error rate.
+#' @param max_eps_neg Numeric. Maximum allowable negative error rate.
+#' @param record_latent_genotypes Logical. Whether to record latent genotypes during the analysis.
+#' @param num_chains Numeric. Number of MCMC chains.
+#' @param num_cores Numeric. Number of CPU cores to use for parallel processing.
+#' @param pt_chains Numeric. Number of chains for parallel tempering.
+#' @param pt_grad Numeric. Gradient step size for parallel tempering.
+#' @param pt_num_threads Numeric. Number of threads for parallel tempering computations.
+#' @param adapt_temp Logical. Whether to adapt the temperature during parallel tempering.
+#' @param max_runtime Numeric. Maximum runtime allowed for the MCMC algorithm (in seconds).
+#' @param seed Numeric or NULL. Random seed for reproducibility. If NULL, no seed is set.
+#'
+#' @return A list containing the Moire data and parameters, ready for downstream analysis.
+#' @examples
+#' \dontrun{
+#' moire_input <- create_Moire_input(
+#'   input_path = "data.csv", allow_relatedness = TRUE, burnin = 1000, 
+#'   samples_per_chain = 5000, verbose = TRUE, eps_pos_alpha = 2, 
+#'   eps_pos_beta = 5, eps_neg_alpha = 2, eps_neg_beta = 5, r_alpha = 1, 
+#'   r_beta = 1, mean_coi_shape = 2, mean_coi_scale = 0.5, max_eps_pos = 0.1, 
+#'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, num_chains = 4, 
+#'   num_cores = 2, pt_chains = 2, pt_grad = 0.01, pt_num_threads = 2, 
+#'   adapt_temp = TRUE, max_runtime = 3600, seed = 42
+#' )
+#' }
+#' @export
+
 create_Moire_input <- function(input_path, allow_relatedness, burnin, 
                                samples_per_chain, verbose, eps_pos_alpha, 
                                eps_pos_beta, eps_neg_alpha, eps_neg_beta, 
@@ -329,6 +375,19 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
   print("Returning Moire object")
   return(moire_object)
 }
+
+#' Run Moire Analysis
+#'
+#' This function performs MCMC-based analysis using the specified Moire input object.
+#'
+#' @param moire_object List. The Moire input object created by `create_Moire_input`.
+#'
+#' @return A list containing the results of the MCMC analysis, including posterior estimates.
+#' @examples
+#' \dontrun{
+#' results <- run_Moire(moire_input)
+#' }
+#' @export
 
 run_Moire <- function(moire_object) {
 
