@@ -150,9 +150,9 @@ create_FEM_input <- function(input_path, groups, group_id) {
   unique_sample_ids <- unique(input_data$specimen_id)
   
   sample_matrix <- matrix(99,  nrow=length(unique_sample_ids), ncol=length(unique_targets))
+  #99 is the "no data" identifier
   colnames(sample_matrix) <- unique_targets
   rownames(sample_matrix) <- unique_sample_ids
-  
  
   
   for(sample in input_data$specimen_id){
@@ -160,9 +160,12 @@ create_FEM_input <- function(input_path, groups, group_id) {
     for(unique_target in unique_targets){
       cut_cut_df <- cut_df[cut_df$unique_targets==unique_target,]
       nvals <- 99
-      nvals <- length(unique(cut_cut_df$codon)) ## DO WE CARE ABOUT SILENT MUTANTS?
-      if (nvals >= 2){
-        sample_matrix[sample, unique_target] <- 0.5
+      nvals <- length(unique(cut_cut_df$aa)) 
+      if (nvals > 2){
+        print('ERROR: too many alleles for FEM')
+      }
+      if (nvals == 2){
+        sample_matrix[sample, unique_target] <- 0.5 # "heterozygous" call
       }
       if (nvals == 1){
         if (cut_cut_df[1, "ref_aa"]==cut_cut_df[1, "aa"]){
@@ -399,5 +402,4 @@ seed <- arg$seed
 create_output(input_dir, groups, COI, output_dir, seed)
 
 #TODO add "total" column
-#TODO add more docstrings
 #TODO add in-line code as needed
