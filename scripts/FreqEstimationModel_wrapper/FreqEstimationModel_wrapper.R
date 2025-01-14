@@ -27,6 +27,13 @@ opts <- list(
       "coi"
     )
   ), 
+  make_option(
+    "--groups", 
+    help = str_c(
+      "TSV containing which regions should be analyzed for each group, with the columns:
+      group_id, gene_id, aa_position"
+    )
+  ),
   make_option("--seed", type = "integer", help = "Random number seed"), 
   make_option(
     "--mlaf", 
@@ -37,6 +44,11 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
+arg <- list(groups = "example_loci_groups.tsv",
+            coi = "example_coi_table.tsv",
+            aa_calls = "example_amino_acid_calls.tsv",
+            seed = 1)
+
 
 # be clear takes input path + returns number
 calculate_COI <- function(coi_path){
@@ -151,7 +163,7 @@ create_FEM_input <- function(input_path, group_id) {
 }
  
 
-run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
+run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir, seed) {
     sample_matrix_list <- create_FEM_input(input_data_path, group)
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
@@ -213,9 +225,7 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
             frequency_hyperparameter = frequency_hyperparameter,
             frequency_initial = frequency_initial
         )
-        seed <- 1 # For reproducibility 
-        ## ARG_PARSE
-        # seed <- arg$seed
+        seed <- seed
         set.seed(seed)
 
         # Run MCMC - works up to here
@@ -266,18 +276,20 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
         )
     )
 }
+
 bin2STAVE <- function(chars, names, alt_alleles){
   name <- ""
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
   for(char in chars_split){
-    if(char==1){
+    if(char==1){call <- "aa"}
+    else {call <- "ref_aa"}
       #gene;position;aa:gene;position;aa
-      formatted_name <- gsub(" ", ";", name)
-      alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
-      alt_current <- alt_current[1, "aa"]
-      name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=";"), sep=":")
-    }
+    formatted_name <- gsub(" ", ";", name)
+    alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
+    alt_current <- alt_current[1, call]
+    name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=";"), sep=":")
+  
     char_ix <- char_ix + 1
   }
   name <- sub('.', '', name)
@@ -291,35 +303,26 @@ format_output <- function(pop_freq_list){
   input_list$variant <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
   return(input_list)
 }
-COI <- calculate_COI("example_coi_table.tsv")
-## ARG_PARSE
-#COI <- arg$coi
 
-groups <- read_groups("example_loci_groups.tsv")
-## ARG_PARSE
-#group <- arg$group
-##TODO add arg parsing for groups
-
-
+COI <- calculate_COI(arg$coi)
+group <- read_groups(arg$group)
 output_dir <- "output"
-input_dir <- "example_amino_acid_calls.tsv"
-## ARG_PARSE
-#input_dir <- arg$aa_calls
+input_dir <- arg$aa_calls
+seed <- arg$seed
 
 #TODO put into function
-#TODO rename names + remove columns (including rownames)
 #TODO add "total" column
 overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
                              "CI_2.5"=c(),	"CI_97.5"=c())
 for(group in unique(groups$group_id)){
   #will be one output file
-  fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir)
+  fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir, seed)
   fem_plsf <- format_output(fem_results)
   fem_plsf$group_id <- group
   overall_output <- rbind(overall_output, fem_plsf)
 }
 overall_output <- apply(overall_output,2,as.character)
-overall_output <- overal_output[, 2:7]
+overall_output <- overall_output[, 2:7]
 write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
 
 #TODO add more docstrings
