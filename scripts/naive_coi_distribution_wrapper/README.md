@@ -6,7 +6,7 @@ Contents:
 
 ## Tool Information
 
-This tool provides a naive summary of the distribution of COI calls across samples.
+This tool provides a naive summary of the distribution of COI calls across samples. It takes as input a table of COI calls, with the columns: specimen_id, coi. The output is a table with the number of samples with each COI call and the proportion of samples with that COI call.
 
 ## Script Usage 
 ```
