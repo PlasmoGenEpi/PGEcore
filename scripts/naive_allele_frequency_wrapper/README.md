@@ -1,4 +1,4 @@
-# Naive Allele Frequency and Prevalence Estimation
+# Naive Allele Frequency Estimation
 
 Contents: 
 * [Tool Information](#tool-information)
@@ -6,7 +6,7 @@ Contents:
 
 ## Tool Information
 
-This tool provides a naive implementation of estimating allele frequency and prevalence from amino acid calls. Prevalence is estimated by calculating the proportion of samples (with at least one call) that have a given variant at a given position. 
+This tool provides a naive implementation of estimating allele frequency from amino acid calls. 
 
 Allele frequency is estimated in two ways:
 - Allele frequency by read count: within sample allele proportions are calculated using read counts and then the allele frequency is calculated as the average within sample allele frequency
@@ -14,11 +14,7 @@ Allele frequency is estimated in two ways:
 
 ## Script Usage 
 ```
-Rscript naive_prevalence_wrapper.R \
-  --aa_calls data/example_amino_acid_calls.tsv \
-  --output prevalence.tsv
-
-Rscript naive_allele_freq_wrapper.R \
+Rscript naive_allele_frequency_wrapper.R \
   --aa_calls data/example_amino_acid_calls.tsv \
   --method read_count_prop \ # or presence_absence
   --output allele_freqs.tsv
