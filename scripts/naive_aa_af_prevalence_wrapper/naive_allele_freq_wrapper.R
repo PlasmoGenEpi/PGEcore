@@ -1,9 +1,11 @@
 library(optparse)
 library(rlang)
 
+options(dplyr.summarise.inform = FALSE)
+
 opts <- list(
   make_option(
-    "--aa_calls",
+    c("-i", "--aa_calls"),
     help = stringr::str_c(
       "TSV containing amino acid calls, with the columns: specimen_id, ",
       "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa"
@@ -18,7 +20,7 @@ opts <- list(
     }
   ),
   make_option(
-    "--method",
+    c("-m", "--method"),
     help = stringr::str_c(
       "Method to use for estimating allele frequency. Options are: ",
       "read_count_prop, presence_absence. Default: %default"
@@ -33,12 +35,12 @@ opts <- list(
     }
   ),
   make_option(
-    "--output",
+    c("-o", "--output"),
     help = stringr::str_c(
       "Output file name. Default: %default"
     ),
     type = "character",
-    default = "af_prevalence.tsv"
+    default = "allele_frequency.tsv"
   )
 )
 
@@ -56,16 +58,17 @@ calculate_af_read_count_prop <- function(aa_calls) {
       .data$specimen_id, .data$gene_id, .data$aa_position, .data$ref_codon,
       .data$ref_aa
     ) |>
-    # calculate the within-sample allele frequency
+    # calculate the within-sample allele frequency for each position
     dplyr::mutate(wsaf = .data$read_count / sum(.data$read_count)) |>
     dplyr::ungroup() |>
     dplyr::group_by(
       .data$gene_id, .data$aa_position, .data$ref_aa, .data$aa
     ) |>
-    # sum af by gene and variant
-    dplyr::summarise(af = sum(.data$wsaf)) |>
+    # sum af by gene and variant across all samples
+    dplyr::summarise(freq = sum(.data$wsaf)) |>
     dplyr::group_by(.data$gene_id, .data$aa_position) |>
-    dplyr::mutate(af = .data$af / sum(.data$af)) |>
+    # normalize by the total number of samples with data at each position
+    dplyr::mutate(freq = .data$freq / sum(.data$freq)) |>
     dplyr::ungroup()
   return(af)
 }
@@ -81,34 +84,17 @@ calculate_af_presence_absence <- function(aa_calls) {
       .data$ref_aa, .data$aa, .data$total_obs
     ) |>
     dplyr::summarise(
-      count = dplyr::n(),
-      .groups = "drop"
+      total = dplyr::n(),
     ) |>
-    dplyr::mutate(af = .data$count / .data$total_obs) |>
-    dplyr::select(-"total_obs", -"count")
+    dplyr::mutate(freq = .data$total / .data$total_obs) |>
+    dplyr::select(-"total_obs", -"total")
 
   return(af)
 }
 
-#' Calculate allele prevalence
-calculate_prevalence <- function(aa_calls) {
-  prev <- aa_calls |>
-    dplyr::group_by(.data$gene_id, .data$aa_position, .data$ref_aa,) |>
-    dplyr::mutate(n_samples = dplyr::n_distinct(.data$specimen_id)) |>
-    dplyr::group_by(
-      .data$gene_id, .data$aa_position, .data$ref_aa, .data$aa, .data$n_samples
-    ) |>
-    dplyr::summarise(
-      count = dplyr::n()
-    ) |>
-    dplyr::mutate(prev = .data$count / .data$n_samples) |>
-    dplyr::select(-"count")
-  return(prev)
-}
-
 #' Load amino acid calls
 parse_aa_calls <- function(path) {
-   aa_dat <- readr::read_tsv(
+  aa_dat <- readr::read_tsv(
     path,
     col_types = readr::cols(
       specimen_id = readr::col_character(),
@@ -130,16 +116,10 @@ parse_aa_calls <- function(path) {
 
 aa_calls <- parse_aa_calls(args$aa_calls)
 
-prevalence <- calculate_prevalence(aa_calls)
-af <- switch(
+out <- switch(
   args$method,
   read_count_prop = calculate_af_read_count_prop(aa_calls),
   presence_absence = calculate_af_presence_absence(aa_calls)
-)
-
-out <- dplyr::left_join(
-  prevalence, af,
-  by = c("gene_id", "aa_position", "ref_aa", "aa")
 )
 
 readr::write_tsv(out, args$output)

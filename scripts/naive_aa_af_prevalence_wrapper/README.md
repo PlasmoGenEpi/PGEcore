@@ -14,8 +14,12 @@ Allele frequency is estimated in two ways:
 
 ## Script Usage 
 ```
-Rscript naive_aa_af_prevalence_wrapper.R \
+Rscript naive_prevalence_wrapper.R \
+  --aa_calls data/example_amino_acid_calls.tsv \
+  --output prevalence.tsv
+
+Rscript naive_allele_freq_wrapper.R \
   --aa_calls data/example_amino_acid_calls.tsv \
   --method read_count_prop \ # or presence_absence
-  --output data/example_aa_af_prevalence.tsv
+  --output allele_freqs.tsv
 ```
