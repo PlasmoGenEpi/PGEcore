@@ -53,7 +53,9 @@ read_groups <- function(groups_path){
 #TODO fix this function
 check_biallelic <- function(input_data){
   mutants <- input_data[input_data$ref_aa != input_data$aa,]
-  print(mutants)
+  mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
+  print(mutants_ignoring_sample)
+  mutants <- mutants_ignoring_sample
   bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)]
   print(paste('Dropped', bad_targets))
   only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
@@ -298,8 +300,6 @@ groups <- read_groups("example_loci_groups.tsv")
 #group <- arg$group
 ##TODO add arg parsing for groups
 
-test_sample_mat <- create_FEM_input(input_dir, "pfdhfr_pfdhps")
-
 
 output_dir <- "output"
 input_dir <- "example_amino_acid_calls.tsv"
@@ -314,8 +314,6 @@ for(group in unique(groups$group_id)){
   fem_plsf <- format_output(fem_results)
   fem_plsf$group <- group
   overall_output <- rbind(overall_output, fem_plsf)
-  
-  #TODO add the 101 parsing to seq level
 }
 overall_output <- apply(overall_output,2,as.character)
 write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"))
