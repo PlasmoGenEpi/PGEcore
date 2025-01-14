@@ -129,6 +129,7 @@ parse_aa_calls <- function(path) {
 }
 
 aa_calls <- parse_aa_calls(args$aa_calls)
+
 prevalence <- calculate_prevalence(aa_calls)
 af <- switch(
   args$method,
@@ -141,6 +142,4 @@ out <- dplyr::left_join(
   by = c("gene_id", "aa_position", "ref_aa", "aa")
 )
 
-print(args)
-print(out)
 readr::write_tsv(out, args$output)
