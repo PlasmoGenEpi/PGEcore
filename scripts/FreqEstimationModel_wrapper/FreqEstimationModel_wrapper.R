@@ -44,10 +44,10 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
-arg <- list(groups = "example_loci_groups.tsv",
-            coi = "example_coi_table.tsv",
-            aa_calls = "example_amino_acid_calls.tsv",
-            seed = 1)
+#arg <- list(groups = "example_loci_groups.tsv",
+#            coi = "example_coi_table.tsv",
+#            aa_calls = "example_amino_acid_calls.tsv",
+#            seed = 1)
 
 
 #' Returns average COI from COI tsv file path
