@@ -154,7 +154,7 @@ create_FEM_input <- function(input_path, groups, group_id) {
   colnames(sample_matrix) <- unique_targets
   rownames(sample_matrix) <- unique_sample_ids
  
-  
+  # populate the input matrix with 0 (only reference), 0.5 (het cal), or 1 (only non-reference)
   for(sample in input_data$specimen_id){
     cut_df <- input_data[input_data$specimen_id==sample,]
     for(unique_target in unique_targets){
@@ -232,8 +232,7 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, output_dir, se
             moi_prior <- "Poisson" # Choose between 'Uniform', 'Poisson', 'Geometric' or 'nBinomial'
         }
         moi_max <- 8 # Maximum MOI regarded as possible by the model (I haven't tested beyond 20)
-        #### ALFRED 
-        moi_hyperparameter <- COI # Specify population-average MOI (parameter of the prior on the MOI)
+        moi_hyperparameter <- COI 
         moi_size_hyperparameter <- 0.5 # Only applies if moi_prior == 'nBinomial' (hyperparameter for the prior on the MOI if the prior is the negative Binomial)
         moi_prior_min2 <- NULL # Specify the lower bound for the MOI per individual
         moi_initial <- NULL # If null, the initial vector of MOIs is set internally, otherwise set to input moi_initial
@@ -379,7 +378,6 @@ create_output <- function(input_dir, groups, COI, output_dir, seed){
   overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
                                "CI_2.5"=c(),	"CI_97.5"=c())
   for(group in unique(groups$group_id)){
-    print(group)
     #will be one output file
     fem_results <- run_FreqEstimationModel(input_dir, groups, COI, output_dir, seed, group)
     fem_plsf <- format_single_group_output(fem_results)
@@ -387,7 +385,7 @@ create_output <- function(input_dir, groups, COI, output_dir, seed){
     overall_output <- rbind(overall_output, fem_plsf)
   }
   overall_output <- apply(overall_output,2,as.character)
-  overall_output <- overall_output[, 2:7]
+  overall_output <- overall_output[, 2:7] #remove sequence column
   write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
   
   
@@ -395,11 +393,10 @@ create_output <- function(input_dir, groups, COI, output_dir, seed){
 
 COI <- arg$coi
 groups <- arg$groups
-output_dir <- "output"
+output_dir <- "output" #hardcoded for now
 input_dir <- arg$aa_calls
 seed <- arg$seed
 
 create_output(input_dir, groups, COI, output_dir, seed)
 
 #TODO add "total" column
-#TODO add in-line code as needed
