@@ -10,6 +10,7 @@ library(validate)
 library(magrittr)
 library(stringr)
 library(optparse)
+library(readr)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -44,10 +45,11 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
-#arg <- list(groups = "example_loci_groups.tsv",
-#            coi = "example_coi_table.tsv",
-#            aa_calls = "example_amino_acid_calls.tsv",
-#            seed = 1)
+arg <- list(groups = "example_loci_groups.tsv",
+            coi = "example_coi_table.tsv",
+            aa_calls = "example_amino_acid_calls.tsv",
+            seed = 1,
+            mlaf = "output")
 
 
 #' Returns average COI from COI tsv file path
@@ -59,14 +61,14 @@ arg <- parse_args(OptionParser(option_list = opts))
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
-  COI_table <- read.csv(coi_path, sep="\t")
+  COI_table <- read_tsv(coi_path)
   vals <- COI_table$coi
   avg_val <- mean(vals)
   return(avg_val)
 }
-
+#TODO add readr coltype checking
 read_groups <- function(groups_path){
-  group_table <- read.csv(groups_path, sep="\t")
+  group_table <- read_tsv(groups_path)
   return(group_table)
 }
 
@@ -188,7 +190,7 @@ create_FEM_input <- function(input_path, groups, group_id) {
  
 #' Run FEM
 #'
-#' Given the input_data path, groups, average COI, output directory, and seed, runs
+#' Given the input_data path, groups file, group_id, and average COI, runs
 #' FreqEstimationModel
 #' 
 #' @param input_path Path of TSV file with amino acid calls. It should 
@@ -197,13 +199,12 @@ create_FEM_input <- function(input_path, groups, group_id) {
 #'   aa_position column. There should be no explicit missing data.
 #' @param groups output of read_groups
 #' @param coi output of calculate_avg_COI
-#' @param output_dir file name for output, currently hardcoded
 #' @param seed random seed for reproducibility
 #' @param group single group being analyzed
 #' 
 #' @return list of 4 elements: plsf_table, runtime information, target_mapping, and
 #' alternative alleles
-run_FreqEstimationModel <- function(input_data_path, groups, COI, output_dir, seed, group) {
+run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
     sample_matrix_list <- create_FEM_input(input_data_path, groups, group)
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
@@ -337,12 +338,17 @@ bin2STAVE <- function(chars, names, alt_alleles){
       #gene;position;aa:gene;position;aa
     formatted_name <- gsub(" ", ";", name)
     alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
+    gene_current <- names[char_ix] ###split appropriately
+    print(gene_current)
     alt_current <- alt_current[1, call]
     name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=";"), sep=":")
   
     char_ix <- char_ix + 1
   }
   name <- sub('.', '', name)
+  
+  
+  
   return(name)
 }
 
@@ -364,45 +370,28 @@ format_single_group_output <- function(pop_freq_list){
   return(input_list)
 }
 
-
-#' Overarching function to run FEM
-#'
-#' Takes the input file, groups, COI, output file, and seed to generate a the 
-#' pipeline-appropriate output
-#'
-#' @param input_dir tsv file path containing the columns specimen_id, target_id,
-#' read_count, gene_id, aa_position, ref_codon, ref_aa, codon, aa
-#' @param groups tsv file path containing the group_name, target_id, and aa_position
-#' @param COI Path of TSV file with COI for each specimen. It should 
-#' have two columns, "experiment_sample_id" and "coi"
-#' @param output_dir currently hardcoded as "output"
-#' @param seed random seed for reproducability
-#' 
-#' @return formatted dataframe with freq, median_freq, the 2.5 and 97.5% CIs, and 
-#' STAVE-formatted variant
-create_output <- function(input_dir, groups, COI, output_dir, seed){
-  groups <- read_groups(groups)
-  COI <- calculate_avg_COI(COI)
-  overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
-                               "CI_2.5"=c(),	"CI_97.5"=c())
-  for(group in unique(groups$group_id)){
-    #will be one output file
-    fem_results <- run_FreqEstimationModel(input_dir, groups, COI, output_dir, seed, group)
-    fem_plsf <- format_single_group_output(fem_results)
-    fem_plsf$group_id <- group
-    overall_output <- rbind(overall_output, fem_plsf)
-  }
-  overall_output <- apply(overall_output,2,as.character)
-  overall_output <- overall_output[, 2:8] #remove sequence column
-  write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
-  
-  
-}
-
+#arg assignments
 COI <- arg$coi
 groups <- arg$groups
-output_dir <- "output" #hardcoded for now
+output_dir <- arg$mlaf
 input_dir <- arg$aa_calls
 seed <- arg$seed
 
-create_output(input_dir, groups, COI, output_dir, seed)
+#create base dataframe
+groups <- read_groups(groups)
+COI <- calculate_avg_COI(COI)
+overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
+                             "CI_2.5"=c(),	"CI_97.5"=c())
+#run FEM separately for each group
+for(group in unique(groups$group_id)){
+  #will be one output file
+  fem_results <- run_FreqEstimationModel(input_dir, groups, COI, group)
+  fem_plsf <- format_single_group_output(fem_results)
+  fem_plsf$group_id <- group
+  overall_output <- rbind(overall_output, fem_plsf)
+}
+#format and write output to disk
+overall_output <- apply(overall_output,2,as.character)
+overall_output <- overall_output[, 2:8] #remove sequence column
+write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
+
