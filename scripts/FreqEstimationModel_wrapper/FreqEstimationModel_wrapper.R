@@ -141,9 +141,9 @@ create_FEM_input <- function(input_path, groups, group_id) {
     )
   }
   
-  input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position, sep=";")
+  input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position, sep=":")
   groups <- groups[groups$group_id == group_id,]
-  group_targets <- paste(groups$gene_id, groups$aa_position, sep=";")
+  group_targets <- paste(groups$gene_id, groups$aa_position, sep=":")
   group_input_data <- input_data[input_data$unique_targets %in% group_targets,]
   input_data <- group_input_data
   data_list <- check_biallelic(input_data)
@@ -332,24 +332,49 @@ bin2STAVE <- function(chars, names, alt_alleles){
   name <- ""
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
+  gene_list <- c()
   for(char in chars_split){
     if(char==1){call <- "aa"}
     else {call <- "ref_aa"}
       #gene;position;aa:gene;position;aa
-    formatted_name <- gsub(" ", ";", name)
+    formatted_name <- gsub(" ", ":", name)
     alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
-    gene_current <- names[char_ix] ###split appropriately
-    print(gene_current)
+    gene_current <- str_split(names[char_ix], ":")[[1]][1] ###split appropriately
+    gene_list <- append(gene_list, gene_current)
     alt_current <- alt_current[1, call]
-    name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=";"), sep=":")
-  
+    name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=":"), sep=";")
     char_ix <- char_ix + 1
   }
-  name <- sub('.', '', name)
-  
-  
-  
-  return(name)
+  #removing initial colon
+  name <- substring(name, 2, nchar(name))
+  #collapsing into true STAVE format
+  return_name <- ""
+  cut_name <- str_split(name, ";")[[1]]
+  for(unique_gene in unique(gene_list)){
+    pos <- c()
+    aa <- c()
+    ix <- 1
+    for(gene in gene_list){
+      if(gene==unique_gene){
+        cut_cut_name <- cut_name[ix]
+        pos_ind <- str_split(cut_cut_name, ":")[[1]][2]
+        aa_ind <- str_split(cut_cut_name, ":")[[1]][3]
+        pos <- append(pos, pos_ind)
+        aa <- append(aa, aa_ind)
+      }
+      ix <- ix + 1
+
+    }
+    if(length(pos)==1){
+      return_name <- paste(return_name, cut_cut_name, ";", sep="")
+    }
+    else {
+      ind_name <- paste(unique_gene, paste(pos, collapse="_"), paste(aa, collapse=""), sep=":")
+      return_name <- paste(return_name, ind_name, ";", sep="")
+    }
+    
+  }
+  return(return_name)
 }
 
 #' Formats a single output from run_FEM
