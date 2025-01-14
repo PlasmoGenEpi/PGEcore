@@ -11,10 +11,16 @@ opts <- list(
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
       if (!file.exists(value)) {
-        stop(stringr::str_c(opt$coi_calls, " does not exist"))
+        stop(stringr::str_c(value, " does not exist"))
       }
       value
     }
+  ),
+  make_option(
+    c("-o", "--output"),
+    help = "Output file name. Default: %default",
+    type = "character",
+    default = "coi_distribution.tsv"
   )
 )
 
@@ -24,7 +30,6 @@ missing_args <- setdiff(required_args, names(args))
 if (length(missing_args) > 0) {
   stop(stringr::str_c("Missing required arguments: ", missing_args))
 }
-
 
 load_coi_calls <- function(path) {
   coi_dat <- readr::read_tsv(
@@ -42,7 +47,7 @@ calculate_coi_distribution <- function(coi_calls) {
   coi_dist <- coi_calls |>
     dplyr::group_by(.data$coi) |>
     dplyr::summarise(n = dplyr::n()) |>
-    dplyr::mutate(prop = .data$n / sum(.data$n))
+    dplyr::mutate(proportion = .data$n / sum(.data$n))
   return(coi_dist)
 }
 
