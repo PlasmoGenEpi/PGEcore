@@ -38,6 +38,7 @@ opts <- list(
 )
 arg <- parse_args(OptionParser(option_list = opts))
 
+# be clear takes input path + returns number
 calculate_COI <- function(coi_path){
   COI_table <- read.csv(coi_path, sep="\t")
   vals <- COI_table$coi
@@ -50,11 +51,10 @@ read_groups <- function(groups_path){
   return(group_table)
 }
 
-#TODO fix this function
+
 check_biallelic <- function(input_data){
   mutants <- input_data[input_data$ref_aa != input_data$aa,]
   mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
-  print(mutants_ignoring_sample)
   mutants <- mutants_ignoring_sample
   bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)]
   print(paste('Dropped', bad_targets))
@@ -266,7 +266,7 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
         )
     )
 }
-read_names <- function(chars, names, alt_alleles){
+bin2STAVE <- function(chars, names, alt_alleles){
   name <- ""
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
@@ -288,7 +288,7 @@ format_output <- function(pop_freq_list){
   names <- pop_freq_list[[3]]
   alt_alleles <- pop_freq_list[[4]]
   
-  input_list$name <- lapply(input_list$sequence, read_names, names, alt_alleles)
+  input_list$name <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
   return(input_list)
 }
 COI <- calculate_COI("example_coi_table.tsv")
@@ -306,6 +306,7 @@ input_dir <- "example_amino_acid_calls.tsv"
 ## ARG_PARSE
 #input_dir <- arg$aa_calls
 
+#put into function
 overall_output <- data.frame("sequence"=c(),	"fem_mean_frequency"=c(),	"fem_median_frequency"=c(),
                              "fem_CI2.5%"=c(),	"fem_CI97.5%"=c())
 for(group in unique(groups$group_id)){
