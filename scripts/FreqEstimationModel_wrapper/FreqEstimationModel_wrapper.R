@@ -87,9 +87,11 @@ check_biallelic <- function(input_data){
   print(paste('Dropped', bad_targets))
   only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
   alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,] #dataframe containing alt + ref calls for biallelic SNPs
+  num_count <- nrow(distinct(only_biallelic))
   return(list(
     only_biallelic,
-    alt_calls))
+    alt_calls,
+    num_count))
 }
 
 #' Reformat amino acid calls into the form required by FEM
@@ -145,6 +147,7 @@ create_FEM_input <- function(input_path, groups, group_id) {
   data_list <- check_biallelic(input_data)
   input_data <- data_list[[1]]
   alt_alleles <- data_list[[2]]
+  num_group <- data_list[[3]]
 
   unique_targets <- unique(input_data$unique_targets)
   unique_sample_ids <- unique(input_data$specimen_id)
@@ -179,7 +182,8 @@ create_FEM_input <- function(input_path, groups, group_id) {
   }
   return(list(
     sample_matrix,
-    alt_alleles))
+    alt_alleles,
+    num_group))
 }
  
 #' Run FEM
@@ -203,6 +207,7 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, output_dir, se
     sample_matrix_list <- create_FEM_input(input_data_path, groups, group)
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
+    num_group <- sample_matrix_list[[3]]
     data_summary <- list()
     #data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
     #data_summary$Data <- as.matrix(data_summary$Data)
@@ -307,7 +312,8 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, output_dir, se
             plsf_table = pop_freq,
             runtime = runtime,
             names = processed_data_list[["markerID"]],
-            alt_allele = alt_alleles
+            alt_allele = alt_alleles,
+            num_group = num_group
         )
     )
 }
@@ -351,10 +357,13 @@ format_single_group_output <- function(pop_freq_list){
   input_list <- pop_freq_list[[1]]
   names <- pop_freq_list[[3]]
   alt_alleles <- pop_freq_list[[4]]
+  num_group <- pop_freq_list[[5]]
   
   input_list$variant <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
+  input_list$total <- num_group
   return(input_list)
 }
+
 
 #' Overarching function to run FEM
 #'
@@ -373,7 +382,6 @@ format_single_group_output <- function(pop_freq_list){
 #' STAVE-formatted variant
 create_output <- function(input_dir, groups, COI, output_dir, seed){
   groups <- read_groups(groups)
-  print(groups$group_id)
   COI <- calculate_avg_COI(COI)
   overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
                                "CI_2.5"=c(),	"CI_97.5"=c())
@@ -385,7 +393,7 @@ create_output <- function(input_dir, groups, COI, output_dir, seed){
     overall_output <- rbind(overall_output, fem_plsf)
   }
   overall_output <- apply(overall_output,2,as.character)
-  overall_output <- overall_output[, 2:7] #remove sequence column
+  overall_output <- overall_output[, 2:8] #remove sequence column
   write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
   
   
@@ -398,5 +406,3 @@ input_dir <- arg$aa_calls
 seed <- arg$seed
 
 create_output(input_dir, groups, COI, output_dir, seed)
-
-#TODO add "total" column
