@@ -50,8 +50,15 @@ arg <- list(groups = "example_loci_groups.tsv",
             seed = 1)
 
 
-# be clear takes input path + returns number
-calculate_COI <- function(coi_path){
+#' Returns average COI from COI tsv file path
+#'
+#' Takes in the COI table for the specimens and calculates the average COI
+#'
+#' @param coi_path Path of TSV file with COI for each specimen. It should 
+#' have two columns, "experiment_sample_id" and "coi"
+#' 
+#' @return average COI across all samples in the file
+calculate_avg_COI <- function(coi_path){
   COI_table <- read.csv(coi_path, sep="\t")
   vals <- COI_table$coi
   avg_val <- mean(vals)
@@ -63,15 +70,23 @@ read_groups <- function(groups_path){
   return(group_table)
 }
 
-
+#' Returns dataframe with only biallelic SNPS
+#'
+#' Takes a dataframe in the long-data format and returns only the targets that
+#' are biallelic in the population
+#'
+#' @param input_data dataframe object containing the columns specimen_id, target_id,
+#' read_count, gene_id, aa_position, ref_codon, ref_aa, codon, aa
+#' 
+#' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){
   mutants <- input_data[input_data$ref_aa != input_data$aa,]
   mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
   mutants <- mutants_ignoring_sample
-  bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)]
+  bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)] #remove targets that have >1 non-reference call
   print(paste('Dropped', bad_targets))
   only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
-  alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,]
+  alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,] #dataframe containing alt + ref calls for biallelic SNPs
   return(list(
     only_biallelic,
     alt_calls))
@@ -86,9 +101,11 @@ check_biallelic <- function(input_data){
 #'   have character columns for specimen_id, target_id, gene_id, 
 #'   ref_codon, ref_aa, codon, and aa. It should have an integer 
 #'   aa_position column. There should be no explicit missing data.
+#' @param groups output of read_groups
+#' @param group_id the string of the current group being analyzed
 #' 
 #' @return Matrix of frequencies for each multi-locus genotype.
-create_FEM_input <- function(input_path, group_id) {
+create_FEM_input <- function(input_path, groups, group_id) {
   input_data <- read.csv(input_path, na.strings = "NA", sep="\t")
   # Validate input format
   rules <- validate::validator(
@@ -162,9 +179,25 @@ create_FEM_input <- function(input_path, group_id) {
     alt_alleles))
 }
  
-
-run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir, seed) {
-    sample_matrix_list <- create_FEM_input(input_data_path, group)
+#' Run FEM
+#'
+#' Given the input_data path, groups, average COI, output directory, and seed, runs
+#' FreqEstimationModel
+#' 
+#' @param input_path Path of TSV file with amino acid calls. It should 
+#'   have character columns for specimen_id, target_id, gene_id, 
+#'   ref_codon, ref_aa, codon, and aa. It should have an integer 
+#'   aa_position column. There should be no explicit missing data.
+#' @param groups output of read_groups
+#' @param coi output of calculate_avg_COI
+#' @param output_dir file name for output, currently hardcoded
+#' @param seed random seed for reproducibility
+#' @param group single group being analyzed
+#' 
+#' @return list of 4 elements: plsf_table, runtime information, target_mapping, and
+#' alternative alleles
+run_FreqEstimationModel <- function(input_data_path, groups, COI, output_dir, seed, group) {
+    sample_matrix_list <- create_FEM_input(input_data_path, groups, group)
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
     data_summary <- list()
@@ -276,7 +309,16 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir, see
         )
     )
 }
-
+#' Turns a binary string into the STAVE format
+#'
+#' Takes a string outputted as "sequence" from FEM and given the mapping of targets
+#' to positions in that string, returns a STAVE-readable format
+#'
+#' @param chars binary string representing each sequence
+#' @param names output from run_FEM mapping positions in the string to targets
+#' @param alt_alleles also an output from run_FEM containing ref + alt allele identities
+#' 
+#' @return string of the STAVE format for a given string
 bin2STAVE <- function(chars, names, alt_alleles){
   name <- ""
   char_ix <- 1
@@ -295,6 +337,14 @@ bin2STAVE <- function(chars, names, alt_alleles){
   name <- sub('.', '', name)
   return(name)
 }
+
+#' Formats a single output from run_FEM
+#'
+#' Takes the output of run_FreqEstimationModel and formats to include the STAVE format
+#'
+#' @param pop_freq_list output list from run_FreqEstimationModel
+#' 
+#' @return formatted dataframe
 format_single_group_output <- function(pop_freq_list){
   input_list <- pop_freq_list[[1]]
   names <- pop_freq_list[[3]]
@@ -304,12 +354,31 @@ format_single_group_output <- function(pop_freq_list){
   return(input_list)
 }
 
+#' Overarching function to run FEM
+#'
+#' Takes the input file, groups, COI, output file, and seed to generate a the 
+#' pipeline-appropriate output
+#'
+#' @param input_dir tsv file path containing the columns specimen_id, target_id,
+#' read_count, gene_id, aa_position, ref_codon, ref_aa, codon, aa
+#' @param groups tsv file path containing the group_name, target_id, and aa_position
+#' @param COI Path of TSV file with COI for each specimen. It should 
+#' have two columns, "experiment_sample_id" and "coi"
+#' @param output_dir currently hardcoded as "output"
+#' @param seed random seed for reproducability
+#' 
+#' @return formatted dataframe with freq, median_freq, the 2.5 and 97.5% CIs, and 
+#' STAVE-formatted variant
 create_output <- function(input_dir, groups, COI, output_dir, seed){
+  groups <- read_groups(groups)
+  print(groups$group_id)
+  COI <- calculate_avg_COI(COI)
   overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
                                "CI_2.5"=c(),	"CI_97.5"=c())
   for(group in unique(groups$group_id)){
+    print(group)
     #will be one output file
-    fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir, seed)
+    fem_results <- run_FreqEstimationModel(input_dir, groups, COI, output_dir, seed, group)
     fem_plsf <- format_single_group_output(fem_results)
     fem_plsf$group_id <- group
     overall_output <- rbind(overall_output, fem_plsf)
@@ -321,19 +390,14 @@ create_output <- function(input_dir, groups, COI, output_dir, seed){
   
 }
 
-COI <- calculate_COI(arg$coi)
-groups <- read_groups(arg$group)
+COI <- arg$coi
+groups <- arg$groups
 output_dir <- "output"
 input_dir <- arg$aa_calls
 seed <- arg$seed
 
-create_output(input_dir, group, COI, output_dir, seed)
-
-
-
-
+create_output(input_dir, groups, COI, output_dir, seed)
 
 #TODO add "total" column
-
 #TODO add more docstrings
 #TODO add in-line code as needed
