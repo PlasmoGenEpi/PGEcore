@@ -1,0 +1,423 @@
+library(tibble)
+library(dplyr)
+library(moire)
+library(tidyr)
+library(optparse)
+library(stringr)
+library(validate)
+library(checkmate)
+
+# Parse arguments ------------------------------------------------------
+opts = list(
+  make_option(
+    "--allele_table",
+    help = str_c(
+       "TSV containing allele present/absent per specimen, with the
+       columns: specimen_id, target_id, seq"
+    )
+  ),
+  make_option(
+    "--allow_relatedness",
+    type = "logical",
+    default = TRUE,
+    help = str_c(
+      "Logical flag to allow relatedness within samples.",
+      "Set to TRUE by default"
+    )
+  ),
+  make_option(
+    "--burnin",
+    type = "integer",
+    default = 10000,
+    help = str_c(
+      "Number of burn-in iterations for the MCMC sampler.",
+      "Default is set to 10000 iterations."
+    )
+  ),
+  make_option(
+    "--samples_per_chain",
+    type = "integer",
+    default = 1000,
+    help = str_c(
+      "Number of samples per chain for the MCMC sampler.",
+      "Default is set to 1000 samples."
+    )
+  ),
+  make_option(
+    "--verbose",
+    type = "logical",
+    default = FALSE,
+    help = str_c(
+      "Logical flag to enable verbose output during processing.",
+      "Set to FALSE by default."
+    )
+  ),
+  make_option(
+    "--eps_pos_alpha",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Alpha parameter for the positive error rate prior.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--eps_pos_beta",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Beta parameter for the positive error rate prior.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--eps_neg_alpha",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Alpha parameter for the negative error rate prior.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--eps_neg_beta",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Beta parameter for the negative error rate prior.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--r_alpha",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Alpha parameter for the relatedness prior.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--r_beta",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Beta parameter for the relatedness prior.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--mean_coi_shape",
+    type = "double",
+    default = 0.1,
+    help = str_c(
+      "Shape parameter for the mean coefficient of inbreeding prior.",
+      "Default set to 0.1."
+    )
+  ),
+  make_option(
+    "--mean_coi_scale",
+    type = "integer",
+    default = 10,
+    help = str_c(
+      "Scale parameter for the mean coefficient of inbreeding prior.",
+      "Default set to 10"
+    )
+  ),
+  make_option(
+    "--max_eps_pos",
+    type = "integer",
+    default = 2,
+    help = str_c(
+      "Maximum value for the positive error rate.",
+      "Default set to 2."
+    )
+  ),
+  make_option(
+    "--max_eps_neg",
+    type = "integer",
+    default = 2,
+    help = str_c(
+      "Maximum value for the negative error rate.",
+      "Default set to 2."
+    )
+  ),
+  make_option(
+    "--record_latent_genotypes",
+    type = "logical",
+    default = FALSE,
+    help = str_c(
+      "Logical flag to record latent genotypes in the output.",
+      "Default set to FALSE."
+    )
+  ),
+  make_option(
+    "--num_chains",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of chains to run in the MCMC process.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--num_cores",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of cores to use for parallel processing.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--pt_chains",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of chains to run in the parallel tempering process.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--pt_grad",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of gradient evaluations to use in the parallel tempering process.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--pt_num_threads",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of threads to use in the parallel tempering process.",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--adapt_temp",
+    type = "logical",
+    default = FALSE,
+    help = str_c(
+      "Logical flag to enable adaptive temperature in the MCMC process.",
+      "Default set to FALSE."
+    )
+  ),
+  make_option(
+    "--max_runtime",
+    type = "double",
+    default = Inf,
+    help = str_c(
+      "Maximum runtime for the MCMC process.",
+      "Default set to Inf."
+    )
+  ),
+  make_option(
+    "--seed",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Random number seed",
+      "Default set to 1")
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+
+# moire_wrapper functions ------------------------------------------------------
+create_Moire_input <- function(input_path, allow_relatedness, burnin, 
+                               samples_per_chain, verbose, eps_pos_alpha, 
+                               eps_pos_beta, eps_neg_alpha, eps_neg_beta, 
+                               r_alpha, r_beta, mean_coi_shape, mean_coi_scale, 
+                               max_eps_pos, max_eps_neg, record_latent_genotypes, 
+                               num_chains, num_cores, pt_chains, pt_grad, 
+                               pt_num_threads, adapt_temp, max_runtime, seed) {
+  print("Reading input data")
+  input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
+  moire_data <- input_data |>
+    dplyr::select(specimen_id, target_id, seq) |> 
+    dplyr::rename(sample_id = specimen_id, locus = target_id, allele = seq)
+
+  print("Creating Moire object")
+  # Create a list containing selected data and parameters
+  moire_object <- list(
+    moire_data = moire_data,
+    moire_parameters = list(
+      allow_relatedness = allow_relatedness,
+      burnin = burnin,
+      samples_per_chain = samples_per_chain,
+      verbose = verbose,
+      eps_pos_alpha = eps_pos_alpha,
+      eps_pos_beta = eps_pos_beta,
+      eps_neg_alpha = eps_neg_alpha,
+      eps_neg_beta = eps_neg_beta,
+      r_alpha = r_alpha,
+      r_beta = r_beta,
+      mean_coi_shape = mean_coi_shape,
+      mean_coi_scale = mean_coi_scale,
+      max_eps_pos = max_eps_pos,
+      max_eps_neg = max_eps_neg,
+      record_latent_genotypes = record_latent_genotypes,
+      num_chains = num_chains,
+      num_cores = num_cores,
+      pt_chains = pt_chains,
+      pt_grad = pt_grad,
+      pt_num_threads = pt_num_threads,
+      adapt_temp = adapt_temp,
+      max_runtime = max_runtime,
+      seed = seed
+    )
+  )
+
+  # Validate input format
+  print("Validating input format")
+  rules <- validate::validator(
+    # Data columns
+    is.character(sample_id),
+    is.character(locus),
+    is.character(allele),
+  
+    # Non-missing values
+    !is.na(sample_id),
+    !is.na(locus),
+    !is.na(allele)
+  )
+  
+  # Validate parameters
+  assert_logical(moire_object$moire_parameters$allow_relatedness, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$burnin, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$samples_per_chain, any.missing = FALSE, len = 1)
+  assert_logical(moire_object$moire_parameters$verbose, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$eps_pos_alpha, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$eps_pos_beta, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$eps_neg_alpha, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$eps_neg_beta, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$r_alpha, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$r_beta, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$mean_coi_shape, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$mean_coi_scale, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$max_eps_pos, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$max_eps_neg, any.missing = FALSE, len = 1)
+  assert_logical(moire_object$moire_parameters$record_latent_genotypes, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$num_chains, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$num_cores, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$pt_chains, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$pt_grad, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
+  assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$seed, any.missing = FALSE, null.ok = TRUE, len = 1)  # Allow NULL seed
+  
+  
+  # Confront the analysis_object with validation rules
+  print("Confronting input data with validation rules")
+  fails <- validate::confront(moire_object$moire_data, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  
+  # Raise an error if any validations fail
+  if (nrow(fails) > 0) {
+    stop(
+      "Analysis object failed one or more validation checks: ",
+      str_c(fails$expression, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+ 
+  print("Returning Moire object")
+  return(moire_object)
+}
+
+run_Moire <- function(moire_object) {
+
+  moire_data = moire_object$moire_data |>
+    moire::load_long_form_data()
+
+  moire_parameters = moire_object$moire_parameters
+
+  runtime <- system.time({
+    set.seed(moire_parameters$seed)
+    # Run the MCMC function
+    moire_res <- moire::run_mcmc(
+      moire_data, moire_data$is_missing,
+      allow_relatedness = moire_parameters$allow_relatedness,
+      burnin = moire_parameters$burnin,
+      samples_per_chain = moire_parameters$samples_per_chain,
+      verbose = moire_parameters$verbose,
+      eps_pos_alpha = moire_parameters$eps_pos_alpha,
+      eps_pos_beta = moire_parameters$eps_pos_beta,
+      eps_neg_alpha = moire_parameters$eps_neg_alpha,
+      eps_neg_beta = moire_parameters$eps_neg_beta,
+      r_alpha = moire_parameters$r_alpha,
+      r_beta = moire_parameters$r_beta,
+      mean_coi_shape = moire_parameters$mean_coi_shape,
+      mean_coi_scale = moire_parameters$mean_coi_scale,
+      max_eps_pos = moire_parameters$max_eps_pos,
+      max_eps_neg = moire_parameters$max_eps_neg,
+      record_latent_genotypes = moire_parameters$record_latent_genotypes,
+      num_chains = moire_parameters$num_chains,
+      num_cores = moire_parameters$num_cores,
+      pt_chains = moire_parameters$pt_chains,
+      pt_grad = moire_parameters$pt_grad,
+      pt_num_threads = moire_parameters$pt_num_threads,
+      adapt_temp = moire_parameters$adapt_temp,
+      max_runtime = moire_parameters$max_runtime
+    )
+  })
+  
+  return(moire_res)
+}
+
+# Main-----------------------------------------------------------------
+
+# Create Moire object -------------------------------------------------
+moire_object <- create_Moire_input(arg$allele_table,
+  arg$allow_relatedness,
+  arg$burnin,
+  arg$samples_per_chain,
+  arg$verbose,
+  arg$eps_pos_alpha,
+  arg$eps_pos_beta,
+  arg$eps_neg_alpha,
+  arg$eps_neg_beta,
+  arg$r_alpha,
+  arg$r_beta,
+  arg$mean_coi_shape,
+  arg$mean_coi_scale,
+  arg$max_eps_pos,
+  arg$max_eps_neg,
+  arg$record_latent_genotypes,
+  arg$num_chains,
+  arg$num_cores,
+  arg$pt_chains,
+  arg$pt_grad,
+  arg$pt_num_threads,
+  arg$adapt_temp,
+  arg$max_runtime,
+  arg$seed
+)
+
+# Run Moire -------------------------------------------------
+moire_results <- run_Moire(moire_object)
+
+# Generate summaries
+
+# Estimate the COI for each sample
+coi_summary <- moire::summarize_coi(mcmc_results)
+
+# Summarize statistics about the allele frequency distribution
+he_summary <- moire::summarize_he(mcmc_results)
+allele_freq_summary <- moire::summarize_allele_freqs(mcmc_results)
+relatedness_summary <- moire::summarize_relatedness(mcmc_results)
+effective_coi_summary <- moire::summarize_effective_coi(mcmc_results)
+
+#Save outputs
+saveRDS(moire_res, "moire_res.rds")
+
+write.csv(coi_summary, "coi_summary.csv")
+write.csv(he_summary, "he_summary.csv")
+write.csv(allele_freq_summary, "allele_freq_summary.csv")
+write.csv(relatedness_summary, "relatedness_summary.csv")
+write.csv(effective_coi_summary, "effective_coi_summary.csv")
