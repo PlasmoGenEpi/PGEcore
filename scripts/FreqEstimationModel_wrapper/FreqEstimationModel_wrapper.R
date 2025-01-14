@@ -295,7 +295,7 @@ bin2STAVE <- function(chars, names, alt_alleles){
   name <- sub('.', '', name)
   return(name)
 }
-format_output <- function(pop_freq_list){
+format_single_group_output <- function(pop_freq_list){
   input_list <- pop_freq_list[[1]]
   names <- pop_freq_list[[3]]
   alt_alleles <- pop_freq_list[[4]]
@@ -304,26 +304,36 @@ format_output <- function(pop_freq_list){
   return(input_list)
 }
 
+create_output <- function(input_dir, groups, COI, output_dir, seed){
+  overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
+                               "CI_2.5"=c(),	"CI_97.5"=c())
+  for(group in unique(groups$group_id)){
+    #will be one output file
+    fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir, seed)
+    fem_plsf <- format_single_group_output(fem_results)
+    fem_plsf$group_id <- group
+    overall_output <- rbind(overall_output, fem_plsf)
+  }
+  overall_output <- apply(overall_output,2,as.character)
+  overall_output <- overall_output[, 2:7]
+  write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
+  
+  
+}
+
 COI <- calculate_COI(arg$coi)
-group <- read_groups(arg$group)
+groups <- read_groups(arg$group)
 output_dir <- "output"
 input_dir <- arg$aa_calls
 seed <- arg$seed
 
-#TODO put into function
+create_output(input_dir, group, COI, output_dir, seed)
+
+
+
+
+
 #TODO add "total" column
-overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
-                             "CI_2.5"=c(),	"CI_97.5"=c())
-for(group in unique(groups$group_id)){
-  #will be one output file
-  fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir, seed)
-  fem_plsf <- format_output(fem_results)
-  fem_plsf$group_id <- group
-  overall_output <- rbind(overall_output, fem_plsf)
-}
-overall_output <- apply(overall_output,2,as.character)
-overall_output <- overall_output[, 2:7]
-write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
 
 #TODO add more docstrings
 #TODO add in-line code as needed
