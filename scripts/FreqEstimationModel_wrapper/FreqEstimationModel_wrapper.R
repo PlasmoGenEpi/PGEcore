@@ -247,10 +247,10 @@ run_FreqEstimationModel <- function(input_data_path, group, COI, output_dir) {
 
         # Extract population-level haplotype frequency estimates
         pop_freq <- cbind(
-            fem_mean_frequency = summary(mcmc_frequency_chains)$statistics[, "Mean"],
-            fem_median_frequency = summary(mcmc_frequency_chains)$quantiles[, 3],
-            "fem_CI2.5%" = summary(mcmc_frequency_chains)$quantiles[, 1],
-            "fem_CI97.5%" = CI_upper <- summary(mcmc_frequency_chains)$quantiles[, 5]
+            freq = summary(mcmc_frequency_chains)$statistics[, "Mean"],
+            median_freq = summary(mcmc_frequency_chains)$quantiles[, 3],
+            "CI_2.5" = summary(mcmc_frequency_chains)$quantiles[, 1],
+            "CI_97.5" = CI_upper <- summary(mcmc_frequency_chains)$quantiles[, 5]
         )
     })
     # Convert row names to a new column named "sequence"
@@ -288,7 +288,7 @@ format_output <- function(pop_freq_list){
   names <- pop_freq_list[[3]]
   alt_alleles <- pop_freq_list[[4]]
   
-  input_list$name <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
+  input_list$variant <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
   return(input_list)
 }
 COI <- calculate_COI("example_coi_table.tsv")
@@ -306,16 +306,21 @@ input_dir <- "example_amino_acid_calls.tsv"
 ## ARG_PARSE
 #input_dir <- arg$aa_calls
 
-#put into function
-overall_output <- data.frame("sequence"=c(),	"fem_mean_frequency"=c(),	"fem_median_frequency"=c(),
-                             "fem_CI2.5%"=c(),	"fem_CI97.5%"=c())
+#TODO put into function
+#TODO rename names + remove columns (including rownames)
+#TODO add "total" column
+overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
+                             "CI_2.5"=c(),	"CI_97.5"=c())
 for(group in unique(groups$group_id)){
   #will be one output file
   fem_results <- run_FreqEstimationModel(input_dir, group, COI, output_dir)
   fem_plsf <- format_output(fem_results)
-  fem_plsf$group <- group
+  fem_plsf$group_id <- group
   overall_output <- rbind(overall_output, fem_plsf)
 }
 overall_output <- apply(overall_output,2,as.character)
-write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"))
+overall_output <- overal_output[, 2:7]
+write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
 
+#TODO add more docstrings
+#TODO add in-line code as needed
