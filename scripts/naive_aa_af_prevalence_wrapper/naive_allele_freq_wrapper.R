@@ -68,7 +68,8 @@ calculate_af_read_count_prop <- function(aa_calls) {
     dplyr::summarise(freq = sum(.data$wsaf)) |>
     dplyr::group_by(.data$gene_id, .data$aa_position) |>
     # normalize by the total number of samples with data at each position
-    dplyr::mutate(freq = .data$freq / sum(.data$freq)) |>
+    dplyr::mutate(total = sum(.data$freq), freq = .data$freq / .data$total) |>
+    dplyr::relocate("freq", .after = "total") |>
     dplyr::ungroup()
   return(af)
 }
@@ -77,17 +78,17 @@ calculate_af_read_count_prop <- function(aa_calls) {
 calculate_af_presence_absence <- function(aa_calls) {
   af <- aa_calls |>
     dplyr::group_by(.data$gene_id, .data$aa_position) |>
-    dplyr::mutate(total_obs = dplyr::n()) |>
+    dplyr::mutate(total = dplyr::n()) |>
     dplyr::ungroup() |>
     dplyr::group_by(
       .data$gene_id, .data$aa_position,
-      .data$ref_aa, .data$aa, .data$total_obs
+      .data$ref_aa, .data$aa, .data$total
     ) |>
     dplyr::summarise(
-      total = dplyr::n(),
+      observed_alleles = dplyr::n(),
     ) |>
-    dplyr::mutate(freq = .data$total / .data$total_obs) |>
-    dplyr::select(-"total_obs", -"total")
+    dplyr::mutate(freq = .data$observed_alleles / .data$total) |>
+    dplyr::select(-"observed_alleles")
 
   return(af)
 }
