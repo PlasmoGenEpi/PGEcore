@@ -1,10 +1,6 @@
 #!/usr/bin/env Rscript
 
 
-#BiocManager::install("pwalign")
-#BiocManager::install("Biostrings")
-#install.packages("tibble", "dplyr", "stringr", "readr", "optparse")
-
 packagesToLoad = c("tibble", "dplyr", "stringr", "readr", "optparse", "pwalign")
 
 loaded = suppressMessages(lapply(packagesToLoad, require, character.only = TRUE))
@@ -192,16 +188,6 @@ opts <- list(
 )
 
 required_arguments = c("allele_table", "ref_bed", "loci_of_interest", "output_directory")
-
-# debugging 
-# arg$ref_seq_table = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example_PMO_ref_seqs.tsv"
-# arg$ref_bed = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example_PMO_insert_locs_of_panel.bed"
-# arg$loci_of_interest = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example_principal_resistance_marker_info_table.bed"
-# arg$allele_table = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example2_allele_table.tsv"
-# arg$output_directory = "~/Downloads/test"
-# arg$overwrite_dir = T
-# arg$select_target_ids = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/test_loci.txt"
-
 
 # parse arguments
 arg <- parse_args(OptionParser(option_list = opts))
