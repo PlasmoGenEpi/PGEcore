@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
-packagesToLoad = c("tibble", "dplyr", "stringr", "readr", "optparse")
+
+packagesToLoad = c("tibble", "dplyr", "stringr", "readr", "optparse", "Biostrings")
 
 loaded = suppressMessages(lapply(packagesToLoad, require, character.only = TRUE))
 
@@ -68,21 +69,21 @@ genWarningsMissCols <- function(tib, cols, fnp){
 # Parse arguments ------------------------------------------------------
 opts <- list(
   make_option(
-    "--amino_acid_calls", 
+    "--ref_bed", 
     help = str_c(
-      "table with amino acid calls"
+      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand"
     )
-  ),
+  ), 
+  make_option(
+    "--fasta", 
+    help = str_c(
+      "a fasta file with the ref sequences, the names of the records should match up with the target_id of the --ref_bed file"
+    )
+  ), 
   make_option(
     "--out", 
     help = str_c(
       "the out file to write to"
-    )
-  ), 
-  make_option(
-    "--out_nonbiallelic", 
-    help = str_c(
-      "only process these targets"
     )
   ), 
   make_option(
@@ -96,7 +97,7 @@ opts <- list(
   )
 )
 
-required_arguments = c("amino_acid_calls", "out")
+required_arguments = c("ref_bed", "out")
 
 
 
@@ -106,20 +107,44 @@ arg <- parse_args(OptionParser(option_list = opts))
 ## check for required arguments
 checkOptparseRequiredArgsThrow(arg, required_arguments)
 
-amino_acid_calls = readr::read_tsv(arg$amino_acid_calls)
+# read in input data and gather warnings about columns and data formatting 
+warnings = c()
 
-warnings = genWarningsMissCols(amino_acid_calls, c("gene_id", "aa_position", "ref_aa", "aa"))
+# read in the panel reference information 
+ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
+warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand"), arg$ref_bed))
 
 if(file.exists(arg$out) & !arg$overwrite){
   warnings = c(warnings, "file ", arg$out, " already exist, use --overwrite to over write it") 
 }
 
-if("out_nonbiallelic" %in% names(arg) && file.exists(arg$out_nonbiallelic) && !arg$overwrite){
-  warnings = c(warnings, "file ", arg$out_nonbiallelic, " already exist, use --overwrite to over write it") 
+
+
+dna <- Biostrings::readDNAStringSet(arg$fasta)
+
+
+# check to see if values between dataets are similar 
+ref_allele_decomp = set_decompose(ref_bed$target_id, unique(allele_table$target_id))
+
+if(length(ref_allele_decomp$only_in_vectorA) > 0){
+  warnings = c(warnings, paste0("the following loci were missing from the fasta file ", arg$fasta, " but are in ", arg$ref_bed,
+                                "\n", paste0(ref_allele_decomp$only_in_vectorA, collapse = ",")
+  ) 
+  )
 }
+
 
 if(length(warnings) > 0){
   stop(paste0("\n", paste0(warnings, collapse = "\n")) )
 }
+
+
+
+
+
+
+
+
+
 
 
