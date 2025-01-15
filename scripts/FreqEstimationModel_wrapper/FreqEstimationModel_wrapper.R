@@ -18,29 +18,29 @@ opts <- list(
     "--aa_calls", 
     help = str_c(
       "TSV containing amino acid calls, with the columns: specimen_id, ", 
-      "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa"
+      "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa. Required."
     )
   ), 
   make_option(
     "--coi", 
     help = str_c(
       "TSV containing COI for each specimen, with the columns: specimen_id, ", 
-      "coi"
+      "coi. Required."
     )
   ), 
   make_option(
     "--groups", 
     help = str_c(
       "TSV containing which regions should be analyzed for each group, with the columns:
-      group_id, gene_id, aa_position"
+      group_id, gene_id, aa_position Required."
     )
   ),
-  make_option("--seed", type = "integer", help = "Random number seed"), 
+  make_option("--seed", type = "integer", help = "Random number seed. Optional.", default=1), 
   make_option(
     "--mlaf", 
     help = str_c(
       "TSV containing multilocus allele frequencies, with the columns: ", 
-      "variant, freq, total"
+      "variant, freq, total. Required".
     )
   )
 )
