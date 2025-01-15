@@ -212,7 +212,7 @@ if("select_target_ids" %in% names(arg)){
     select_target_ids = strsplit(arg$select_target_ids, split = ",")
   }
 }
-
+ 
 
 select_specimen_ids = c()
 if("select_specimen_ids" %in% names(arg)){
@@ -237,7 +237,7 @@ if(length(select_target_ids) > 0 ){
     warnings = c(warnings, paste0("supplied --select_target_ids but the following targets are missing from ", arg$ref_bed, "\n", 
                                   paste0(missing_sel_tars, collapse = ",")))
   }
-  ref_bed = ref_bed %>% 
+  ref_bed = ref_bed |> 
     filter(target_id %in% select_target_ids)
 }
 
@@ -262,7 +262,7 @@ if(length(select_specimen_ids) > 0 ){
     warnings = c(warnings, paste0("supplied --select_specimen_ids but the following specimen_ids are missing from ", arg$allele_table, "\n", 
                                   paste0(missing_sel_specs, collapse = ",")))
   }
-  allele_table = allele_table %>% 
+  allele_table = allele_table |> 
     filter(specimen_id %in% select_specimen_ids)
 }
 
@@ -272,7 +272,7 @@ if(length(select_target_ids) > 0 ){
     warnings = c(warnings, paste0("supplied --select_target_ids but the following target_ids are missing from ", arg$allele_table, "\n", 
                                   paste0(missing_sel_tars, collapse = ",")))
   }
-  allele_table = allele_table %>% 
+  allele_table = allele_table |> 
     filter(target_id %in% select_target_ids)
 }
 
@@ -424,10 +424,10 @@ loci_of_interest_out = loci_of_interest |>
             by = c("gene", "aa_position", "refaa", "gene_id"))
 
 
-allele_table_out_untranslatable = allele_table_out %>% 
+allele_table_out_untranslatable = allele_table_out |> 
   filter(aa == "X")
 
-allele_table_out_filt = allele_table_out %>% 
+allele_table_out_filt = allele_table_out |> 
   filter(aa != "X")
 
 
@@ -457,8 +457,8 @@ if(arg$collapse_calls_by_summing){
     filter(target_id == best_target_id) |> 
     select(-seq)
   
-  allele_table_out_collapsed = allele_table_out_collapsed %>% 
-    group_by(specimen_id, target_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa, best_target_id, covered_by_target_ids) %>% 
+  allele_table_out_collapsed = allele_table_out_collapsed |> 
+    group_by(specimen_id, target_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa, best_target_id, covered_by_target_ids) |> 
     summarise(read_count = sum(read_count))
 }
 
