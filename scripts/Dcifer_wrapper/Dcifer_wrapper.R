@@ -248,8 +248,15 @@ create_allele_freq_input <- function(allele_freq_path) {
 #'   there will also be a double p_value column. If `confint = TRUE`, 
 #'   there will also be double CI_lower and CI_upper columns.
 #'
-#' @details This function was originally written by Max Murphy and 
-#'   (very) lightly modified by Alfred Hubbard.
+#' @details
+#' If `rnull` is greater than 0, this means the hypothesis test is one-
+#' sided. In this scenario, the *p*-values output by Dcifer need to be 
+#' divided by two. This is done within this function. Note that these 
+#' *p*-values should generally also be corrected for multiple testing, 
+#' which this function does NOT do.
+#'
+#' This function was originally written by Max Murphy and 
+#' (very) lightly modified by Alfred Hubbard.
 run_dcifer <- function(
                             dsmp, 
                             coi, 
@@ -350,6 +357,14 @@ run_dcifer <- function(
     }
     stopCluster(cl)
     setDefaultCluster(NULL)
+
+    # If rnull is greater than 0, this means the test is 1-sided and 
+    # the p-values should be divided by two
+    if (rnull > 0) {
+      res <- res %>%
+        mutate(p_value = p_value / 2)
+    }
+
     return(res)
 }
 
