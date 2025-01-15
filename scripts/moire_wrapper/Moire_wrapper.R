@@ -507,32 +507,6 @@ moire_object <- create_Moire_input(arg$allele_table,
   arg$max_runtime,
   arg$seed
 )
-################################################################################
-# moire_object <- create_Moire_input("/Users/jar4142/Desktop/PGEcore/scripts/moire_wrapper/example2_allele_table.tsv",
-#                                    allow_relatedness = TRUE,
-#                                    burnin = 10000,
-#                                    samples_per_chain = 1000,
-#                                    verbose = FALSE,
-#                                    eps_pos_alpha = 1,
-#                                    eps_pos_beta = 1,
-#                                    eps_neg_alpha = 1,
-#                                    eps_neg_beta = 1,
-#                                    r_alpha = 1,
-#                                    r_beta = 1,
-#                                    mean_coi_shape = 0.1,
-#                                    mean_coi_scale = 10,
-#                                    max_eps_pos = 2,
-#                                    max_eps_neg = 2,
-#                                    record_latent_genotypes = FALSE,
-#                                    num_chains = 1,
-#                                    num_cores = 1,
-#                                    pt_chains = 1,
-#                                    pt_grad = 1,
-#                                    pt_num_threads = 1,
-#                                    adapt_temp = FALSE,
-#                                    max_runtime = Inf,
-#                                    seed = 1)
-################################################################################
 
 # Run Moire -------------------------------------------------
 moire_results <- run_Moire(moire_object)
