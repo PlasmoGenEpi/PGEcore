@@ -8,7 +8,7 @@ loaded = suppressMessages(lapply(packagesToLoad, require, character.only = TRUE)
 options(readr.show_col_types = FALSE)
 options(dplyr.summarise.inform = FALSE)
 
-
+ 
 #' Check for required arguments, and report which are missing 
 #'
 #' @param arg the parsed arguments from arg parse
@@ -123,14 +123,14 @@ if(length(warnings) > 0){
   stop(paste0("\n", paste0(warnings, collapse = "\n")) )
 }
 
-amino_acid_calls = amino_acid_calls %>% 
-  group_by(gene_id, aa_position, ref_aa) %>% 
+amino_acid_calls = amino_acid_calls |> 
+  group_by(gene_id, aa_position, ref_aa) |> 
   mutate(allele_calls = n_distinct(aa))
 
-amino_acid_calls_biallelic = amino_acid_calls %>% 
+amino_acid_calls_biallelic = amino_acid_calls |> 
   filter(allele_calls <= 2)
 
-amino_acid_calls_more_than_biallelic = amino_acid_calls %>% 
+amino_acid_calls_more_than_biallelic = amino_acid_calls |> 
   filter(allele_calls > 2)
 
 write_tsv(amino_acid_calls_biallelic, arg$out)
