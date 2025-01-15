@@ -150,7 +150,7 @@ opts <- list(
   make_option(
     "--loci_of_interest", 
     help = str_c(
-      "a bed file containing the loci of interest to translate, is genomic location of the codon position so all loci should be of size 3, should correspond to the same "
+      "a bed file containing the loci of interest to translate, is genomic location of the codon position so all loci should be of size 3, should correspond to the same, should have columns, #chrom, start, end, name, length, strand, gene, gene_id, aa_position"
     )
   ), 
   make_option(
