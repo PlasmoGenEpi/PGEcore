@@ -1,4 +1,4 @@
-#chrom	start	end	name	length	strand	Gene	aa_position	refaa	GeneID	KnownAlts	transcript
+#chrom	start	end	name	length	strand	gene	aa_position	refaa	gene_id	KnownAlts	transcript
 Pf3D7_01_v3	268384	268387	PF3D7_0106300.1-AA263	3	-	atp6	263	L	PF3D7_0106300	E	PF3D7_0106300.1
 Pf3D7_01_v3	267880	267883	PF3D7_0106300.1-AA431	3	-	atp6	431	E	PF3D7_0106300	K	PF3D7_0106300.1
 Pf3D7_01_v3	267304	267307	PF3D7_0106300.1-AA623	3	-	atp6	623	A	PF3D7_0106300	E	PF3D7_0106300.1

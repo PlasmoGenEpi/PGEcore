@@ -140,17 +140,11 @@ opts <- list(
     help = str_c(
       "TSV containing the columns: specimen_id, target_id, read_count, seq"
     )
-  ), 
-  make_option(
-    "--ref_seq_table", 
-    help = str_c(
-      "TSV containing the columns: target_id, ref_seq"
-    )
-  ), 
+  ),
   make_option(
     "--ref_bed", 
     help = str_c(
-      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, name, length, strand"
+      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand, ref_seq"
     )
   ), 
   make_option(
@@ -197,14 +191,14 @@ opts <- list(
   )
 )
 
-required_arguments = c("allele_table", "ref_seq_table", "ref_bed", "loci_of_interest", "output_directory")
+required_arguments = c("allele_table", "ref_bed", "loci_of_interest", "output_directory")
 
 # debugging 
 # arg$ref_seq_table = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example_PMO_ref_seqs.tsv"
 # arg$ref_bed = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example_PMO_insert_locs_of_panel.bed"
 # arg$loci_of_interest = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example_principal_resistance_marker_info_table.bed"
-# arg$allele_table = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/immerse_allele_tab.tsv"
-# arg$output_directory = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/immrse_test"
+# arg$allele_table = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example2_allele_table.tsv"
+# arg$output_directory = "~/Downloads/test"
 # arg$overwrite_dir = T
 # arg$select_target_ids = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/test_loci.txt"
 
@@ -248,29 +242,22 @@ if("select_specimen_ids" %in% names(arg)){
 warnings = c()
 
 # read in the panel reference information 
-ref_seqs = readr::read_tsv(arg$ref_seq_table)
-warnings = c(warnings, genWarningsMissCols(ref_seqs, c("target_id","ref_seq"), arg$ref_seq_table))
-ref_bed = readr::read_tsv(arg$ref_bed, col_names = T) |> 
-  left_join(ref_seqs |> 
-              dplyr::rename(name  = target_id), 
-            by = c("name"))
-warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "name", "length", "strand"), arg$ref_bed))
+ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
+warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand", "ref_seq"), arg$ref_bed))
 
 if(length(select_target_ids) > 0 ){
-  missing_sel_tars = setdiff(select_target_ids, ref_bed$name)
+  missing_sel_tars = setdiff(select_target_ids, ref_bed$target_id)
   if(length(missing_sel_tars) > 0 ){
     warnings = c(warnings, paste0("supplied --select_target_ids but the following targets are missing from ", arg$ref_bed, "\n", 
                                   paste0(missing_sel_tars, collapse = ",")))
   }
-  ref_seqs = ref_seqs %>% 
-    filter(target_id %in% select_target_ids)
   ref_bed = ref_bed %>% 
-    filter(name %in% select_target_ids)
+    filter(target_id %in% select_target_ids)
 }
 
 # read in the loci of interest 
 loci_of_interest = readr::read_tsv(arg$loci_of_interest, col_names = T)
-warnings = c(warnings, genWarningsMissCols(loci_of_interest, c("#chrom", "start", "end", "name", "length", "strand", "Gene", "GeneID", "aa_position"), arg$loci_of_interest))
+warnings = c(warnings, genWarningsMissCols(loci_of_interest, c("#chrom", "start", "end", "name", "length", "strand", "gene", "gene_id", "aa_position"), arg$loci_of_interest))
 
 ## check to make sure loci are of length 3 only 
 for(row in 1:nrow(loci_of_interest)){
@@ -294,27 +281,18 @@ if(length(select_specimen_ids) > 0 ){
 }
 
 if(length(select_target_ids) > 0 ){
+  missing_sel_tars = setdiff(select_target_ids, unique(allele_table$target_id))
+  if(length(missing_sel_tars) > 0 ){
+    warnings = c(warnings, paste0("supplied --select_target_ids but the following target_ids are missing from ", arg$allele_table, "\n", 
+                                  paste0(missing_sel_tars, collapse = ",")))
+  }
   allele_table = allele_table %>% 
     filter(target_id %in% select_target_ids)
 }
 
 
 # check to see if values between dataets are similar 
-ref_decomp = set_decompose(ref_seqs$target_id, ref_bed$name)
-
-if(length(ref_decomp$only_in_vectorA) > 0 ){
-  warnings = c(warnings, paste0("the following loci were only in ", arg$ref_bed, " and not found in ", arg$ref_seq_table),
-               "\n", paste0(ref_decomp$only_in_vectorA, collapse = ",")
-               )
-}
-
-if(length(ref_decomp$only_in_vectorB) > 0 ){
-  warnings = c(warnings, paste0("the following loci were only in ", arg$ref_seq_table, " and not found in ", arg$ref_bed),
-               "\n", paste0(ref_decomp$only_in_vectorB, collapse = ",")
-               )
-}
-
-ref_allele_decomp = set_decompose(ref_bed$name, unique(allele_table$target_id))
+ref_allele_decomp = set_decompose(ref_bed$target_id, unique(allele_table$target_id))
 
 if(length(ref_allele_decomp$only_in_vectorB) > 0){
   warnings = c(warnings, paste0("the following loci were missing from the reference location file ", arg$ref_bed, " but are in ", arg$allele_table,
@@ -355,7 +333,7 @@ for(row in 1:nrow(ref_bed)){
       if ("" != loci_of_interest$covered_by_target[loci_row]){
         loci_of_interest$covered_by_target[loci_row] = paste0(loci_of_interest$covered_by_target[loci_row], ",")
       }
-      loci_of_interest$covered_by_target[loci_row] = paste0(loci_of_interest$covered_by_target[loci_row], ref_bed$name[row])
+      loci_of_interest$covered_by_target[loci_row] = paste0(loci_of_interest$covered_by_target[loci_row], ref_bed$target_id[row])
     }
   }
 }
@@ -365,14 +343,14 @@ loci_of_interest = loci_of_interest |>
 # create a map of target location to key into with target IDs 
 ref_bed_by_loci = list()
 for(row in 1:nrow(ref_bed)){
-  ref_bed_by_loci[[ref_bed$name[row]]] = ref_bed[row,]
+  ref_bed_by_loci[[ref_bed$target_id[row]]] = ref_bed[row,]
 }
 
 
 ref_bed_withInterest = ref_bed |> 
   filter("" != intersected_loci_of_interest)
 
-microhaps_with_loci_of_interest = ref_bed_withInterest$name
+microhaps_with_loci_of_interest = ref_bed_withInterest$target_id
 
 # create substitution matrix 
 mat <- pwalign::nucleotideSubstitutionMatrix(match = 2, mismatch = -2, baseOnly = TRUE)
@@ -422,8 +400,8 @@ for(row in 1:nrow(allele_table_unique_haps)){
           tibble(
             target_id = allele_table_unique_haps$target_id[row], 
             seq = allele_table_unique_haps$seq[row], 
-            gene = loci_of_interest_for_target$Gene[loci_of_interest_for_target_row],
-            gene_id = loci_of_interest_for_target$GeneID[loci_of_interest_for_target_row],
+            gene = loci_of_interest_for_target$gene[loci_of_interest_for_target_row],
+            gene_id = loci_of_interest_for_target$gene_id[loci_of_interest_for_target_row],
             aa_position = loci_of_interest_for_target$aa_position[loci_of_interest_for_target_row],
             ref_codon = as.character(ref_codon), 
             ref_aa = as.character(ref_aa), 
@@ -455,10 +433,9 @@ coveredBySamplesCount = allele_table_out |>
 
 loci_of_interest_out = loci_of_interest |> 
   left_join(coveredBySamplesCount |> 
-              dplyr::rename(Gene = gene, 
-                            GeneID = gene_id, 
+              dplyr::rename( 
                             refaa = ref_aa), 
-            by = c("Gene", "aa_position", "refaa", "GeneID"))
+            by = c("gene", "aa_position", "refaa", "gene_id"))
 
 
 allele_table_out_untranslatable = allele_table_out %>% 
