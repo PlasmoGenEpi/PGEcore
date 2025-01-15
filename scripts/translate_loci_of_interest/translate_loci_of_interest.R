@@ -478,15 +478,15 @@ if(arg$collapse_calls_by_summing){
 
 
 # writing output results 
-write_tsv(allele_table_out, paste0(arg$output_directory, "/", "amino_acid_calls.tsv.gz"))
+write_tsv(allele_table_out, file.path(arg$output_directory, "amino_acid_calls.tsv.gz"))
 
 # writing output results collapsing calls if calls occur on multiple targets  
-write_tsv(allele_table_out_collapsed, paste0(arg$output_directory, "/", "collapsed_amino_acid_calls.tsv.gz"))
+write_tsv(allele_table_out_collapsed, file.path(arg$output_directory,"collapsed_amino_acid_calls.tsv.gz"))
 
 # writing covered by info 
-write_tsv(loci_of_interest_out, paste0(arg$output_directory, "/", "loci_covered_by_target_samples_info.tsv"))
+write_tsv(loci_of_interest_out, file.path(arg$output_directory,"loci_covered_by_target_samples_info.tsv"))
 
 if(nrow(allele_table_out_untranslatable) > 0){
-  write_tsv(allele_table_out_untranslatable, paste0(arg$output_directory, "/", "allele_table_out_untranslatable.tsv"))
+  write_tsv(allele_table_out_untranslatable, file.path(arg$output_directory,"allele_table_out_untranslatable.tsv"))
 }
 

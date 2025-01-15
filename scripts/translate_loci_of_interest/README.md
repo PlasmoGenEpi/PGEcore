@@ -16,6 +16,15 @@ This takes in an allele table, a reference sequence table to align to, the bed l
 
 ## Script Usage 
 
+requires the below packages 
+
+```r
+BiocManager::install("pwalign")
+BiocManager::install("Biostrings")
+install.packages("tibble", "dplyr", "stringr", "readr", "optparse")
+```
+
+
 ```
 Options:
 	--allele_table=ALLELE_TABLE
