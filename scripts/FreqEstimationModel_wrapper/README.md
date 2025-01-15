@@ -28,6 +28,6 @@ Freq Estimation Model (FEM) estimates the population-level frequencies of multi-
 
 ## Script Usage 
 
-'''{r}
+``
 Rscript scripts/FreqEtimationModel/FreqEstimationModel_wrapper.R --aa_calls data/example_amino_acid_calls.tsv --coi data/example_coi_table.tsv --groups data/example_loci_groups.tsv --mlaf output
-'''
+``
