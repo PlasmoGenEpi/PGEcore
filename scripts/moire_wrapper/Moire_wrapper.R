@@ -489,7 +489,8 @@ summarize_and_write_results <- function(mcmc_results) {
            he = post_stat_mean)
   allele_freq_summary <- moire::summarize_allele_freqs(mcmc_results) %>%
     rename(target_id = locus, 
-           freq = post_allele_freqs_mean)
+           freq = post_allele_freqs_mean,
+           seq = allele)
   relatedness_summary <- moire::summarize_relatedness(mcmc_results) %>%
     rename(specimen_id = sample_id,
            within_host_rel = post_relatedness_mean)
