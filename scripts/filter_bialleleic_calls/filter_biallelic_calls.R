@@ -1,10 +1,6 @@
 #!/usr/bin/env Rscript
 
 
-#BiocManager::install("pwalign")
-#BiocManager::install("Biostrings")
-#install.packages("tibble", "dplyr", "stringr", "readr", "optparse")
-
 packagesToLoad = c("tibble", "dplyr", "stringr", "readr", "optparse")
 
 loaded = suppressMessages(lapply(packagesToLoad, require, character.only = TRUE))
