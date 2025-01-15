@@ -1,4 +1,4 @@
-# Dcifer Wrapper
+# Dcifer
 
 Contents: 
 * [Tool Information](#tool-information)
@@ -28,4 +28,6 @@ A tutorial and information about this tool can be found
 
 ## Script Usage 
 
-
+```
+Rscript scripts/Dcifer_wrapper/Dcifer_wrapper.R --allele_table data/example_allele_table.tsv --coi data/example_coi_table.tsv --threads 2 --btwn_host_rel btwn_host_rel.tsv
+```
