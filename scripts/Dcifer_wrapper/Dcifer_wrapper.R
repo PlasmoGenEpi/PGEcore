@@ -8,6 +8,7 @@ library(doParallel)
 library(magrittr)
 library(optparse)
 library(parallel)
+library(parallelly)
 library(tidyverse)
 
 # Parse arguments ------------------------------------------------------
@@ -20,7 +21,7 @@ opts <- list(
     )
   ), 
   make_option(
-    "--coi", 
+    "--coi_table", 
     help = 
       str_c(
         "TSV containing specimen COIs, with the columns: specimen_id and ", 
@@ -28,7 +29,7 @@ opts <- list(
       )
   ), 
   make_option(
-    "--allele_freq", 
+    "--allele_freq_table", 
     help = 
       str_c(
         "TSV containing single locus allele frequencies, with the columns: ", 
@@ -60,7 +61,7 @@ opts <- list(
     help = "Random number seed. Optional."
   ), 
   make_option(
-    "--btwn_host_rel", 
+    "--btwn_host_rel_table", 
     help = str_c(
       "Path of TSV file to contain relatedness results, with the columns: ", 
       "specimen_id, btwn_host_rel. Required."
@@ -71,12 +72,12 @@ arg <- parse_args(OptionParser(option_list = opts))
 # Arguments used for development
 # arg <- list(
 #   allele_table = "../../data/example_allele_table.tsv", 
-#   coi = "../../data/example_coi_table.tsv", 
+#   coi_table = "../../data/example_coi_table.tsv", 
 #   rnull = 0, 
 #   alpha = 0.05, 
 #   threads = 1, 
 #   seed = 1, 
-#   btwn_host_rel = "btwn_host_rel.tsv"
+#   btwn_host_rel_table = "btwn_host_rel.tsv"
 # )
 
 #' Read allele table into a tibble
@@ -308,7 +309,7 @@ run_dcifer <- function(
         dplyr::filter(Var1 < Var2)
 
     if (is.null(total_cores)) {
-        total_cores <- detectCores() - 1
+        total_cores <- parallelly::availableCores() - 1
     }
     
     if (is.null(getDefaultCluster())) {
@@ -381,8 +382,8 @@ run_dcifer <- function(
 write_dcifer_output <- function(dcifer_results, out_path) {
   dcifer_results %>%
     rename(
-      specimen_a = sample_a, 
-      specimen_b = sample_b, 
+      specimen_id_a = sample_a, 
+      specimen_id_b = sample_b, 
       btwn_host_rel = estimate
     ) %>%
     write_tsv(out_path)
@@ -393,17 +394,17 @@ set.seed(arg$seed)
 # Read data and/or calculate COI and allele frequencies ----------------
 dcifer_alleles <- create_allele_table_input(arg$allele_table)
 # If no COI input was provided, use Dcifer's built-in naive estimation
-if (is.null(arg$coi)) {
+if (is.null(arg$coi_table)) {
   coi <- dcifer::getCOI(dcifer_alleles)
 } else {
-  coi <- create_coi_input(arg$coi, dcifer_alleles)
+  coi <- create_coi_input(arg$coi_table, dcifer_alleles)
 }
 # If no allele frequencies were provided, use Dcifer's built-in naive 
 # estimation
-if (is.null(arg$allele_freq)) {
+if (is.null(arg$allele_freq_table)) {
   allele_freqs <- dcifer::calcAfreq(dcifer_alleles, coi, tol = 1e-5)
 } else {
-  allele_freqs <- create_allele_freq_input(arg$allele_freq)
+  allele_freqs <- create_allele_freq_input(arg$allele_freq_table)
 }
 
 # Compute relatedness and save -----------------------------------------
@@ -416,4 +417,4 @@ run_dcifer(
     alpha = arg$alpha, 
     total_cores = arg$threads
   ) %>%
-  write_dcifer_output(arg$btwn_host_rel)
+  write_dcifer_output(arg$btwn_host_rel_table)
