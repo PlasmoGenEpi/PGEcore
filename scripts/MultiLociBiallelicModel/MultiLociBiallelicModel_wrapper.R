@@ -57,9 +57,9 @@ create_MultiLociBiallelicModel_input <- function(input_path) {
   # Read the allele table
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
-
-  MultiLociBiallelicModel_data <- input_data %>%
-    mutate(identifier = paste(gene_id, aa_position, sep = "_")) %>%
+  
+  MLBM_data <- input_data %>%
+    mutate(identifier = paste(target_id, aa_position, sep = ":")) %>%
     group_by(specimen_id, identifier) %>%
     mutate(value = case_when(
       n_distinct(aa) > 2 ~ NA_real_,                      # More than two distinct amino acids
@@ -71,10 +71,10 @@ create_MultiLociBiallelicModel_input <- function(input_path) {
     select(specimen_id, identifier, value) %>%
     distinct() %>%
     pivot_wider(names_from = identifier, values_from = value, values_fill = NA)
-
+  
   # Generate validation rules to check if all columns (except `specimen_id`) are numeric
   # Validate package couldn't handle a tibble with variable number of columns.
-  all_doubles <- all(sapply(MultiLociBiallelicModel_data[-1], is.double))  
+  all_doubles <- all(sapply(MLBM_data[-1], is.double))  
   
   # Raise an error if any validations fail
   if (!all_doubles) {
@@ -84,7 +84,24 @@ create_MultiLociBiallelicModel_input <- function(input_path) {
       call. = FALSE
     )
   }
-  return(MultiLociBiallelicModel_data)
+  
+  staves_data <- input_data %>%
+    mutate(
+      staves = paste(target_id, aa_position, aa, sep = ":"),
+      state = if_else(
+        substr(staves, nchar(staves), nchar(staves)) == ref_aa, 
+        0, 
+        1
+      )
+    ) %>%
+    distinct(staves, .keep_all = TRUE) %>%
+    select(staves, state) %>%
+    mutate(prestave = sub(":([^:]+)$", "", staves))
+  
+  
+  MLBM_object = list(MLBM_data = MLBM_data, 
+                     staves_data = staves_data)
+  return(MLBM_object)
 }
 
 #' Run Multi-Loci Biallelic Model
@@ -139,17 +156,89 @@ run_MultiLociBiallelicModel <- function(inputToMLE) {
   )
 }
 
+#' Summarise Multi-Loci Biallelic Model Results
+#'
+#' This function processes and summarises results from the Multi-Loci Biallelic Model (MLBM). It updates the sequence matrix with corresponding values from the `staves_data`, modifies the sequence representation, and writes the summarised results to a TSV file.
+#'
+#' @param MLBM_res A list containing the results of the MLBM analysis, including:
+#' \describe{
+#'   \item{\code{plsf_table}}{A data frame with columns \code{sequence} (encoded as a string of 0s and 1s) and \code{MLBM_frequency} (the frequency of the sequence).}
+#' }
+#' @param MLBM_object A list containing the MLBM data and additional information, including:
+#' \describe{
+#'   \item{\code{MLBM_data}}{A data frame where each column corresponds to a specific genetic locus and each row to a specimen.}
+#'   \item{\code{staves_data}}{A data frame with columns:
+#'     \itemize{
+#'       \item \code{staves}: The encoded genetic representation.
+#'       \item \code{state}: The state (0 or 1) of the representation.
+#'       \item \code{prestave}: The genetic locus identifier without the encoded suffix.}}
+#' }
+#'
+#' @details
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Converts the \code{sequence} column in \code{MLBM_res$plsf_table} into a matrix, splitting each sequence into individual loci.
+#'   \item Replaces 0s and 1s in the sequence matrix with corresponding genetic representations from \code{MLBM_object$staves_data}.
+#'   \item Updates the \code{sequence} column in \code{MLBM_res$plsf_table} by concatenating all loci values row-wise, separated by semicolons (\code{;}).
+#'   \item Renames columns in \code{MLBM_res$plsf_table} to \code{seq} and \code{freq} for clarity.
+#'   \item Writes the summarised table to a TSV file named \code{"MLBM_summary.tsv"} in the working directory.
+#' }
+#'
+#' @return None. The function modifies the input \code{MLBM_res} and writes the summarised results to a file.
+#'
+#' @examples
+#' \dontrun{
+#' # Example usage:
+#' summarise_MLBM_results(MLBM_res, MLBM_object)
+#' }
+#'
+#' @import dplyr
+#' @import tidyr
+#' @import readr
+#' @export
+summarise_MLBM_results <- function(MLBM_res, MLBM_object) {
+  sequence_matrix <- MLBM_res$plsf_table %>%
+    mutate(sequence_split = strsplit(sequence, "")) %>%  # Split each sequence into characters
+    unnest_wider(sequence_split, names_sep = "_") %>%   # Convert the list of characters to columns
+    select(-MLBM_frequency) %>%                         # Remove the frequency column
+    rename_with(~ colnames(MLBM_object$MLBM_data)[-1], starts_with("sequence_split")) %>% # Rename columns
+    as.matrix() 
+  
+  # Convert sequence_matrix to a data frame for easier manipulation
+  sequence_df <- as.data.frame(sequence_matrix, stringsAsFactors = FALSE)
+  columns_to_replace <- colnames(sequence_df)[-1]  # Exclude the "sequence" column
+  
+  # Replace 0s and 1s in sequence_matrix[,-1] based on staves_data
+  for (col in columns_to_replace) {
+    matching_rows <- MLBM_object$staves_data %>%
+      filter(prestave == col)  # Match column name with prestave
+    for(i in 1:length(sequence_df[[col]])) {
+      sequence_df[[col]][i] = matching_rows$staves[matching_rows$state == sequence_df[[col]][i]]
+    }
+  }
+  
+  # Convert the modified data frame back to a matrix if needed
+  sequence_matrix_updated <- as.matrix(sequence_df)
+  
+  MLBM_res$plsf_table$sequence <- apply(sequence_df[-1], 1, paste, collapse = ";")
+  
+  MLBM_res$plsf_table <- MLBM_res$plsf_table %>%
+    rename(seq = sequence, 
+           freq = MLBM_frequency)
+  
+  readr::write_tsv(MLBM_res$plsf_table, "MLBM_summary.tsv")
+}
+
 # Main -----------------------------------------------------------------
 
 # Read the aminoacid calls
-
 #arg$aa_calls = "example_amino_acid_calls.tsv"
 
-MLBM_data <- create_MultiLociBiallelicModel_input(arg$aa_calls)
+MLBM_object <- create_MultiLociBiallelicModel_input(arg$aa_calls)
 
 # Run the Multi-Loci Biallelic Model
+MLBM_res <- run_MultiLociBiallelicModel(MLBM_object$MLBM_data)
 
-MLBM_res <- run_MultiLociBiallelicModel(MLBM_data)
-
-saveRDS(MLBM_res, "moire_res.rds")
+# Generate summary
+summarise_MLBM_results(MLBM_res, MLBM_object)
 
