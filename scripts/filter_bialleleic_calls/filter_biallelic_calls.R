@@ -103,11 +103,7 @@ opts <- list(
 
 required_arguments = c("amino_acid_calls", "out")
 
-# debugging 
-# arg$amino_acid_calls = "/Users/nicholashathaway/Documents/sourceCodes/PGEcore/data/example2_amino_acid_calls.tsv"
-# arg$out = "~/Downloads/test.tsv"
-# arg$out_nonbiallelic = "~/Downloads/test_nonbi.tsv"
-# arg$overwrite = T
+
 
 
 # parse arguments
