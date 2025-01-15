@@ -429,6 +429,56 @@ run_Moire <- function(moire_object) {
   return(moire_res)
 }
 
+#' Summarize and Write Results
+#'
+#' This function summarizes statistics from MCMC results and writes the summaries to TSV files.
+#'
+#' @param mcmc_results An object containing the results of MCMC analysis, to be processed for summaries.
+#'
+#' @details
+#' The function generates the following summaries using the `moire` package:
+#' \describe{
+#'   \item{\code{he_summary}}{Summarizes heterozygosity across loci.}
+#'   \item{\code{allele_freq_summary}}{Summarizes allele frequency distributions.}
+#'   \item{\code{relatedness_summary}}{Summarizes relatedness metrics and renames the \code{sample_id} column to \code{specimen_id}.}
+#'   \item{\code{effective_coi_summary}}{Summarizes the effective complexity of infection and renames the \code{sample_id} column to \code{specimen_id}.}
+#' }
+#'
+#' The summaries are written to the following files in the current working directory:
+#' \itemize{
+#'   \item \code{he_summary.tsv}
+#'   \item \code{allele_freq_summary.tsv}
+#'   \item \code{relatedness_summary.tsv}
+#'   \item \code{effective_coi_summary.tsv}
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Example usage
+#' summarize_and_write_results(mcmc_results)
+#' }
+#'
+#' @importFrom dplyr rename
+#' @importFrom readr write_tsv
+#' @export
+summarize_and_write_results <- function(mcmc_results) {
+  # Summarize statistics
+  he_summary <- moire::summarize_he(mcmc_results) %>%
+    rename(target_id = locus)
+  allele_freq_summary <- moire::summarize_allele_freqs(mcmc_results) %>%
+    rename(target_id = locus)
+  relatedness_summary <- moire::summarize_relatedness(mcmc_results) %>%
+    rename(specimen_id = sample_id)
+  effective_coi_summary <- moire::summarize_effective_coi(mcmc_results) %>%
+    rename(specimen_id = sample_id)
+
+  # Write summaries to files
+  readr::write_tsv(he_summary, "he_summary.tsv")
+  readr::write_tsv(allele_freq_summary, "allele_freq_summary.tsv")
+  readr::write_tsv(relatedness_summary, "relatedness_summary.tsv")
+  readr::write_tsv(effective_coi_summary, "effective_coi_summary.tsv")
+}
+
 # Main-----------------------------------------------------------------
 
 # Create Moire object -------------------------------------------------
@@ -457,26 +507,36 @@ moire_object <- create_Moire_input(arg$allele_table,
   arg$max_runtime,
   arg$seed
 )
+################################################################################
+# moire_object <- create_Moire_input("/Users/jar4142/Desktop/PGEcore/scripts/moire_wrapper/example2_allele_table.tsv",
+#                                    allow_relatedness = TRUE,
+#                                    burnin = 10000,
+#                                    samples_per_chain = 1000,
+#                                    verbose = FALSE,
+#                                    eps_pos_alpha = 1,
+#                                    eps_pos_beta = 1,
+#                                    eps_neg_alpha = 1,
+#                                    eps_neg_beta = 1,
+#                                    r_alpha = 1,
+#                                    r_beta = 1,
+#                                    mean_coi_shape = 0.1,
+#                                    mean_coi_scale = 10,
+#                                    max_eps_pos = 2,
+#                                    max_eps_neg = 2,
+#                                    record_latent_genotypes = FALSE,
+#                                    num_chains = 1,
+#                                    num_cores = 1,
+#                                    pt_chains = 1,
+#                                    pt_grad = 1,
+#                                    pt_num_threads = 1,
+#                                    adapt_temp = FALSE,
+#                                    max_runtime = Inf,
+#                                    seed = 1)
+################################################################################
 
 # Run Moire -------------------------------------------------
 moire_results <- run_Moire(moire_object)
 
 # Generate summaries
+summarize_and_write_results(moire_results)
 
-# Estimate the COI for each sample
-coi_summary <- moire::summarize_coi(mcmc_results)
-
-# Summarize statistics about the allele frequency distribution
-he_summary <- moire::summarize_he(mcmc_results)
-allele_freq_summary <- moire::summarize_allele_freqs(mcmc_results)
-relatedness_summary <- moire::summarize_relatedness(mcmc_results)
-effective_coi_summary <- moire::summarize_effective_coi(mcmc_results)
-
-#Save outputs
-saveRDS(moire_res, "moire_res.rds")
-
-write.csv(coi_summary, "coi_summary.csv")
-write.csv(he_summary, "he_summary.csv")
-write.csv(allele_freq_summary, "allele_freq_summary.csv")
-write.csv(relatedness_summary, "relatedness_summary.csv")
-write.csv(effective_coi_summary, "effective_coi_summary.csv")
