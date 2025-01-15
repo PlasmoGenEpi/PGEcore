@@ -1,8 +1,6 @@
-library(dplyr)
-library(tidyr)
-library(xlsx)
 library(optparse)
 library(stringr)
+library(dplyr)
 source("SNPModel.R")
 
 # Parse arguments ------------------------------------------------------
@@ -70,7 +68,7 @@ create_MultiLociBiallelicModel_input <- function(input_path) {
     ungroup() %>%
     select(specimen_id, identifier, value) %>%
     distinct() %>%
-    pivot_wider(names_from = identifier, values_from = value, values_fill = NA)
+    tidyr::pivot_wider(names_from = identifier, values_from = value, values_fill = NA)
   
   # Generate validation rules to check if all columns (except `specimen_id`) are numeric
   # Validate package couldn't handle a tibble with variable number of columns.
@@ -199,7 +197,7 @@ run_MultiLociBiallelicModel <- function(inputToMLE) {
 summarise_MLBM_results <- function(MLBM_res, MLBM_object) {
   sequence_matrix <- MLBM_res$plsf_table %>%
     mutate(sequence_split = strsplit(sequence, "")) %>%  # Split each sequence into characters
-    unnest_wider(sequence_split, names_sep = "_") %>%   # Convert the list of characters to columns
+    tidyr::unnest_wider(sequence_split, names_sep = "_") %>%   # Convert the list of characters to columns
     select(-MLBM_frequency) %>%                         # Remove the frequency column
     rename_with(~ colnames(MLBM_object$MLBM_data)[-1], starts_with("sequence_split")) %>% # Rename columns
     as.matrix() 

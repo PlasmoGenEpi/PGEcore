@@ -10,11 +10,8 @@ A tutorial and information about this tool can be found [here](https://mrc-ide.g
 
 ### Purpose
 
-The code supplied by this paper does a maximum-likelihood (MLE) method to estimate:
-
-haplotype frequencies and prevalence
-multiplicity of infection (MOI/COI) from SNP data.
-The functions here provide functionality to predict possible haplotype prevalence within the population that lead to the current set of data. Also estimates MOI/COI based on these estimates. Has to take only biallelic SNPs and compuationally can be limited by the number of loci supplied (in publication used 10 loci).
+The code supplied by this paper does a maximum-likelihood (MLE) method to estimate haplotype frequencies and prevalence
+multiplicity of infection (MOI/COI) from SNP data. The functions here provide functionality to predict possible haplotype prevalence within the population that lead to the current set of data. Also estimates MOI/COI based on these estimates. Has to take only biallelic SNPs and compuationally can be limited by the number of loci supplied (in publication used 10 loci).
 
 ### Existing resources
 
