@@ -429,50 +429,76 @@ run_Moire <- function(moire_object) {
   return(moire_res)
 }
 
-#' Summarize and Write Results
+#' Summarize and Write MCMC Results
 #'
-#' This function summarizes statistics from MCMC results and writes the summaries to TSV files.
+#' This function processes MCMC analysis results to generate summaries of key statistics and writes the results to TSV files.
 #'
-#' @param mcmc_results An object containing the results of MCMC analysis, to be processed for summaries.
+#' @param mcmc_results A list containing the results of the MCMC analysis, structured for input to the `moire` package's summarization functions.
 #'
 #' @details
-#' The function generates the following summaries using the `moire` package:
+#' The function computes the following summaries:
 #' \describe{
-#'   \item{\code{he_summary}}{Summarizes heterozygosity across loci.}
-#'   \item{\code{allele_freq_summary}}{Summarizes allele frequency distributions.}
-#'   \item{\code{relatedness_summary}}{Summarizes relatedness metrics and renames the \code{sample_id} column to \code{specimen_id}.}
-#'   \item{\code{effective_coi_summary}}{Summarizes the effective complexity of infection and renames the \code{sample_id} column to \code{specimen_id}.}
+#'   \item{\code{coi_summary}}{Summarizes the complexity of infection (COI) for each specimen, with columns:
+#'     \itemize{
+#'       \item \code{specimen_id}: Identifier for each specimen.
+#'       \item \code{coi}: Mean posterior COI.}}
+#'   \item{\code{he_summary}}{Summarizes heterozygosity for each target, with columns:
+#'     \itemize{
+#'       \item \code{target_id}: Identifier for each genetic locus.
+#'       \item \code{he}: Mean posterior heterozygosity.}}
+#'   \item{\code{allele_freq_summary}}{Summarizes allele frequencies for each target, with columns:
+#'     \itemize{
+#'       \item \code{target_id}: Identifier for each genetic locus.
+#'       \item \code{freq}: Mean posterior allele frequency.}}
+#'   \item{\code{relatedness_summary}}{Summarizes within-host relatedness for each specimen, with columns:
+#'     \itemize{
+#'       \item \code{specimen_id}: Identifier for each specimen.
+#'       \item \code{within_host_rel}: Mean posterior within-host relatedness.}}
+#'   \item{\code{effective_coi_summary}}{Summarizes the effective complexity of infection for each specimen, with columns:
+#'     \itemize{
+#'       \item \code{specimen_id}: Identifier for each specimen.
+#'       \item \code{ecoi}: Mean posterior effective COI.}}
 #' }
 #'
-#' The summaries are written to the following files in the current working directory:
+#' The function writes the summaries to the following files:
 #' \itemize{
-#'   \item \code{he_summary.tsv}
-#'   \item \code{allele_freq_summary.tsv}
-#'   \item \code{relatedness_summary.tsv}
-#'   \item \code{effective_coi_summary.tsv}
+#'   \item \code{"coi_summary.tsv"}
+#'   \item \code{"he_summary.tsv"}
+#'   \item \code{"allele_freq_summary.tsv"}
+#'   \item \code{"relatedness_summary.tsv"}
+#'   \item \code{"effective_coi_summary.tsv"}
 #' }
 #'
 #' @examples
 #' \dontrun{
-#' # Example usage
+#' # Example usage:
 #' summarize_and_write_results(mcmc_results)
 #' }
 #'
 #' @importFrom dplyr rename
 #' @importFrom readr write_tsv
+#' @importFrom moire summarize_coi summarize_he summarize_allele_freqs summarize_relatedness summarize_effective_coi
 #' @export
 summarize_and_write_results <- function(mcmc_results) {
   # Summarize statistics
+  coi_summary <- moire::summarize_coi(mcmc_results) %>%
+    rename(specimen_id = sample_id,
+           coi = post_coi_mean)
   he_summary <- moire::summarize_he(mcmc_results) %>%
-    rename(target_id = locus)
+    rename(target_id = locus,
+           he = post_stat_mean)
   allele_freq_summary <- moire::summarize_allele_freqs(mcmc_results) %>%
-    rename(target_id = locus)
+    rename(target_id = locus, 
+           freq = post_allele_freqs_mean)
   relatedness_summary <- moire::summarize_relatedness(mcmc_results) %>%
-    rename(specimen_id = sample_id)
+    rename(specimen_id = sample_id,
+           within_host_rel = post_relatedness_mean)
   effective_coi_summary <- moire::summarize_effective_coi(mcmc_results) %>%
-    rename(specimen_id = sample_id)
+    rename(specimen_id = sample_id,
+           ecoi = post_effective_coi_mean)
 
   # Write summaries to files
+  readr::write_tsv(coi_summary, "coi_summary.tsv")
   readr::write_tsv(he_summary, "he_summary.tsv")
   readr::write_tsv(allele_freq_summary, "allele_freq_summary.tsv")
   readr::write_tsv(relatedness_summary, "relatedness_summary.tsv")
@@ -508,7 +534,7 @@ moire_object <- create_Moire_input(arg$allele_table,
   arg$seed
 )
 
-# Run Moire -------------------------------------------------
+# Run Moire -------------------------------------------------------------------
 moire_results <- run_Moire(moire_object)
 
 # Generate summaries
