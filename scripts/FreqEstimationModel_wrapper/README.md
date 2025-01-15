@@ -12,19 +12,19 @@ Contents:
 | Authors | Aimee Taylor |
 | Latest version | NA |
 | License | MIT |
-| Website | (https://github.com/aimeertaylor/FreqEstimationModel/tree/master) |
-| Code repository | (https://github.com/aimeertaylor/FreqEstimationModel/tree/master) |
-| Publication | (https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-13-102) |
+| Website | https://github.com/aimeertaylor/FreqEstimationModel/tree/master |
+| Code repository | https://github.com/aimeertaylor/FreqEstimationModel/tree/master |
+| Publication | https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-13-102 |
 
 ### Purpose
 
-Freq Estimation Model (FEM) estimates the population-level frequencies of multi-allele genotypes. It was developed for analyzing anti-malarial drug resistance. For the full documentation by Aimee Taylor, see the [full documentation](https://github.com/aimeertaylor/FreqEstimationModel/blob/master/README.md).
+Freq Estimation Model (FEM) estimates the population-level frequencies of multi-allele genotypes. It was developed for analyzing anti-malarial drug resistance. For the full documentation by  Aimee Taylor, see the full documentation https://github.com/aimeertaylor/FreqEstimationModel/blob/master/README.md.
 
 ### Existing resources
 
-- [Install instructions] https://github.com/aimeertaylor/FreqEstimationModel/blob/master/Instructions
-- [Initial FEM publication] https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-13-102
-- [In-depth description (Aimee's thesis)] https://github.com/aimeertaylor/FreqEstimationModel/blob/master/inst/Thesis_methods_chapter.pdf
+- Install instructions https://github.com/aimeertaylor/FreqEstimationModel/blob/master/Instructions
+- Initial FEM publication https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-13-102
+- In-depth description (Aimee's thesis) https://github.com/aimeertaylor/FreqEstimationModel/blob/master/inst/Thesis_methods_chapter.pdf
 
 ## Script Usage 
 
