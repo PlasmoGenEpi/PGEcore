@@ -61,14 +61,43 @@ arg <- list(groups = "example_loci_groups.tsv",
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
-  COI_table <- read_tsv(coi_path)
+  COI_table <- read_tsv(coi_path, col_types=list(
+    col_character(),
+    col_number()))
+  rules <- validate::validator(
+    ! is.na(experiment_sample_id), 
+    ! is.na(coi)
+  )
+  fails <- validate::confront(COI_table, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input input_data failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
+  
   vals <- COI_table$coi
   avg_val <- mean(vals)
   return(avg_val)
 }
-#TODO add readr coltype checking
+
+#' Reads in group file
+#'
+#' Takes in the group file path and returns a dataframe object
+#'
+#' @param groups_path Path of TSV file with COI for each specimen. It should have
+#' three columns: group_id, gene_id, aa_position
+#' 
+#' @return a group_table dataframe
 read_groups <- function(groups_path){
-  group_table <- read_tsv(groups_path)
+  group_table <- read_tsv(groups_path, col_types=list(
+    col_character(),
+    col_character(),
+    col_integer()
+  ))
   return(group_table)
 }
 
@@ -86,7 +115,9 @@ check_biallelic <- function(input_data){
   mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
   mutants <- mutants_ignoring_sample
   bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)] #remove targets that have >1 non-reference call
-  print(paste('Dropped', bad_targets))
+  if(length(bad_targets)>0){
+    warning("Not biallelic, dropped", bad_targets)
+  }
   only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
   alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,] #dataframe containing alt + ref calls for biallelic SNPs
   num_count <- nrow(distinct(only_biallelic))
@@ -110,7 +141,16 @@ check_biallelic <- function(input_data){
 #' 
 #' @return Matrix of frequencies for each multi-locus genotype.
 create_FEM_input <- function(input_path, groups, group_id) {
-  input_data <- read.csv(input_path, na.strings = "NA", sep="\t")
+  input_data <- read_tsv(input_path, col_types=list(col_character(),
+                                                    col_character(),
+                                                    col_character(),
+                                                    col_integer(),
+                                                    col_character(),
+                                                    col_integer(),
+                                                    col_character(),
+                                                    col_character(),
+                                                    col_character(),
+                                                    col_character()))
   # Validate input format
   rules <- validate::validator(
     is.character(specimen_id), 
@@ -167,7 +207,10 @@ create_FEM_input <- function(input_path, groups, group_id) {
       nvals <- 99
       nvals <- length(unique(cut_cut_df$aa)) 
       if (nvals > 2){
-        print('ERROR: too many alleles for FEM')
+        stop(
+          "Too many alleles for FEM", 
+          call. = FALSE
+        )
       }
       if (nvals == 2){
         sample_matrix[sample, unique_target] <- 0.5 # "heterozygous" call
@@ -193,13 +236,12 @@ create_FEM_input <- function(input_path, groups, group_id) {
 #' Given the input_data path, groups file, group_id, and average COI, runs
 #' FreqEstimationModel
 #' 
-#' @param input_path Path of TSV file with amino acid calls. It should 
+#' @param input_data_path Path of TSV file with amino acid calls. It should 
 #'   have character columns for specimen_id, target_id, gene_id, 
 #'   ref_codon, ref_aa, codon, and aa. It should have an integer 
 #'   aa_position column. There should be no explicit missing data.
 #' @param groups output of read_groups
 #' @param coi output of calculate_avg_COI
-#' @param seed random seed for reproducibility
 #' @param group single group being analyzed
 #' 
 #' @return list of 4 elements: plsf_table, runtime information, target_mapping, and
@@ -418,5 +460,10 @@ for(group in unique(groups$group_id)){
 #format and write output to disk
 overall_output <- apply(overall_output,2,as.character)
 overall_output <- overall_output[, 2:8] #remove sequence column
-write.csv(unlist(overall_output), file.path(output_dir, "plsf_table_grouped.csv"), row.names=FALSE)
+overall_output_df <- data.frame(overall_output)
+path <- paste(output_dir, "plsf_table_grouped.tsv", sep="/")
+write_tsv(overall_output_df, path)
 
+# TODO experiment_sample to speciment_id
+# TODO comment out args
+# TODO readme doc
