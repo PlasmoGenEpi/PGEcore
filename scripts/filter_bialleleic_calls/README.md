@@ -1,4 +1,4 @@
-# filter\_bialleleic\_calls.R 
+# filter\_biallelic\_calls.R 
 
 Contents: 
 * [Tool Information](#tool-information)
@@ -7,14 +7,14 @@ Contents:
 
 ## Tool Information
 
-This will filter a table of amino acid calls and filter it to only allele calls that are bialleleic within the input population. Can also optionally write out the filtered off nonbialleleic calls 
+This will filter a table of amino acid calls and filter it to only allele calls that are biallelic within the input population. Can also optionally write out the filtered off nonbiallelic calls 
 
 
 ## Script Usage 
 
 
 ```bash
-Usage: ./filter_bialleleic_calls.R [options]
+Usage: ./filter_biallelic_calls.R [options]
 
 
 Options:
@@ -39,8 +39,8 @@ Options:
 
 
 ```bash
-./filter_bialleleic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out bialleleic_example2_amino_acid_calls.tsv.tsv.gz --overwrite
+./filter_biallelic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out biallelic_example2_amino_acid_calls.tsv.tsv.gz --overwrite
 
-./filter_bialleleic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out bialleleic_example2_amino_acid_calls.tsv.tsv.gz --overwrite --out_nonbiallelic nonbialleleic_example2_amino_acid_calls.tsv.tsv.gz
+./filter_biallelic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out biallelic_example2_amino_acid_calls.tsv.tsv.gz --overwrite --out_nonbiallelic nonbiallelic_example2_amino_acid_calls.tsv.tsv.gz
 ```
 
