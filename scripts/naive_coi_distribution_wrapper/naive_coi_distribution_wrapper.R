@@ -44,10 +44,17 @@ load_coi_calls <- function(path) {
 }
 
 calculate_coi_distribution <- function(coi_calls) {
+  ret <- tibble::tibble(
+    coi = 1:max(coi_calls$coi)
+  )
   coi_dist <- coi_calls |>
     dplyr::group_by(.data$coi) |>
     dplyr::summarise(n = dplyr::n()) |>
-    dplyr::mutate(proportion = .data$n / sum(.data$n))
+    dplyr::mutate(proportion = .data$n / sum(.data$n)) |>
+    dplyr::arrange(.data$coi) |>
+    dplyr::right_join(ret, by = "coi") |>
+    tidyr::replace_na(list(proportion = 0, n = 0)) |>
+    dplyr::arrange(.data$coi)
   return(coi_dist)
 }
 
