@@ -45,11 +45,11 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
-arg <- list(groups = "example_loci_groups.tsv",
-            coi = "example_coi_table.tsv",
-            aa_calls = "example_amino_acid_calls.tsv",
-            seed = 1,
-            mlaf = "output")
+#arg <- list(groups = "example_loci_groups.tsv",
+#            coi = "example_coi_table.tsv",
+#            aa_calls = "example_amino_acid_calls.tsv",
+#            seed = 1,
+#            mlaf = "output")
 
 
 #' Returns average COI from COI tsv file path
@@ -57,7 +57,7 @@ arg <- list(groups = "example_loci_groups.tsv",
 #' Takes in the COI table for the specimens and calculates the average COI
 #'
 #' @param coi_path Path of TSV file with COI for each specimen. It should 
-#' have two columns, "experiment_sample_id" and "coi"
+#' have two columns, "specimen_id" and "coi"
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
@@ -65,7 +65,7 @@ calculate_avg_COI <- function(coi_path){
     col_character(),
     col_number()))
   rules <- validate::validator(
-    ! is.na(experiment_sample_id), 
+    ! is.na(specimen_id), 
     ! is.na(coi)
   )
   fails <- validate::confront(COI_table, rules, raise = "all") %>%
@@ -416,6 +416,7 @@ bin2STAVE <- function(chars, names, alt_alleles){
     }
     
   }
+  return_name <- substr(return_name, 1, nchar(return_name)-1)
   return(return_name)
 }
 
@@ -463,7 +464,3 @@ overall_output <- overall_output[, 2:8] #remove sequence column
 overall_output_df <- data.frame(overall_output)
 path <- paste(output_dir, "plsf_table_grouped.tsv", sep="/")
 write_tsv(overall_output_df, path)
-
-# TODO experiment_sample to speciment_id
-# TODO comment out args
-# TODO readme doc
