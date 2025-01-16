@@ -7,10 +7,7 @@ options(dplyr.summarize.inform = FALSE)
 opts <- list(
   make_option(
     c("-i", "--mlaf_input"),
-    help = stringr::str_c(
-      "TSV containing multi-locus allele frequency data with columns: group_id, variant, freq, total.", 
-      "Variant column is in STAVE format.",
-    ),
+    help = "TSV containing multi-locus allele frequency data with columns: group_id, variant, freq, total. Variant column is in STAVE format.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
