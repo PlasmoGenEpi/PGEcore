@@ -62,8 +62,8 @@ arg <- parse_args(OptionParser(option_list = opts))
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
   COI_table <- read_tsv(coi_path, col_types=list(
-    col_character(),
-    col_number()))
+    "specimen_id"=col_character(),
+    "coi"=col_number()))
   rules <- validate::validator(
     ! is.na(specimen_id), 
     ! is.na(coi)
@@ -94,9 +94,9 @@ calculate_avg_COI <- function(coi_path){
 #' @return a group_table dataframe
 read_groups <- function(groups_path){
   group_table <- read_tsv(groups_path, col_types=list(
-    col_character(),
-    col_character(),
-    col_integer()
+    "group_id"=col_character(),
+    "gene_id"=col_character(),
+    "aa_position"=col_integer()
   ))
   return(group_table)
 }
@@ -141,16 +141,14 @@ check_biallelic <- function(input_data){
 #' 
 #' @return Matrix of frequencies for each multi-locus genotype.
 create_FEM_input <- function(input_path, groups, group_id) {
-  input_data <- read_tsv(input_path, col_types=list(col_character(),
-                                                    col_character(),
-                                                    col_character(),
-                                                    col_integer(),
-                                                    col_character(),
-                                                    col_integer(),
-                                                    col_character(),
-                                                    col_character(),
-                                                    col_character(),
-                                                    col_character()))
+  input_data <- read_tsv(input_path, col_types=list("specimen_id"=col_character(),
+                                                    "aa_position" = col_integer(),
+                                                    "target_id"=col_character(),
+                                                    "gene_id"=col_character(),
+                                                    "ref_codon"=col_character(),
+                                                    "ref_aa"=col_character(),
+                                                    "codon"=col_character(),
+                                                    "aa"=col_character()))
   # Validate input format
   rules <- validate::validator(
     is.character(specimen_id), 
