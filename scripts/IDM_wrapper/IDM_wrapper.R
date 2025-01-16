@@ -730,30 +730,36 @@ get_optparse_args <- function() {
       type = "character",
       help = str_c(
         "TSV containing amino acid calls, with the columns: specimen_id, ",
-        "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa"
+        "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa. ",
+        "Required"
       )
     ),
     make_option("--model",
       type = "character",
+      default = "IDM",
       help = str_c(
-        "OM or IDM. OM for original model; IDM for incomplete-data model ",
-        "(default)"
+        "OM or IDM. OM for original model; IDM for incomplete-data model. ",
+        "Default: %default"
       )
     ),
     make_option("--lambda_initial",
       type = "numeric",
+      default = "1.0",
       help = str_c(
         "the initial value (default to 1) for the numerical iteration to ",
         "find the estimate  lambda. The default value can be changed to ",
         "optimize computational time. Unless numerical problem occur, the ",
-        "default parameter should be used."
+        "default parameter should be used. ",
+        "Default: %default"
       )
     ),
     make_option("--eps_initial",
       type = "numeric",
+      default = "0.1",
       help = str_c(
         "the argument eps_initial (default 0.1) specifies the initial ",
-        "value in the numerical iteration to find eps"
+        "value in the numerical iteration to find eps. ",
+        "Default: %default"
       )
     ),
     make_option(
@@ -761,7 +767,8 @@ get_optparse_args <- function() {
       type = "character",
       help = str_c(
         "Output TSV containing single locus allele frequencies, with the ",
-        "columns: variant, freq, total"
+        "columns: variant, freq, total. ",
+        "Required"
       )
     )
   )
