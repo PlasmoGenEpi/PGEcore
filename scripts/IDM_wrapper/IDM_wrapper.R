@@ -726,7 +726,7 @@ get_value_of_optional_argument <- function(
 get_optparse_args <- function() {
   opts <- list(
     make_option(
-      "--aa_calls",
+      "--aa_calls_input",
       type = "character",
       help = str_c(
         "TSV containing amino acid calls, with the columns: specimen_id, ",
@@ -757,7 +757,7 @@ get_optparse_args <- function() {
       )
     ),
     make_option(
-      "--slaf",
+      "--slaf_output",
       type = "character",
       help = str_c(
         "Output TSV containing single locus allele frequencies, with the ",
@@ -774,11 +774,11 @@ arg <- get_optparse_args()
 arg_model <- get_value_of_optional_argument(arg, "model", "IDM", c("IDM", "OM"))
 arg_lambda_initial <- get_value_of_optional_argument(arg, "lambda_initial", 1.0)
 arg_eps_initial <- get_value_of_optional_argument(arg, "eps_initial", 0.1)
-arg_aa_calls <- get_value_of_required_argument(arg, "aa_calls")
-arg_slaf <- get_value_of_required_argument(arg, "slaf")
+arg_aa_calls_input <- get_value_of_required_argument(arg, "aa_calls_input")
+arg_slaf_output <- get_value_of_required_argument(arg, "slaf_output")
 
 # prepare input (shared)
-df <- read_delim(arg_aa_calls, delim = "\t", show_col_types = FALSE) %>%
+df <- read_delim(arg_aa_calls_input, delim = "\t", show_col_types = FALSE) %>%
   mutate(
     locus = str_c(gene_id, aa_position, sep = ";"),
     variants = str_c(gene_id, aa_position, aa, sep = ";")
@@ -825,14 +825,14 @@ res <- tibble(
   freq = freq_array,
   total = total_array,
 )
-write.table(res, arg_slaf, sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(res, arg_slaf_output, sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Clean up: remove the intermediate file
 invisible(file.remove("tmp.txt"))
 
 cat("Done\n")
-cat("INPUT:\t", arg_aa_calls, "\n")
-cat("OUTPUT:\t", arg_slaf, "\n")
+cat("INPUT:\t", arg_aa_calls_input, "\n")
+cat("OUTPUT:\t", arg_slaf_output, "\n")
 #############################################################
 ##################### END  : WRAPPER_CODE #################
 #############################################################
