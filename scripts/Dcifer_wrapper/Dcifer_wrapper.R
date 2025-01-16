@@ -61,7 +61,7 @@ opts <- list(
     help = "Random number seed. Optional."
   ), 
   make_option(
-    "--btwn_host_rel_table", 
+    "--btwn_host_rel_output", 
     help = str_c(
       "Path of TSV file to contain relatedness results, with the columns: ", 
       "specimen_id, btwn_host_rel. Required."
@@ -77,7 +77,7 @@ arg <- parse_args(OptionParser(option_list = opts))
 #   alpha = 0.05, 
 #   threads = 1, 
 #   seed = 1, 
-#   btwn_host_rel_table = "btwn_host_rel.tsv"
+#   btwn_host_rel_output = "btwn_host_rel.tsv"
 # )
 
 #' Read allele table into a tibble
@@ -417,4 +417,4 @@ run_dcifer(
     alpha = arg$alpha, 
     total_cores = arg$threads
   ) %>%
-  write_dcifer_output(arg$btwn_host_rel_table)
+  write_dcifer_output(arg$btwn_host_rel_output)

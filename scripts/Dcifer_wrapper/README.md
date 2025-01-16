@@ -29,5 +29,5 @@ A tutorial and information about this tool can be found
 ## Script Usage 
 
 ```
-Rscript scripts/Dcifer_wrapper/Dcifer_wrapper.R --allele_table data/example_allele_table.tsv --coi data/example_coi_table.tsv --threads 2 --btwn_host_rel btwn_host_rel.tsv
+Rscript scripts/Dcifer_wrapper/Dcifer_wrapper.R --allele_table data/example_allele_table.tsv --coi_table data/example_coi_table.tsv --threads 2 --btwn_host_rel_output btwn_host_rel.tsv
 ```
