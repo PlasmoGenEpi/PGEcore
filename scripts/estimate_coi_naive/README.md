@@ -28,3 +28,10 @@ method").
 
 The `estimate_coi_naive.R` script contains all the requisite functions to read
 in the data, estimate COI, and write results to file.
+
+For example:
+```
+Rscript estimate_coi_naive.R --input_path "/Users/rverity/Desktop/alleles_table.tsv" -- output_path "/Users/rverity/Desktop/coi_table.tsv" --method integer_method --integer_threshold 5
+Rscript estimate_coi_naive.R --input_path "/Users/rverity/Desktop/alleles_table.tsv" -- output_path "/Users/rverity/Desktop/coi_table.tsv" --method quantile_method --quantile_threshold 0.05
+```
+

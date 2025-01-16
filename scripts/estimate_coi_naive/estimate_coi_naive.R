@@ -33,7 +33,7 @@ opts <- list(
       "estimates, but is more robust to errors. The quantile method works in the same ",
       "way, but by specifying a percentage quantile rather than a raw integer. This has ",
       "the advantage of naturally scaling with the number of loci, while the integer method ",
-      "does not."
+      "does not. Default: %default."
       ),
     metavar = "method",
   ),
@@ -42,7 +42,8 @@ opts <- list(
     type = "integer",
     default = 1,
     help = str_c("The index in the ordered sequence that is used as the COI estimate ",
-                 "(used in integer_method only). A positive integer of 1 or above."),
+                 "(used in integer_method only). A positive integer of 1 or above. ",
+                 "Default: %default"),
     metavar = "integer"
   ),
   make_option(
@@ -50,7 +51,9 @@ opts <- list(
     type = "double",
     default = 0.05,
     help = str_c("The quantile used to define the COI estimate from the ordered sequence ",
-                 "(used in quantile_method only). A numeric value between 0 and 1"),
+                 "(used in quantile_method only). A numeric value between 0 and 1. Number of ",
+                 "alleles is in increasing order, meaning quantiles close to zero lead to ",
+                 "higher COI estimates. Default: %default"),
     metavar = "number"
   )
 )
