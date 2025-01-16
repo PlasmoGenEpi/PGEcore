@@ -209,7 +209,7 @@ if("select_target_ids" %in% names(arg)){
   if(file.exists(arg$select_target_ids)){
     select_target_ids = readr::read_tsv(arg$select_target_ids, col_names = F)$X1
   } else { 
-    select_target_ids = strsplit(arg$select_target_ids, split = ",")
+    select_target_ids = unlist(strsplit(arg$select_target_ids, split = ","))
   }
 }
  
@@ -219,7 +219,7 @@ if("select_specimen_ids" %in% names(arg)){
   if(file.exists(arg$select_specimen_ids)){
     select_specimen_ids = readr::read_tsv(arg$select_specimen_ids, col_names = F)$X1
   } else { 
-    select_specimen_ids = strsplit(arg$select_specimen_ids, split = ",")
+    select_specimen_ids = unlist(strsplit(arg$select_specimen_ids, split = ","))
   }
 }
 
