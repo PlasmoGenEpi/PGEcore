@@ -26,5 +26,5 @@ method").
 
 ## Script Usage
 
-The estimate_coi_naive.R script contains all the requisite functions. The
-example_run.R file demonstrates the use of these functions on some example data.
+The `estimate_coi_naive.R` script contains all the requisite functions to read
+in the data, estimate COI, and write results to file.

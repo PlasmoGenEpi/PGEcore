@@ -4,14 +4,22 @@ library(optparse)
 library(dplyr)
 library(validate)
 
-# Parse arguments ------------------------------------------------------
+# ----------------------------------------------------------------------
+# Parse arguments
+
 opts <- list(
   make_option(
-    "--input_path", 
+    "--input_path",
+    type = "character",
     help = str_c(
       "Path to a TSV file containing allele calls, with the columns: specimen_id, ", 
       "target_id, read_count, seq"
     )
+  ), 
+  make_option(
+    "--output_path",
+    type = "character",
+    help = "Path to write a TSV file containing results, with the columns: specimin_id, coi"
   ), 
   make_option(
     "--method",
@@ -184,5 +192,20 @@ write_coi_naive <- function(df_coi,
               row.names = FALSE)
 }
 
+#------------------------------------------------------
+# RUN MODULE
+
+# parse input arguments
+args <- parse_args(OptionParser(option_list = opts))
+
+# estimate COI
+df_coi <- run_estimate_coi_naive(input_path = args$input_path,
+                                 method = args$method,
+                                 integer_threshold = args$integer_threshold,
+                                 quantile_threshold = args$quantile_threshold)
+
+# Write to file
+write_coi_naive(df_coi = df_coi,
+                output_path = args$output_path)
 
 
