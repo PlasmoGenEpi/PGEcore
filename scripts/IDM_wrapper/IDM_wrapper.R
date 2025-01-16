@@ -776,6 +776,91 @@ get_optparse_args <- function() {
   return(arg)
 }
 
+#' Prepare input data
+#'
+#' @param aa_calls_input Character; file path to the input amino acid call
+#'    table.
+#' @return A data table ready for running the IDM model.
+prepare_input <- function(aa_calls_input) {
+  # prepare input (shared)
+  library(tidyverse)
+  df <- read_delim(aa_calls_input, delim = "\t", show_col_types = FALSE) %>%
+    mutate(
+      locus = str_c(gene_id, aa_position, sep = ";"),
+      variants = str_c(gene_id, aa_position, aa, sep = ";")
+    ) %>%
+    select(specimen_id, locus, variants)
+  return(df)
+}
+
+#' Run IDM model to infer allele frequency
+#'
+#' @param df Formatted input data table from the `prepare_input` call.
+#' @param model The model used, either OM (original model) or IDM (incomplete
+#'   data model).
+#' @param lambda_initial The initial value for the numerical
+#'    iteration to find the estimate lambda. The default value can be
+#'    changed to optimize computational time. Unless numerical problems
+#'    occur, the default parameter should be used (default 1.0).
+#' @param eps_initial The argument eps_initial (default 0.1)
+#'     specifies the initial value in the numerical iteration to find eps.
+#' @return The result data table with three columns: allele, frequency,
+#' and total.
+run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
+                                    eps_initial = 0.1) {
+  # Variables to collect results from different loci
+  variants_array <- c()
+  freq_array <- c()
+  total_array <- c()
+
+  # run IDM for each locus sequentially
+  for (l in (df %>% distinct(locus))$locus) {
+    # prepare input (per locus): a two-column text file
+    tmp_df <- df %>%
+      filter(locus == l) %>%
+      select(specimen_id, variants)
+    write.table(tmp_df, "tmp.txt", sep = "\t", row.names = FALSE)
+
+    # Load input data and run the MLE for this locus
+    dat <- DatImp("tmp.txt")
+    nk <- Nk(dat)
+    mle_res <- MLE(nk[[1]], nk[[2]], nk[[3]],
+      model = model, lambda_initial = lambda_initial,
+      eps_initial = eps_initial
+    )
+
+    # Store results in the variables
+    n_uniq_variants <- length(nk$N_k)
+    locus_freq <- mle_res$`lineage frequencies`
+    if (length(locus_freq) < n_uniq_variants) {
+      # make up for the length when freq is a single NA
+      locus_freq <- rep(NA, n_uniq_variants)
+    }
+    total <- nrow(tmp_df)
+    freq_array <- c(freq_array, locus_freq)
+    variants_array <- c(variants_array, colnames(nk$N_k))
+    total_array <- c(total_array, rep(total, n_uniq_variants))
+  }
+  # Organize the data into a table
+  res <- tibble(
+    variant = variants_array,
+    freq = freq_array,
+    total = total_array,
+  )
+  # Clean up: remove the intermediate file
+  invisible(file.remove("tmp.txt"))
+  return(res)
+}
+
+#' Write out the result table to a file
+#'
+#' @param res Result table to be written to file.
+#' @param slaf_output Output file path where the result table will be saved.
+write_output <- function(res, slaf_output) {
+  write.table(res, slaf_output, sep = "\t", quote = FALSE, row.names = FALSE)
+
+}
+
 # prepare arguments
 arg <- get_optparse_args()
 arg_model <- get_value_of_optional_argument(arg, "model", "IDM", c("IDM", "OM"))
@@ -784,58 +869,15 @@ arg_eps_initial <- get_value_of_optional_argument(arg, "eps_initial", 0.1)
 arg_aa_calls_input <- get_value_of_required_argument(arg, "aa_calls_input")
 arg_slaf_output <- get_value_of_required_argument(arg, "slaf_output")
 
-# prepare input (shared)
-df <- read_delim(arg_aa_calls_input, delim = "\t", show_col_types = FALSE) %>%
-  mutate(
-    locus = str_c(gene_id, aa_position, sep = ";"),
-    variants = str_c(gene_id, aa_position, aa, sep = ";")
-  ) %>%
-  select(specimen_id, locus, variants)
+# prepare input
+df <- prepare_input(arg_aa_calls_input)
 
-# Variables to collect results from different loci
-variants_array <- c()
-freq_array <- c()
-total_array <- c()
+# run the model
+res <- run_idm_mle_across_loci(df, arg_model, arg_lambda_initial,
+  arg_eps_initial)
 
-# run IDM for each locus sequentially
-for (l in (df %>% distinct(locus))$locus) {
-  # prepare input (per locus): a two-column text file
-  tmp_df <- df %>%
-    filter(locus == l) %>%
-    select(specimen_id, variants)
-  write.table(tmp_df, "tmp.txt", sep = "\t", row.names = FALSE)
-
-  # Load input data and run the MLE for this locus
-  dat <- DatImp("tmp.txt")
-  nk <- Nk(dat)
-  mle_res <- MLE(nk[[1]], nk[[2]], nk[[3]],
-    model = arg_model, lambda_initial = arg_lambda_initial,
-    eps_initial = arg_eps_initial
-  )
-
-  # Store results in the variables
-  n_uniq_variants <- length(nk$N_k)
-  locus_freq <- mle_res$`lineage frequencies`
-  if (length(locus_freq) < n_uniq_variants) {
-    # make up for the length when freq is a single NA
-    locus_freq <- rep(NA, n_uniq_variants)
-  }
-  total <- nrow(tmp_df)
-  freq_array <- c(freq_array, locus_freq)
-  variants_array <- c(variants_array, colnames(nk$N_k))
-  total_array <- c(total_array, rep(total, n_uniq_variants))
-}
-
-# Organize the data into a table and write it to a file
-res <- tibble(
-  variant = variants_array,
-  freq = freq_array,
-  total = total_array,
-)
-write.table(res, arg_slaf_output, sep = "\t", quote = FALSE, row.names = FALSE)
-
-# Clean up: remove the intermediate file
-invisible(file.remove("tmp.txt"))
+# write the result to a file
+write_output(res, arg_slaf_output)
 
 cat("Done\n")
 cat("INPUT:\t", arg_aa_calls_input, "\n")
