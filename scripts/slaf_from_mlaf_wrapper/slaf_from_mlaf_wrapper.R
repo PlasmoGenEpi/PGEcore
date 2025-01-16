@@ -2,7 +2,7 @@ library(variantstring)
 library(rlang)
 library(optparse)
 
-options(dplyr.summarize.inform = FALSE)
+options(dplyr.summarise.inform = FALSE)
 
 opts <- list(
   make_option(
