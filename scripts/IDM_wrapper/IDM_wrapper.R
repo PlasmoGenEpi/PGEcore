@@ -784,7 +784,7 @@ get_optparse_args <- function() {
 prepare_input <- function(aa_calls_input) {
   # prepare input (shared)
   library(tidyverse)
-  df <- read_delim(aa_calls_input, delim = "\t", show_col_types = FALSE) %>%
+  df <- read_tsv(aa_calls_input, show_col_types = FALSE) %>%
     mutate(
       locus = str_c(gene_id, aa_position, sep = ";"),
       variants = str_c(gene_id, aa_position, aa, sep = ";")
@@ -857,7 +857,7 @@ run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
 #' @param res Result table to be written to file.
 #' @param slaf_output Output file path where the result table will be saved.
 write_output <- function(res, slaf_output) {
-  write.table(res, slaf_output, sep = "\t", quote = FALSE, row.names = FALSE)
+  write_tsv(res, slaf_output)
 
 }
 
