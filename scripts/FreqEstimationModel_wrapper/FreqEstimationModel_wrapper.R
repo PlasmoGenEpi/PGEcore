@@ -37,10 +37,10 @@ opts <- list(
   ),
   make_option("--seed", type = "integer", help = "Random number seed. Optional.", default=1), 
   make_option(
-    "--mlaf", 
+    "--mlaf_output", 
     help = str_c(
       "TSV containing multilocus allele frequencies, with the columns: ", 
-      "variant, freq, total. Required".
+      "variant, freq, total. Required."
     )
   )
 )
@@ -49,7 +49,7 @@ arg <- parse_args(OptionParser(option_list = opts))
 #            coi = "example_coi_table.tsv",
 #            aa_calls = "example_amino_acid_calls.tsv",
 #            seed = 1,
-#            mlaf = "output")
+#            mlaf_output = "output")
 
 
 #' Returns average COI from COI tsv file path
@@ -441,7 +441,7 @@ format_single_group_output <- function(pop_freq_list){
 #arg assignments
 COI <- arg$coi
 groups <- arg$groups
-output_dir <- arg$mlaf
+output_dir <- arg$mlaf_output
 input_dir <- arg$aa_calls
 seed <- arg$seed
 
