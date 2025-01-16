@@ -100,8 +100,6 @@ opts <- list(
 required_arguments = c("ref_bed", "out")
 
 
-
-
 # parse arguments
 arg <- parse_args(OptionParser(option_list = opts))
 ## check for required arguments
@@ -119,12 +117,14 @@ if(file.exists(arg$out) & !arg$overwrite){
 }
 
 
-
 dna <- Biostrings::readDNAStringSet(arg$fasta)
 
+if(length(warnings) > 0){
+  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+}
 
 # check to see if values between dataets are similar 
-ref_allele_decomp = set_decompose(ref_bed$target_id, unique(allele_table$target_id))
+ref_allele_decomp = set_decompose(ref_bed$target_id, names(dna))
 
 if(length(ref_allele_decomp$only_in_vectorA) > 0){
   warnings = c(warnings, paste0("the following loci were missing from the fasta file ", arg$fasta, " but are in ", arg$ref_bed,
@@ -132,19 +132,47 @@ if(length(ref_allele_decomp$only_in_vectorA) > 0){
   ) 
   )
 }
+if(length(warnings) > 0){
+  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+}
+dna_tab = tibble(
+  target_id = names(dna), 
+  ref_seq = as.character(dna)
+)
 
+# check if multiple target_id loaded 
+ref_bed_name_sum_multi = ref_bed |> 
+  group_by(target_id) |> 
+  count() |> 
+  filter(n > 1)
+
+if(nrow(ref_bed_name_sum_multi) > 0){
+  warnings = c(warnings, paste0("found multi names for target_id in ", arg$ref_bed, " found the following multiple times: ", paste0(ref_bed_name_sum_multi$target_id, collapse = ",")) ) 
+}
+
+# check if multiple target_id loaded 
+dna_tab_sum_multi = dna_tab |> 
+  group_by(target_id) |> 
+  count() |> 
+  filter(n > 1)
+
+if(nrow(dna_tab_sum_multi) > 0){
+  warnings = c(warnings, paste0("found multi names for target_id in ", arg$fasta, " found the following multiple times: ", paste0(dna_tab_sum_multi$target_id, collapse = ",")) ) 
+}
 
 if(length(warnings) > 0){
   stop(paste0("\n", paste0(warnings, collapse = "\n")) )
 }
 
+# remove ref_seq if it already exists 
+if("ref_seq" %in% colnames(ref_bed)){
+  ref_bed = ref_bed |> 
+    select(-ref_seq)
+}
 
+# join the ref_seq
+ref_bed = ref_bed |> 
+  left_join(dna_tab)
 
-
-
-
-
-
-
-
+write_tsv(ref_bed, arg$out)
 

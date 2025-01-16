@@ -1,44 +1,84 @@
-# Insert tool/ code title
+# add\_ref\_seqs\_with\_fasta.R 
 
 Contents: 
 * [Tool Information](#tool-information)
 * [Script Usage](#script-usage)
 
-## Tool Information - IF ON PGEforge
 
-If section for this tool is on [PGEforge](https://mrc-ide.github.io/PGEforge/) then fill in the link in the sentence below and delete the sections for [not on pgeforge](#tool-information---if-not-on-pgeforge) and [bespoke code](#tool-information---if-bespoke-code).
+## Tool Information
 
-A tutorial and information about this tool can be found [here](**insert link to tool on PGEforge**).
+Take a bed file with location of panel info and add reference sequences from a fasta file to that file. 
 
-## Tool Information - IF NOT ON PGEforge
-If no tutorial on PGEforge then fill in the table below and delete the sections for [on pgeforge](#tool-information---if-on-pgeforge) and [bespoke code](#tool-information---if-bespoke-code).
-
-| Tool Summary    |  |
-| -------- | ------- |
-| Main use-cases | INSERT INFO |
-| Authors | INSERT INFO |
-| Latest version | INSERT INFO |
-| License | INSERT INFO |
-| Website | INSERT INFO |
-| Code repository | INSERT INFO |
-| Publication | INSERT INFO |
-
-### Purpose
-
-A quick one paragraph description of what the tool does. For an example, see the [DRpower page](https://mrc-ide.github.io/PGEforge/tutorials/DRpower/DRpower_background.html).
-
-### Existing resources
-
-- Any existing online tutorials?
-- Any important papers?
-
-## Tool Information - IF BESPOKE CODE
-
-If you are writing bespoke code that is not based upon an existing tool then fill out this section and delete the sections for [tool on pgeforge](#tool-information---if-on-pgeforge) and [tool not on pgeforge](#tool-information---if-not-on-pgeforge).
-
-Insert: 
-* A quick one paragraph description of what the script does.
-* Links to any relevant information.
 
 
 ## Script Usage 
+
+
+```bash
+Usage: ./add_ref_seqs_with_fasta.R [options]
+
+
+Options:
+	--ref_bed=REF_BED
+		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand
+
+	--fasta=FASTA
+		a fasta file with the ref sequences, the names of the records should match up with the target_id of the --ref_bed file
+
+	--out=OUT
+		the out file to write to
+
+	--overwrite
+		overwrite the output if it already exists
+
+	-h, --help
+		Show this help message and exit
+```
+
+
+```
+./add_ref_seqs_with_fasta.R --ref_bed example_PMO_insert_locs_of_panel.bed --fasta example_PMO_insert_locs_of_panel_refseqs.fasta --out example_PMO_insert_locs_of_panel_withRefSeqs.bed
+```
+
+
+# add\_ref\_seqs\_with\_genome.R 
+
+
+## Tool Information - genome
+
+Take a bed file with location of panel info and add reference sequences from a genome file to that file. 
+
+
+## Script Usage - genome
+
+
+```bash
+Usage: ./add_ref_seqs_with_genome.R [options]
+
+
+Options:
+	--ref_bed=REF_BED
+		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand
+
+	--genome=GENOME
+		a genome file to extract the ref_seq
+
+	--out=OUT
+		the out file to write to
+
+	--overwrite
+		overwrite the output if it already exists
+
+	-h, --help
+		Show this help message and exit
+```
+
+
+```
+./add_ref_seqs_with_genome.R --ref_bed  example_PMO_insert_locs_of_panel.bed --genome Pf3D7.fasta --out example_PMO_insert_locs_of_panel_withRefSeqs.bed
+
+```
+
+
+
+
