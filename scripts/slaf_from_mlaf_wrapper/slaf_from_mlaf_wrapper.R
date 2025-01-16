@@ -8,7 +8,7 @@ opts <- list(
   make_option(
     c("-i", "--mlaf_input"),
     help = stringr::str_c(
-      "TSV containing multi-locus allele frequency data with columns: variant, freq, total.", 
+      "TSV containing multi-locus allele frequency data with columns: group_id, variant, freq, total.", 
       "Variant column is in STAVE format.",
     ),
     type = "character",
@@ -39,11 +39,12 @@ load_mlaf <- function(path) {
   mlaf <- readr::read_tsv(
     path,
     col_types = readr::cols(
+      group_id = readr::col_character(),
       variant = readr::col_character(),
       freq = readr::col_double(),
       total = readr::col_double()
     ),
-    col_select = c("variant", "freq", "total")
+    col_select = c("group_id", "variant", "freq", "total")
   )
   return(mlaf)
 }
