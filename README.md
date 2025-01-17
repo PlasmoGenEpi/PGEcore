@@ -31,7 +31,7 @@ PGEcore/
 1. Clone the Repository and checkout the `develop` branch:
 ```
   git clone https://github.com/PlasmoGenEpi/PGEcore.git
-  cd PGEtools
+  cd PGEcore
   git checkout develop
 ```
 
