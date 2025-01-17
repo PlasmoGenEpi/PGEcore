@@ -129,6 +129,278 @@ getAlignedSubjectFromOverlapAlign <-function(pw_overlapAlign){
 }
 
 
+
+#' Create output directory and handle if already exists
+#'
+#' @param output_directory the output directory 
+#' @param overwrite_dir whether or not to overwrite it
+#'
+#' @returns none
+ensure_output_directory <- function(output_directory, overwrite_dir = F){
+  # create output directory and decided to overwrite or not if it exists 
+  if(dir.exists(output_directory) & overwrite_dir){
+    unlink(output_directory, recursive = T)
+  } else if(dir.exists(output_directory)){
+    stop(paste0(output_directory, " already exist, use --", overwrite_dir, " to overwrite"))
+  }
+  dir.create(output_directory)
+}
+
+
+#' Check for sub selecting arguments of target_ids and specimen_ids
+#'
+#' @param parsed_args 
+#'
+#' @returns a list with two named vectors, select_target_ids and select_specimen_ids
+check_subselecting_args <- function(parsed_args){
+  select_target_ids = c()
+  if("select_target_ids" %in% names(parsed_args)){
+    if(file.exists(parsed_args$select_target_ids)){
+      select_target_ids = readr::read_tsv(parsed_args$select_target_ids, col_names = F)$X1
+    } else { 
+      select_target_ids = unlist(strsplit(parsed_args$select_target_ids, split = ","))
+    }
+  }
+  
+  select_specimen_ids = c()
+  if("select_specimen_ids" %in% names(parsed_args)){
+    if(file.exists(parsed_args$select_specimen_ids)){
+      select_specimen_ids = readr::read_tsv(parsed_args$select_specimen_ids, col_names = F)$X1
+    } else { 
+      select_specimen_ids = unlist(strsplit(parsed_args$select_specimen_ids, split = ","))
+    }
+  }
+  list(select_target_ids = select_target_ids, 
+       select_specimen_ids = select_specimen_ids)
+}
+
+
+#' Fitler an allele table for select target_ids and specimen_ids 
+#'
+#' @param allele_data the allele data 
+#' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_ids and select_specimen_ids
+#'
+#' @returns a filtered allele_data table 
+filter_allele_table_for_optional_subselecting <- function (allele_data, opt_sub_sels){
+  if(length(opt_sub_sels$select_specimen_ids) > 0 ){
+    allele_data = allele_data |> 
+      filter(specimen_id %in% opt_sub_sels$select_specimen_ids)
+  }
+  
+  if(length(opt_sub_sels$select_target_ids) > 0 ){
+    allele_data = allele_data |> 
+      filter(target_id %in% opt_sub_sels$select_target_ids)
+  }
+  return(allele_data)
+}
+
+
+#' generate warnings for sub selecting for selections that don't exist 
+#'
+#' @param allele_data the allele data 
+#' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_ids and select_specimen_ids 
+#' @param allele_table_fnp the table the allele data was read from 
+#'
+#' @returns warnings about missing sub-selections
+check_warnings_for_subselecting_allele_table <- function(allele_data, opt_sub_sels, allele_table_fnp){
+  warns = c()
+  if(length(opt_sub_sels$select_specimen_ids) > 0 ){
+    missing_sel_specs = setdiff(opt_sub_sels$select_specimen_ids, unique(allele_data$specimen_id))
+    if(length(missing_sel_specs) > 0 ){
+      warns = c(warns, paste0("supplied --select_specimen_ids but the following specimen_ids are missing from ", allele_table_fnp, "\n", 
+                                    paste0(missing_sel_specs, collapse = ",")))
+    }
+  }
+  
+  if(length(opt_sub_sels$select_target_ids) > 0 ){
+    missing_sel_tars = setdiff(opt_sub_sels$select_target_ids, unique(allele_data$target_id))
+    if(length(missing_sel_tars) > 0 ){
+      warns = c(warns, paste0("supplied --select_target_ids but the following target_ids are missing from ", allele_table_fnp, "\n", 
+                                    paste0(missing_sel_tars, collapse = ",")))
+    }
+  }
+  return (warns)
+}
+
+
+
+#' Add to the ref_bed table the row numbers of the loci it intersects with in a table of loci of interest 
+#'
+#' @param ref_bed_tab the ref bed locations 
+#' @param loci_of_interest_tab the loci to intersect with 
+#'
+#' @returns the ref_bed table with a new column intersected_loci_of_interest with the row numbers of the covered loci of interest 
+add_intersected_loci_of_interest_to_ref_bed <-function(ref_bed_tab, loci_of_interest_tab){
+  # find which loci and targets intersect
+  ref_bed_tab$intersected_loci_of_interest = ""
+
+  for(row in 1:nrow(ref_bed_tab)){
+    for(loci_row in 1:nrow(loci_of_interest_tab)){
+      if(ref_bed_tab$`#chrom`[row] == loci_of_interest_tab$`#chrom`[loci_row] & 
+         loci_of_interest_tab$start[loci_row] >= ref_bed_tab$start[row] & 
+         loci_of_interest_tab$end[loci_row] <= ref_bed_tab$end[row]){
+        # add which loci are covered by the target to the target table
+        if ("" != ref_bed_tab$intersected_loci_of_interest[row]){
+          ref_bed_tab$intersected_loci_of_interest[row] = paste0(ref_bed_tab$intersected_loci_of_interest[row], ",")
+        }
+        ref_bed_tab$intersected_loci_of_interest[row] = paste0(ref_bed_tab$intersected_loci_of_interest[row], loci_row)
+      }
+    }
+  }
+  return(ref_bed_tab)
+}
+
+#' Adding what ref_bed locations covered the loci of interest  
+#'
+#' @param loci_of_interest_tab the loci to intersect with 
+#' @param ref_bed_tab the ref bed locations 
+#'
+#' @returns loci_of_interest with a new column, covered_by_target, which has which locations cover this loci 
+add_covered_by_target_to_loci_of_interest <-function(loci_of_interest_tab, ref_bed_tab){
+  # find which loci and targets intersect
+  loci_of_interest_tab$covered_by_target = ""
+  
+  for(row in 1:nrow(ref_bed_tab)){
+    for(loci_row in 1:nrow(loci_of_interest_tab)){
+      if(ref_bed_tab$`#chrom`[row] == loci_of_interest_tab$`#chrom`[loci_row] & 
+         loci_of_interest_tab$start[loci_row] >= ref_bed_tab$start[row] & 
+         loci_of_interest_tab$end[loci_row] <= ref_bed_tab$end[row]){
+        # add which targets cover this loci
+        if ("" != loci_of_interest_tab$covered_by_target[loci_row]){
+          loci_of_interest_tab$covered_by_target[loci_row] = paste0(loci_of_interest_tab$covered_by_target[loci_row], ",")
+        }
+        loci_of_interest_tab$covered_by_target[loci_row] = paste0(loci_of_interest_tab$covered_by_target[loci_row], ref_bed_tab$target_id[row])
+      }
+    }
+  }
+  loci_of_interest_tab = loci_of_interest_tab |> 
+    mutate(covered_by_target = ifelse("" == covered_by_target, "uncovered", covered_by_target))
+  
+  return (loci_of_interest_tab)
+}
+
+
+#' Align sequences and translate specific loci of interest  
+#'
+#' @param allele_table_unique_haps_tab a table of unique haplotypes for a taget 
+#' @param microhaps_intersected_with_loci_of_interest the target_ids for the microhaplotypes that cover loci 
+#' @param ref_bed_by_loci_lookup the a list with a key for each microhaplotype location for the target_id 
+#' @param loci_of_interest_tab the table of interested loci to translate 
+#'
+#' @returns a table with the translated loci of interest for the overlapping microhaplotypes 
+translate_microhap_seqs <-function(allele_table_unique_haps_tab, microhaps_intersected_with_loci_of_interest, ref_bed_by_loci_lookup, loci_of_interest_tab){
+  
+  all_loci_of_interest_for_target_for_microhap = tibble()
+  
+  # create substitution matrix 
+  mat <- pwalign::nucleotideSubstitutionMatrix(match = 2, mismatch = -2, baseOnly = TRUE)
+  
+  # iterate over unique sequences to translate
+  for(row in 1:nrow(allele_table_unique_haps_tab)){
+    # if the target is in the loci of interest table then determine the calls per sequence 
+    if(allele_table_unique_haps_tab$target_id[row] %in% microhaps_intersected_with_loci_of_interest){
+      # end-to-end align sequences 
+      overlapAlign <- pwalign::pairwiseAlignment(Biostrings::DNAString(allele_table_unique_haps_tab$seq[row]), 
+                                                 Biostrings::DNAString(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1]),
+                                                 substitutionMatrix = mat, gapOpening = 5, gapExtension = 1, 
+                                                 type="overlap") 
+      # get the loci for this target 
+      loci_of_interest_for_target = loci_of_interest_tab[as.numeric(unlist(strsplit(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$intersected_loci_of_interest, ","))),] |> 
+        mutate(rel_start = start - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1], 
+               rel_end = end - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1])
+      
+      loci_of_interest_for_target_for_microhap = tibble()
+      # get the relative position of the codon within the aligned sequence and translate 
+      for(loci_of_interest_for_target_row in 1:nrow(loci_of_interest_for_target)){
+        aln_pos = getAlnPosPerRealPos(getAlignedSubjectFromOverlapAlign(overlapAlign), loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 1)
+        seq_codon = Biostrings::DNAString(substr(getAlignedPatternFromOverlapAlign(overlapAlign), aln_pos, aln_pos + 2))
+        ref_codon = Biostrings::DNAString(substr(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1], 
+                                                 loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 1, 
+                                                 loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 2 + 1))
+        # if the sequences are in the opposite direction from the amino acid call then reverse complement to get the correct translation 
+        if(loci_of_interest_for_target$strand[loci_of_interest_for_target_row] != ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$strand){
+          seq_codon = Biostrings::reverseComplement(seq_codon)
+          ref_codon = Biostrings::reverseComplement(ref_codon)
+        }
+        if(stringr::str_detect(as.character(seq_codon), "-")){
+          seq_aa = "X"
+        } else{
+          seq_aa = Biostrings::translate(seq_codon)
+        }
+        ref_aa = Biostrings::translate(ref_codon)
+        
+        # create the table with the data of interest 
+        loci_of_interest_for_target_for_microhap = 
+          bind_rows(
+            loci_of_interest_for_target_for_microhap,
+            tibble(
+              target_id = allele_table_unique_haps_tab$target_id[row], 
+              seq = allele_table_unique_haps_tab$seq[row], 
+              gene = loci_of_interest_for_target$gene[loci_of_interest_for_target_row],
+              gene_id = loci_of_interest_for_target$gene_id[loci_of_interest_for_target_row],
+              aa_position = loci_of_interest_for_target$aa_position[loci_of_interest_for_target_row],
+              ref_codon = as.character(ref_codon), 
+              ref_aa = as.character(ref_aa), 
+              codon = as.character(seq_codon), 
+              aa = as.character(seq_aa)
+            )
+          )
+      }
+      
+      # join in with the final summary table 
+      all_loci_of_interest_for_target_for_microhap = bind_rows(
+        all_loci_of_interest_for_target_for_microhap, 
+        loci_of_interest_for_target_for_microhap
+      )
+    }
+  }
+  return (all_loci_of_interest_for_target_for_microhap)
+}
+
+
+
+#' collapsed allele table with translated loci of interest that which might contain overlapping microhaplotypes 
+#'
+#' @param allele_table_to_filter the allele_data to collapse for the amino acid calls 
+#' @param collapse_calls_by_summing whether to do the collpase by summing over overlapping microhaplotypes, default is to take the one with the highest read counts 
+#'
+#' @returns the collapsed table 
+collapse_allele_table <- function(allele_table_to_filter, collapse_calls_by_summing = F){
+  allele_table_out_collapsed =  tibble()
+  # collapse amino acid calls 
+  if(collapse_calls_by_summing){
+    allele_table_out_collapsed = allele_table_to_filter |> 
+      group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa) |> 
+      summarise(read_count = sum(read_count), 
+                target_id = paste0(target_id, collapse = ","))
+  } else { 
+    allele_table_out_winnerTarget = allele_table_to_filter |> 
+      group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, target_id) |> 
+      summarise(read_count = sum(read_count)) |> 
+      arrange(desc(read_count)) |> 
+      mutate(read_count_rank = row_number(), 
+             covered_by_target_ids = paste0(target_id, collapse = ",")) |> 
+      filter(read_count_rank == 1) |> 
+      ungroup() |> 
+      select(-read_count_rank) |> 
+      dplyr::rename(best_target_id = target_id)
+    
+    allele_table_out_collapsed = allele_table_to_filter |> 
+      left_join(allele_table_out_winnerTarget |> 
+                  ungroup() |> 
+                  select(-read_count), 
+                by = c("specimen_id", "gene", "gene_id", "aa_position", "ref_codon", "ref_aa")) |> 
+      filter(target_id == best_target_id) |> 
+      select(-seq)
+    
+    allele_table_out_collapsed = allele_table_out_collapsed |> 
+      group_by(specimen_id, target_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa, best_target_id, covered_by_target_ids) |> 
+      summarise(read_count = sum(read_count))
+  }
+  return (allele_table_out_collapsed)
+}
+
+
 # Parse arguments ------------------------------------------------------
 opts <- list(
   make_option(
@@ -187,292 +459,137 @@ opts <- list(
   )
 )
 
-required_arguments = c("allele_table", "ref_bed", "loci_of_interest", "output_directory")
-
-# parse arguments
-arg <- parse_args(OptionParser(option_list = opts))
-## check for required arguments
-checkOptparseRequiredArgsThrow(arg, required_arguments)
-
-# create output directory and decided to overwrite or not if it exists 
-if(dir.exists(arg$output_directory) & arg$overwrite_dir){
-  unlink(arg$output_directory, recursive = T)
-} else if(dir.exists(arg$output_directory)){
-  stop(paste0(arg$output_directory, " already exist, use --overwrite_dir to overwrite"))
-}
-dir.create(arg$output_directory)
-
-# process if only processing specific targets and specimens
-
-select_target_ids = c()
-if("select_target_ids" %in% names(arg)){
-  if(file.exists(arg$select_target_ids)){
-    select_target_ids = readr::read_tsv(arg$select_target_ids, col_names = F)$X1
-  } else { 
-    select_target_ids = unlist(strsplit(arg$select_target_ids, split = ","))
+#' The function that runs the translating of loci of interest in microhaplotypes, handles the argument parsing from the command line 
+#'
+#' @returns true if it runs all the way through 
+run_translate_loci_of_interest <-function(){
+  required_arguments = c("allele_table", "ref_bed", "loci_of_interest", "output_directory")
+  
+  # parse arguments
+  arg <- parse_args(OptionParser(option_list = opts))
+  ## check for required arguments
+  checkOptparseRequiredArgsThrow(arg, required_arguments)
+  
+  # create output directory and decided to overwrite or not if it exists 
+  ensure_output_directory(arg$output_directory, arg$overwrite_dir)
+  
+  # process if only processing specific targets and specimens
+  optional_sub_selections = check_subselecting_args(arg)
+  
+  # read in input data and gather warnings about columns and data formatting 
+  warnings = c()
+  
+  # read in the panel reference information 
+  ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
+  warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand", "ref_seq"), arg$ref_bed))
+  
+  if(length(optional_sub_selections$select_target_ids) > 0 ){
+    missing_sel_tars = setdiff(optional_sub_selections$select_target_ids, ref_bed$target_id)
+    if(length(missing_sel_tars) > 0 ){
+      warnings = c(warnings, paste0("supplied --select_target_ids but the following targets are missing from ", arg$ref_bed, "\n", 
+                                    paste0(missing_sel_tars, collapse = ",")))
+    }
+    ref_bed = ref_bed |> 
+      filter(target_id %in% optional_sub_selections$select_target_ids)
   }
-}
- 
-
-select_specimen_ids = c()
-if("select_specimen_ids" %in% names(arg)){
-  if(file.exists(arg$select_specimen_ids)){
-    select_specimen_ids = readr::read_tsv(arg$select_specimen_ids, col_names = F)$X1
-  } else { 
-    select_specimen_ids = unlist(strsplit(arg$select_specimen_ids, split = ","))
-  }
-}
-
-
-# read in input data and gather warnings about columns and data formatting 
-warnings = c()
-
-# read in the panel reference information 
-ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
-warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand", "ref_seq"), arg$ref_bed))
-
-if(length(select_target_ids) > 0 ){
-  missing_sel_tars = setdiff(select_target_ids, ref_bed$target_id)
-  if(length(missing_sel_tars) > 0 ){
-    warnings = c(warnings, paste0("supplied --select_target_ids but the following targets are missing from ", arg$ref_bed, "\n", 
-                                  paste0(missing_sel_tars, collapse = ",")))
-  }
-  ref_bed = ref_bed |> 
-    filter(target_id %in% select_target_ids)
-}
-
-# read in the loci of interest 
-loci_of_interest = readr::read_tsv(arg$loci_of_interest, col_names = T)
-warnings = c(warnings, genWarningsMissCols(loci_of_interest, c("#chrom", "start", "end", "name", "length", "strand", "gene", "gene_id", "aa_position"), arg$loci_of_interest))
-
-## check to make sure loci are of length 3 only 
-for(row in 1:nrow(loci_of_interest)){
-  if(loci_of_interest$length[row] != 3){
-    warnings  = c(warnings, paste0("loci of interest must be of length 3, locus: ", loci_of_interest$name[row], " is length: ",  loci_of_interest$length[row]))
-  }
-}
-
-# read in allele table for the microhaplotype data 
-allele_table = readr::read_tsv(arg$allele_table)
-warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_id","target_id","read_count","seq"), arg$allele_table))
-
-if(length(select_specimen_ids) > 0 ){
-  missing_sel_specs = setdiff(select_target_ids, unique(allele_table$specimen_id))
-  if(length(missing_sel_specs) > 0 ){
-    warnings = c(warnings, paste0("supplied --select_specimen_ids but the following specimen_ids are missing from ", arg$allele_table, "\n", 
-                                  paste0(missing_sel_specs, collapse = ",")))
-  }
-  allele_table = allele_table |> 
-    filter(specimen_id %in% select_specimen_ids)
-}
-
-if(length(select_target_ids) > 0 ){
-  missing_sel_tars = setdiff(select_target_ids, unique(allele_table$target_id))
-  if(length(missing_sel_tars) > 0 ){
-    warnings = c(warnings, paste0("supplied --select_target_ids but the following target_ids are missing from ", arg$allele_table, "\n", 
-                                  paste0(missing_sel_tars, collapse = ",")))
-  }
-  allele_table = allele_table |> 
-    filter(target_id %in% select_target_ids)
-}
-
-
-# check to see if values between dataets are similar 
-ref_allele_decomp = set_decompose(ref_bed$target_id, unique(allele_table$target_id))
-
-if(length(ref_allele_decomp$only_in_vectorB) > 0){
-  warnings = c(warnings, paste0("the following loci were missing from the reference location file ", arg$ref_bed, " but are in ", arg$allele_table,
-                                "\n", paste0(ref_allele_decomp$only_in_vectorB, collapse = ",")
-                                ) 
-               )
-}
-
-if(length(warnings) > 0){
-  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
-}
-
-# create a table of unique 
-allele_table_unique_haps = allele_table |> 
-  select(target_id, seq) |> 
-  unique() |> 
-  arrange(target_id)
-
-
-# find which loci and targets intersect
-loci_of_interest_by_target_loci = list()
-
-ref_bed$intersected_loci_of_interest = ""
-loci_of_interest$covered_by_target = ""
-
-for(row in 1:nrow(ref_bed)){
-  for(loci_row in 1:nrow(loci_of_interest)){
-    if(ref_bed$`#chrom`[row] == loci_of_interest$`#chrom`[loci_row] & 
-       loci_of_interest$start[loci_row] >= ref_bed$start[row] & 
-       loci_of_interest$end[loci_row] <= ref_bed$end[row]){
-      # add which loci are covered by the target to the target table
-      if ("" != ref_bed$intersected_loci_of_interest[row]){
-        ref_bed$intersected_loci_of_interest[row] = paste0(ref_bed$intersected_loci_of_interest[row], ",")
-      }
-      ref_bed$intersected_loci_of_interest[row] = paste0(ref_bed$intersected_loci_of_interest[row], loci_row)
-      
-      # add which targets cover this loci
-      if ("" != loci_of_interest$covered_by_target[loci_row]){
-        loci_of_interest$covered_by_target[loci_row] = paste0(loci_of_interest$covered_by_target[loci_row], ",")
-      }
-      loci_of_interest$covered_by_target[loci_row] = paste0(loci_of_interest$covered_by_target[loci_row], ref_bed$target_id[row])
+  
+  # read in the loci of interest 
+  loci_of_interest = readr::read_tsv(arg$loci_of_interest, col_names = T)
+  warnings = c(warnings, genWarningsMissCols(loci_of_interest, c("#chrom", "start", "end", "name", "length", "strand", "gene", "gene_id", "aa_position"), arg$loci_of_interest))
+  
+  ## check to make sure loci are of length 3 only 
+  for(row in 1:nrow(loci_of_interest)){
+    if(loci_of_interest$length[row] != 3){
+      warnings  = c(warnings, paste0("loci of interest must be of length 3, locus: ", loci_of_interest$name[row], " is length: ",  loci_of_interest$length[row]))
     }
   }
-}
-loci_of_interest = loci_of_interest |> 
-  mutate(covered_by_target = ifelse("" == covered_by_target, "uncovered", covered_by_target))
-
-# create a map of target location to key into with target IDs 
-ref_bed_by_loci = list()
-for(row in 1:nrow(ref_bed)){
-  ref_bed_by_loci[[ref_bed$target_id[row]]] = ref_bed[row,]
-}
-
-
-ref_bed_withInterest = ref_bed |> 
-  filter("" != intersected_loci_of_interest)
-
-microhaps_with_loci_of_interest = ref_bed_withInterest$target_id
-
-# create substitution matrix 
-mat <- pwalign::nucleotideSubstitutionMatrix(match = 2, mismatch = -2, baseOnly = TRUE)
-
-
-
-all_loci_of_interest_for_target_for_microhap = tibble()
-
-# iterate over unique sequences to translate
-for(row in 1:nrow(allele_table_unique_haps)){
-  # if the target is in the loci of interest table then determine the calls per sequence 
-  if(allele_table_unique_haps$target_id[row] %in% microhaps_with_loci_of_interest){
-    # end-to-end align sequences 
-    overlapAlign <- pwalign::pairwiseAlignment(Biostrings::DNAString(allele_table_unique_haps$seq[row]), 
-                                              Biostrings::DNAString(ref_bed_by_loci[[allele_table_unique_haps$target_id[row]]]$ref_seq[1]),
-                                              substitutionMatrix = mat, gapOpening = 5, gapExtension = 1, 
-                                              type="overlap") 
-    # get the loci for this target 
-    loci_of_interest_for_target = loci_of_interest[as.numeric(unlist(strsplit(ref_bed_by_loci[[allele_table_unique_haps$target_id[row]]]$intersected_loci_of_interest, ","))),] |> 
-      mutate(rel_start = start - ref_bed_by_loci[[allele_table_unique_haps$target_id[row]]]$start[1], 
-             rel_end = end - ref_bed_by_loci[[allele_table_unique_haps$target_id[row]]]$start[1])
-    
-    loci_of_interest_for_target_for_microhap = tibble()
-    # get the relative position of the codon within the aligned sequence and translate 
-    for(loci_of_interest_for_target_row in 1:nrow(loci_of_interest_for_target)){
-      aln_pos = getAlnPosPerRealPos(getAlignedSubjectFromOverlapAlign(overlapAlign), loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 1)
-      seq_codon = Biostrings::DNAString(substr(getAlignedPatternFromOverlapAlign(overlapAlign), aln_pos, aln_pos + 2))
-      ref_codon = Biostrings::DNAString(substr(ref_bed_by_loci[[allele_table_unique_haps$target_id[row]]]$ref_seq[1], 
-                         loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 1, 
-                         loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 2 + 1))
-      # if the sequences are in the opposite direction from the amino acid call then reverse complement to get the correct translation 
-      if(loci_of_interest_for_target$strand[loci_of_interest_for_target_row] != ref_bed_by_loci[[allele_table_unique_haps$target_id[row]]]$strand){
-        seq_codon = Biostrings::reverseComplement(seq_codon)
-        ref_codon = Biostrings::reverseComplement(ref_codon)
-      }
-      if(stringr::str_detect(as.character(seq_codon), "-")){
-        seq_aa = "X"
-      } else{
-        seq_aa = Biostrings::translate(seq_codon)
-      }
-      ref_aa = Biostrings::translate(ref_codon)
-      
-      # create the table with the data of interest 
-      loci_of_interest_for_target_for_microhap = 
-        bind_rows(
-          loci_of_interest_for_target_for_microhap,
-          tibble(
-            target_id = allele_table_unique_haps$target_id[row], 
-            seq = allele_table_unique_haps$seq[row], 
-            gene = loci_of_interest_for_target$gene[loci_of_interest_for_target_row],
-            gene_id = loci_of_interest_for_target$gene_id[loci_of_interest_for_target_row],
-            aa_position = loci_of_interest_for_target$aa_position[loci_of_interest_for_target_row],
-            ref_codon = as.character(ref_codon), 
-            ref_aa = as.character(ref_aa), 
-            codon = as.character(seq_codon), 
-            aa = as.character(seq_aa)
-          )
-        )
-    }
-    
-    # join in with the final summary table 
-    all_loci_of_interest_for_target_for_microhap = bind_rows(
-      all_loci_of_interest_for_target_for_microhap, 
-      loci_of_interest_for_target_for_microhap
+  
+  # read in allele table for the microhaplotype data 
+  allele_table = readr::read_tsv(arg$allele_table)
+  warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_id","target_id","read_count","seq"), arg$allele_table))
+  warnings = c(warnings, check_warnings_for_subselecting_allele_table(allele_table, optional_sub_selections, arg$allele_table))
+  
+  
+  allele_table = filter_allele_table_for_optional_subselecting(allele_table, optional_sub_selections)
+  
+  # check to see if values between dataets are similar 
+  ref_allele_decomp = set_decompose(ref_bed$target_id, unique(allele_table$target_id))
+  if(length(ref_allele_decomp$only_in_vectorB) > 0){
+    warnings = c(warnings, paste0("the following loci were missing from the reference location file ", arg$ref_bed, " but are in ", arg$allele_table,
+                                  "\n", paste0(ref_allele_decomp$only_in_vectorB, collapse = ",")
+    ) 
     )
   }
-}
-
-
-# take the calls per unique sequence and join them to the original allele calls for all samples 
-allele_table_out = allele_table |> 
-  filter(target_id %in% microhaps_with_loci_of_interest) |> 
-  left_join(all_loci_of_interest_for_target_for_microhap, relationship = "many-to-many", by = c("target_id", "seq"))
-
-# get sample coverage info 
-coveredBySamplesCount = allele_table_out |> 
-  group_by(gene, gene_id, aa_position, ref_aa) |> 
-  summarise(n_samples = n_distinct(specimen_id)) |> 
-  mutate(total_samples = n_distinct(allele_table$specimen_id))
-
-loci_of_interest_out = loci_of_interest |> 
-  left_join(coveredBySamplesCount |> 
-              dplyr::rename( 
-                            refaa = ref_aa), 
-            by = c("gene", "aa_position", "refaa", "gene_id"))
-
-
-allele_table_out_untranslatable = allele_table_out |> 
-  filter(aa == "X")
-
-allele_table_out_filt = allele_table_out |> 
-  filter(aa != "X")
-
-
-# collapse amino acid calls 
-if(arg$collapse_calls_by_summing){
-  allele_table_out_collapsed = allele_table_out_filt |> 
-    group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa) |> 
-    summarise(read_count = sum(read_count), 
-              target_id = paste0(target_id, collapse = ","))
-} else { 
-  allele_table_out_winnerTarget = allele_table_out_filt |> 
-    group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, target_id) |> 
-    summarise(read_count = sum(read_count)) |> 
-    arrange(desc(read_count)) |> 
-    mutate(read_count_rank = row_number(), 
-           covered_by_target_ids = paste0(target_id, collapse = ",")) |> 
-    filter(read_count_rank == 1) |> 
-    ungroup() |> 
-    select(-read_count_rank) |> 
-    dplyr::rename(best_target_id = target_id)
   
-  allele_table_out_collapsed = allele_table_out_filt |> 
-    left_join(allele_table_out_winnerTarget |> 
-                ungroup() |> 
-                select(-read_count), 
-              by = c("specimen_id", "gene", "gene_id", "aa_position", "ref_codon", "ref_aa")) |> 
-    filter(target_id == best_target_id) |> 
-    select(-seq)
+  if(length(warnings) > 0){
+    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+  }
   
-  allele_table_out_collapsed = allele_table_out_collapsed |> 
-    group_by(specimen_id, target_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa, best_target_id, covered_by_target_ids) |> 
-    summarise(read_count = sum(read_count))
+  # create a table of unique 
+  allele_table_unique_haps = allele_table |> 
+    select(target_id, seq) |> 
+    unique() |> 
+    arrange(target_id)
+  
+  
+  # find which loci and targets intersect
+  ref_bed = add_intersected_loci_of_interest_to_ref_bed(ref_bed, loci_of_interest)
+  loci_of_interest = add_covered_by_target_to_loci_of_interest(loci_of_interest, ref_bed)
+  ref_bed_withInterest = ref_bed |> 
+    filter("" != intersected_loci_of_interest)
+  microhaps_with_loci_of_interest = ref_bed_withInterest$target_id
+  
+  # create a map of target location to key into with target IDs 
+  ref_bed_by_loci = list()
+  for(row in 1:nrow(ref_bed)){
+    ref_bed_by_loci[[ref_bed$target_id[row]]] = ref_bed[row,]
+  }
+  
+  # translate sequences 
+  all_loci_of_interest_for_target_for_microhap = translate_microhap_seqs(allele_table_unique_haps, microhaps_with_loci_of_interest, ref_bed_by_loci, loci_of_interest)
+  
+  
+  # take the calls per unique sequence and join them to the original allele calls for all samples 
+  allele_table_out = allele_table |> 
+    filter(target_id %in% microhaps_with_loci_of_interest) |> 
+    left_join(all_loci_of_interest_for_target_for_microhap, relationship = "many-to-many", by = c("target_id", "seq"))
+  
+  # get sample coverage info 
+  coveredBySamplesCount = allele_table_out |> 
+    group_by(gene, gene_id, aa_position, ref_aa) |> 
+    summarise(n_samples = n_distinct(specimen_id)) |> 
+    mutate(total_samples = n_distinct(allele_table$specimen_id))
+  
+  loci_of_interest_out = loci_of_interest |> 
+    left_join(coveredBySamplesCount, 
+              by = c("gene", "aa_position", "gene_id"))
+  
+  
+  # filter the uncallable sites
+  allele_table_out_untranslatable = allele_table_out |> 
+    filter(aa == "X")
+  allele_table_out_filt = allele_table_out |> 
+    filter(aa != "X")
+  
+  # collapse amino acid calls 
+  allele_table_out_collapsed = collapse_allele_table(allele_table_out_filt)
+  
+  
+  # writing output results 
+  write_tsv(allele_table_out, file.path(arg$output_directory, "amino_acid_calls.tsv.gz"))
+  
+  # writing output results collapsing calls if calls occur on multiple targets  
+  write_tsv(allele_table_out_collapsed, file.path(arg$output_directory,"collapsed_amino_acid_calls.tsv.gz"))
+  
+  # writing covered by info 
+  write_tsv(loci_of_interest_out, file.path(arg$output_directory,"loci_covered_by_target_samples_info.tsv"))
+  
+  if(nrow(allele_table_out_untranslatable) > 0){
+    write_tsv(allele_table_out_untranslatable, file.path(arg$output_directory,"allele_table_out_untranslatable.tsv"))
+  }
+  
+  return(T)
 }
 
-
-# writing output results 
-write_tsv(allele_table_out, file.path(arg$output_directory, "amino_acid_calls.tsv.gz"))
-
-# writing output results collapsing calls if calls occur on multiple targets  
-write_tsv(allele_table_out_collapsed, file.path(arg$output_directory,"collapsed_amino_acid_calls.tsv.gz"))
-
-# writing covered by info 
-write_tsv(loci_of_interest_out, file.path(arg$output_directory,"loci_covered_by_target_samples_info.tsv"))
-
-if(nrow(allele_table_out_untranslatable) > 0){
-  write_tsv(allele_table_out_untranslatable, file.path(arg$output_directory,"allele_table_out_untranslatable.tsv"))
-}
+did_run = run_translate_loci_of_interest()
 
