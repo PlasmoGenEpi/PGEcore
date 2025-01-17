@@ -537,7 +537,7 @@ summarize_and_write_results <- function(moire_object, mcmc_results) {
   target_id_count <- moire_object$moire_data %>% 
     select(!sample_id) %>%
     group_by(locus) %>%         # Group by 'locus' and 'allele'
-    summarise(count = n(), .groups = 'drop') %>% # Count the occurrences and drop grouping
+    summarise(sample_total = n(), .groups = 'drop') %>% # Count the occurrences and drop grouping
     rename(target_id = locus)
   
   he_summary <- target_id_count %>%
