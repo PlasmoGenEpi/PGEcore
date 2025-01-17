@@ -73,3 +73,10 @@ without requiring a known complexity of infection for each sample.
 
 The `multilocus_prevfreq_naive.R` script contains all the requisite functions to
 read in the data, calculate prevalence and frequency, and write results to file.
+
+An example of usage, executed from the root of this repo, would be:
+
+``
+Rscript scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
+    --input_path data/example_amino_acid_calls.tsv --output_path mlafp.tsv
+``
