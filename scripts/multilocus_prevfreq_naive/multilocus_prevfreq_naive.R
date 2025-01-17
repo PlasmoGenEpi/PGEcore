@@ -1,6 +1,7 @@
 
-library(dplyr)
-library(tidyr)
+library(tidyverse)
+library(optparse)
+library(validate)
 
 # install a specific version of variantstring package (this is in development so
 # may not always be backwards-compatible)
@@ -51,8 +52,33 @@ aa_table_to_variant <- function(input_path) {
   # Check input arguments
   stopifnot(is.character(input_path))
   
-  # read in amino acid calls and tidy up columns
-  df_aa <- read.table(input_path, header = TRUE) |>
+  # read in amino acid calls and validate columns
+  df_aa <- read.table(input_path, header = TRUE)
+  rules <- validate::validator(
+    is.character(specimen_id), 
+    is.character(gene_id), 
+    is.integer(aa_position), 
+    is.integer(read_count), 
+    is.character(aa), 
+    ! is.na(specimen_id), 
+    ! is.na(gene_id), 
+    ! is.na(aa_position), 
+    ! is.na(read_count), 
+    ! is.na(aa)
+  )
+  fails <- validate::confront(df_aa, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input input_data failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
+
+  # tidy up columns
+  df_aa <- df_aa |>
     select(specimen_id, gene_id, aa_position, read_count, aa) |>
     rename(gene = gene_id,
            pos = aa_position)
@@ -181,7 +207,7 @@ write_prev <- function(df_prev,
   stopifnot(all(names(df_prev) == c("variant", "prev", "freq", "sample_total")))
   stopifnot(is.character(output_path))
   
-  write.table(df_prev, file = output_path, row.names = FALSE)
+  write_tsv(df_prev, file = output_path)
 }
 
 
