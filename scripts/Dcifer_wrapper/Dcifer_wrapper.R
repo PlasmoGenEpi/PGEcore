@@ -205,7 +205,7 @@ create_coi_input <- function(coi_path, allele_list) {
 #'
 #' @param allele_freq_path Path to the TSV file containing the allele 
 #'   frequencies. There should be character columns for target_id and 
-#'   seq, a double freq column, and an integer total column.
+#'   seq, and a double freq column.
 #' @inheritParams create_allele_table_input
 #'
 #' @return A named list with target_id as the names. The values are a 
@@ -218,8 +218,7 @@ create_allele_freq_input <- function(allele_freq_path, allele_list) {
     allele_freq_path, 
     col_types = cols(
       .default = col_character(), 
-      freq = col_double(), 
-      total = col_integer()
+      freq = col_double()
     ), 
     progress = FALSE
   )
@@ -229,11 +228,9 @@ create_allele_freq_input <- function(allele_freq_path, allele_list) {
     is.character(target_id), 
     is.character(seq), 
     is.double(freq), 
-    is.integer(total), 
     ! is.na(target_id), 
     ! is.na(seq), 
-    ! is.na(freq), 
-    ! is.na(total)
+    ! is.na(freq)
   )
   fails <- validate::confront(allele_freqs, rules, raise = "all") %>%
     validate::summary() %>%
@@ -458,7 +455,10 @@ if (is.null(arg$coi_table)) {
 if (is.null(arg$allele_freq_table)) {
   allele_freqs <- dcifer::calcAfreq(dcifer_alleles, coi, tol = 1e-5)
 } else {
-  allele_freqs <- create_allele_freq_input(arg$allele_freq_table)
+  allele_freqs <- create_allele_freq_input(
+    arg$allele_freq_table, 
+    dcifer_alleles
+  )
 }
 
 # Compute relatedness and save -----------------------------------------
