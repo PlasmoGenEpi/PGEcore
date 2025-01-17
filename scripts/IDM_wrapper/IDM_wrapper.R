@@ -783,8 +783,48 @@ get_optparse_args <- function() {
 #'    table.
 #' @return A data table ready for running the IDM model.
 prepare_input <- function(aa_calls_input) {
-  # prepare input (shared)
-  df <- read_tsv(aa_calls_input, show_col_types = FALSE) %>%
+
+  # Read input
+  df <- read_tsv(
+    aa_calls_input, 
+    col_types = cols(
+      .default = col_character(), 
+      aa_position = col_integer()
+    )
+  )
+
+  # Validate fields
+  rules <- validate::validator(
+    is.character(specimen_id), 
+    is.character(target_id), 
+    is.character(gene_id), 
+    is.integer(aa_position), 
+    is.character(ref_codon), 
+    is.character(ref_aa), 
+    is.character(codon), 
+    is.character(aa), 
+    ! is.na(specimen_id), 
+    ! is.na(target_id), 
+    ! is.na(gene_id), 
+    ! is.na(aa_position), 
+    ! is.na(ref_codon), 
+    ! is.na(ref_aa), 
+    ! is.na(codon), 
+    ! is.na(aa)
+  )
+  fails <- validate::confront(df, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input input_data failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
+
+  # Reformat and return
+  df <- df %>%
     mutate(
       locus = str_c(gene_id, aa_position, sep = ":"),
       variants = str_c(gene_id, aa_position, aa, sep = ":")
