@@ -25,8 +25,11 @@
 
 
 suppressPackageStartupMessages(library(tidyverse))
-library(stringr)
 library(optparse)
+# The moi_mle_idm.R script requires the tidyverse, openxlsx, and Rmpfr 
+# packages
+library(openxlsx)
+library(Rmpfr)
 
 #############################################################
 ##################### BEGIN : moi_mle_idm.R #################
@@ -39,8 +42,6 @@ library(optparse)
 # Last modified: 30.05.23
 
 
-library("ggplot2")
-library("stringr")
 
 ############## This function imports data #################################
 
@@ -783,7 +784,6 @@ get_optparse_args <- function() {
 #' @return A data table ready for running the IDM model.
 prepare_input <- function(aa_calls_input) {
   # prepare input (shared)
-  library(tidyverse)
   df <- read_tsv(aa_calls_input, show_col_types = FALSE) %>%
     mutate(
       locus = str_c(gene_id, aa_position, sep = ";"),
