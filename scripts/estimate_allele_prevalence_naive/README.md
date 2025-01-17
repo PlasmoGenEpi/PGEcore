@@ -10,7 +10,7 @@ This tool provides a naive implementation of estimating allele prevalence from a
 
 ## Script Usage 
 ```
-Rscript naive_allele_prevalence_wrapper.R \
+Rscript estimate_allele_prevalence_naive.R \
   --aa_calls data/example_amino_acid_calls.tsv \
   --output prevalence.tsv
 ```
