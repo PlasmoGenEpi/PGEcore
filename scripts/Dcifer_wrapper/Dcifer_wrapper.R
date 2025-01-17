@@ -168,6 +168,27 @@ create_coi_input <- function(coi_path, allele_list) {
     )
   }
 
+  # Check that all specimen IDs in the allele table are in the COI 
+  # input, and vice versa
+  specimen_inallele_notincoi <- setdiff(names(allele_list), coi$specimen_id)
+  if (length(specimen_inallele_notincoi) > 0) {
+    stop(
+      "The following specimen IDs appear in the allele table and not in the ", 
+      "COI table: ", 
+      str_c(specimen_inallele_notincoi, collapse = " "), 
+      call. = FALSE
+    )
+  }
+  specimen_incoi_notinallele <- setdiff(coi$specimen_id, names(allele_list))
+  if (length(specimen_incoi_notinallele) > 0) {
+    warning(
+      "The following specimen IDs appear in the allele table and not in the ", 
+      "COI table: ", 
+      str_c(specimen_incoi_notinallele, collapse = " "), 
+      call. = FALSE
+    )
+  }
+
   # Join COI to allele list to ensure order matches
   coi <- tibble(specimen_id = names(allele_list)) %>%
     left_join(coi, by = "specimen_id")
@@ -185,11 +206,12 @@ create_coi_input <- function(coi_path, allele_list) {
 #' @param allele_freq_path Path to the TSV file containing the allele 
 #'   frequencies. There should be character columns for target_id and 
 #'   seq, a double freq column, and an integer total column.
+#' @inheritParams create_allele_table_input
 #'
 #' @return A named list with target_id as the names. The values are a 
 #'   named vector with seq as the name and freq as the value. This is 
 #'   format taken by `dcifer::ibdDat` and `dcifer::ibdPair`.
-create_allele_freq_input <- function(allele_freq_path) {
+create_allele_freq_input <- function(allele_freq_path, allele_list) {
 
   # Read in table
   allele_freqs <- read_tsv(
@@ -220,6 +242,42 @@ create_allele_freq_input <- function(allele_freq_path) {
     stop(
       "Input input_data failed one or more validation checks: ", 
       str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
+
+  # Check that all alleles in the allele frequency table are in the 
+  # allele list, and vice versa
+  allele_freq_alleles <- allele_freqs %>%
+    unite(allele, target_id, seq, sep = ":") %$%
+    allele
+  allele_table_alleles <- list_c(allele_list) %>%
+    tibble(target_id = names(.), seqs = .) %>%
+    mutate(seqs = map(seqs, names)) %>%
+    unnest(seqs) %>%
+    unite(alleles, target_id, seqs, sep = ":") %$%
+    alleles
+  specimen_intable_notinfreq <- setdiff(
+    allele_table_alleles, 
+    allele_freq_alleles
+  )
+  if (length(specimen_intable_notinfreq) > 0) {
+    stop(
+      "The following alleles are in the allele table and not in the provided ", 
+      "allele frequencies: ", 
+      str_c(specimen_intable_notinfreq, collapse = " "), 
+      call. = FALSE
+    )
+  }
+  specimen_infreq_notintable <- setdiff(
+    allele_freq_alleles, 
+    allele_table_alleles
+  )
+  if (length(specimen_infreq_notintable) > 0) {
+    stop(
+      "The following alleles are in the provided allele frequencies and not ", 
+      "in the allele table: ", 
+      str_c(specimen_infreq_notintable, collapse = " "), 
       call. = FALSE
     )
   }
