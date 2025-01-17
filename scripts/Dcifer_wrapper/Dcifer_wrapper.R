@@ -308,11 +308,14 @@ create_allele_freq_input <- function(allele_freq_path, allele_list) {
 #'   there will also be double CI_lower and CI_upper columns.
 #'
 #' @details
-#' If `rnull` is greater than 0, this means the hypothesis test is one-
-#' sided. In this scenario, the *p*-values output by Dcifer need to be 
-#' divided by two. This is done within this function. Note that these 
-#' *p*-values should generally also be corrected for multiple testing, 
-#' which this function does NOT do.
+#' If `rnull` is 0 or 1, Dcifer performs a one-sided hypothesis test, 
+#' but it does a two-sided test if it is between 0 and 1. Therefore, if 
+#' the scientific hypothesis of interest is, e.g., *r* > 0.25, it is 
+#' necessary to divide the *p*-values returned by this function by two, 
+#' and set *p*-values for *r* estimates below `rnull` to some 
+#' arbitrarily high number if using something like the Benjamini-
+#' Hochberg correction for multiple testing. These corrections are left 
+#' to the user - they are NOT done in this function.
 #'
 #' This function was originally written by Max Murphy and 
 #' (very) lightly modified by Alfred Hubbard.
@@ -416,13 +419,6 @@ run_dcifer <- function(
     }
     stopCluster(cl)
     setDefaultCluster(NULL)
-
-    # If rnull is greater than 0, this means the test is 1-sided and 
-    # the p-values should be divided by two
-    if (rnull > 0) {
-      res <- res %>%
-        mutate(p_value = p_value / 2)
-    }
 
     return(res)
 }
