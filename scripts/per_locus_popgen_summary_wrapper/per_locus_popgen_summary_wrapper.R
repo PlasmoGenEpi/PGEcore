@@ -102,12 +102,12 @@ create_locus_data <- function(input_path) {
 #' @export
 
 calculate_popgen_stats <- function(allele_data) {
-  allele_matrix <- do.call(rbind, strsplit(allele_data, split = ""))
-  dna_sequences <- as.DNAbin(allele_matrix)
+  alignment <- msa::msa(allele_data, method = "ClustalW", type = "dna")
+  aligned_sequences <- msa::msaConvert(alignment, type = "ape::DNAbin")
   
-  nucleotide_diversity <- nuc.div(dna_sequences)
-  segregating_sites <- length(seg.sites(dna_sequences))
-  tajima_test <- tajima.test(dna_sequences)
+  nucleotide_diversity <- nuc.div(aligned_sequences)
+  segregating_sites <- length(seg.sites(aligned_sequences))
+  tajima_test <- tajima.test(aligned_sequences)
   
   # Return the results as a list
   return(list(
@@ -155,6 +155,7 @@ calculate_stats_by_target_id <- function(locus_data) {
 
 # Main function ------------------------------------------------------
 # Load allele table/locus data
+#arg$allele_table = "/Users/jar4142/Desktop/PGEcore/data/example2_allele_table.tsv"
 locus_data = create_locus_data(arg$allele_table)
 
 # Calculate popgens
