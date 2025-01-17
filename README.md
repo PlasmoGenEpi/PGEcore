@@ -42,7 +42,7 @@ PGEcore/
 ```
 
 3. Add your script and documentation:
-* See [here](#script-requirements) for more information on this. 
+* See [here](#how-to-add-a-script) for more information on this. 
 
 4. Commit Your Changes:
 * Write clear and concise commit messages.
