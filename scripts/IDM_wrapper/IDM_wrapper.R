@@ -768,7 +768,7 @@ get_optparse_args <- function() {
       type = "character",
       help = str_c(
         "Output TSV containing single locus allele frequencies, with the ",
-        "columns: variant, freq, total. ",
+        "columns: variant, freq. ",
         "Required"
       )
     )
@@ -786,8 +786,8 @@ prepare_input <- function(aa_calls_input) {
   # prepare input (shared)
   df <- read_tsv(aa_calls_input, show_col_types = FALSE) %>%
     mutate(
-      locus = str_c(gene_id, aa_position, sep = ";"),
-      variants = str_c(gene_id, aa_position, aa, sep = ";")
+      locus = str_c(gene_id, aa_position, sep = ":"),
+      variants = str_c(gene_id, aa_position, aa, sep = ":")
     ) %>%
     select(specimen_id, locus, variants)
   return(df)
@@ -804,14 +804,12 @@ prepare_input <- function(aa_calls_input) {
 #'    occur, the default parameter should be used (default 1.0).
 #' @param eps_initial The argument eps_initial (default 0.1)
 #'     specifies the initial value in the numerical iteration to find eps.
-#' @return The result data table with three columns: allele, frequency,
-#' and total.
+#' @return The result data table with two columns: allele and frequency
 run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
                                     eps_initial = 0.1) {
   # Variables to collect results from different loci
   variants_array <- c()
   freq_array <- c()
-  total_array <- c()
 
   # run IDM for each locus sequentially
   for (l in (df %>% distinct(locus))$locus) {
@@ -836,16 +834,13 @@ run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
       # make up for the length when freq is a single NA
       locus_freq <- rep(NA, n_uniq_variants)
     }
-    total <- nrow(tmp_df)
     freq_array <- c(freq_array, locus_freq)
     variants_array <- c(variants_array, colnames(nk$N_k))
-    total_array <- c(total_array, rep(total, n_uniq_variants))
   }
   # Organize the data into a table
   res <- tibble(
     variant = variants_array,
-    freq = freq_array,
-    total = total_array,
+    freq = freq_array
   )
   # Clean up: remove the intermediate file
   invisible(file.remove("tmp.txt"))
