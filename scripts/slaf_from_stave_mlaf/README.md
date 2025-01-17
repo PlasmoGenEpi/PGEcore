@@ -14,7 +14,7 @@ The output is a table with columns: group_id, gene, pos, aa, freq.
 
 ## Script Usage 
 ```
-Rscript slaf_from_mlaf_wrapper.R \
+Rscript slaf_from_stave_mlaf.R \
   --mlaf_input data/example_mlaf.tsv \
   --output single_locus_allele_frequencies.tsv
 ```
