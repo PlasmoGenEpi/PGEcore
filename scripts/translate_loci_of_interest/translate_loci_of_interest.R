@@ -400,6 +400,96 @@ collapse_allele_table <- function(allele_table_to_filter, collapse_calls_by_summ
   return (allele_table_out_collapsed)
 }
 
+#' validate the input data columns 
+#'
+#' @param ref_bed the ref bed locations table 
+#' @param loci_of_interest the loci of interest table
+#' @param allele_table the allele data table 
+#'
+#' @returns the warnings about the input 
+validate_columns_types <-function(ref_bed, loci_of_interest, allele_table){
+  warns = c()
+  # validate columns ref_bed
+  ref_bed_rules <- validate::validator(
+    is.character(`#chrom`), 
+    is.numeric(start),
+    is.numeric(end),
+    is.character(target_id), 
+    is.numeric(length), 
+    is.character(strand), 
+    is.character(ref_seq),
+    ! is.na(`#chrom`), 
+    ! is.na(start), 
+    ! is.na(end), 
+    ! is.na(target_id), 
+    ! is.na(length), 
+    ! is.na(strand), 
+    ! is.na(ref_seq)
+  )
+  ref_bed_fails <- validate::confront(ref_bed, ref_bed_rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+
+  if (nrow(ref_bed_fails) > 0) {
+    warns = paste0(
+      "Input ref_bed failed one or more validation checks: ", 
+      str_c(ref_bed_fails$expression, collapse = "\n")
+    )
+  }
+  
+  # validate columns loci_of_interest
+  loci_of_interest_rules <- validate::validator(
+    is.character(`#chrom`), 
+    is.numeric(start),
+    is.numeric(end),
+    is.character(name), 
+    is.numeric(length), 
+    is.character(strand), 
+    is.character(gene), 
+    is.numeric(aa_position),  
+    is.character(gene_id),
+    ! is.na(`#chrom`), 
+    ! is.na(start), 
+    ! is.na(end), 
+    ! is.na(name), 
+    ! is.na(length), 
+    ! is.na(strand), 
+    ! is.na(gene), 
+    ! is.na(aa_position), 
+    ! is.na(gene_id)
+  )
+  loci_of_interest_fails <- validate::confront(loci_of_interest, loci_of_interest_rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(loci_of_interest_fails) > 0) {
+    warns = paste0(
+      "Input loci_of_interest failed one or more validation checks: ", 
+      str_c(loci_of_interest_fails$expression, collapse = "\n")
+    )
+  }
+  
+  # validate columns allele_table
+  allele_table_rules <- validate::validator(
+    is.character(specimen_id),
+    is.numeric(read_count),
+    is.character(target_id), 
+    is.character(seq),
+    ! is.na(specimen_id), 
+    ! is.na(read_count), 
+    ! is.na(target_id), 
+    ! is.na(seq)
+  )
+  allele_table_fails <- validate::confront(allele_table, allele_table_rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(allele_table_fails) > 0) {
+    warns = paste0(
+      "Input allele_table failed one or more validation checks: ", 
+      str_c(allele_table_fails$expression, collapse = "\n")
+    )
+  }
+  return(warns)
+}
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -459,6 +549,9 @@ opts <- list(
   )
 )
 
+
+
+
 #' The function that runs the translating of loci of interest in microhaplotypes, handles the argument parsing from the command line 
 #'
 #' @returns true if it runs all the way through 
@@ -496,6 +589,9 @@ run_translate_loci_of_interest <-function(){
     stop(paste0("\n", paste0(warnings, collapse = "\n")) )
   }
   warnings = c()
+  
+  #check column types 
+  warnings = c(warnings, validate_columns_types(ref_bed, loci_of_interest, allele_table))
   
   # check to see if selected target ids 
   if(length(optional_sub_selections$select_target_ids) > 0 ){
