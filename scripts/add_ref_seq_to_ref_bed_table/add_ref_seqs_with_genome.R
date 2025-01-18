@@ -75,10 +75,10 @@ gen_warns_on_validate_ref_bed_cols <- function(ref_bed){
   # validate columns
   rules <- validate::validator(
     is.character(`#chrom`), 
-    is.integer(start),
-    is.integer(end),
+    is.numeric(start),
+    is.numeric(end),
     is.character(target_id), 
-    is.integer(length), 
+    is.numeric(length), 
     is.character(strand), 
     ! is.na(`#chrom`), 
     ! is.na(start), 

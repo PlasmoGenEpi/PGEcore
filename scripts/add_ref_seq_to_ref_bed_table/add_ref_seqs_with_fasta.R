@@ -109,10 +109,10 @@ gen_warns_on_validate_ref_bed_cols <- function(ref_bed){
   # validate columns
   rules <- validate::validator(
     is.character(`#chrom`), 
-    is.integer(start),
-    is.integer(end),
+    is.numeric(start),
+    is.numeric(end),
     is.character(target_id), 
-    is.integer(length), 
+    is.numeric(length), 
     is.character(strand), 
     ! is.na(`#chrom`), 
     ! is.na(start), 
@@ -230,7 +230,7 @@ run_add_ref_seqs_from_fasta <- function(){
   
   # join the ref_seq
   ref_bed = ref_bed |> 
-    left_join(dna_tab)
+    left_join(dna_tab, by = "target_id")
   
   # write out 
   write_tsv(ref_bed, arg$out)
