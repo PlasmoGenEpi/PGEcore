@@ -281,12 +281,12 @@ add_covered_by_target_to_snps_of_interest <-function(snps_of_interest_tab, ref_b
 #' Align sequences and extract SNPs of interest   
 #'
 #' @param allele_table_unique_haps_tab a table of unique haplotypes for a taget 
-#' @param microhaps_intersected_with_loci_of_interest the target_ids for the microhaplotypes that cover loci 
+#' @param microhaps_intersected_with_snps_of_interest the target_ids for the microhaplotypes that cover snps 
 #' @param ref_bed_by_loci_lookup the a list with a key for each microhaplotype location for the target_id 
-#' @param snps_of_interest_tab the table of interested loci to translate 
+#' @param snps_of_interest_tab the table of interested snps to translate 
 #'
-#' @returns a table with the translated loci of interest for the overlapping microhaplotypes 
-extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_intersected_with_loci_of_interest, ref_bed_by_loci_lookup, snps_of_interest_tab){
+#' @returns a table with the snps of interest for the covering microhaplotypes 
+extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_intersected_with_snps_of_interest, ref_bed_by_loci_lookup, snps_of_interest_tab){
   # create substitution matrix 
   mat <- pwalign::nucleotideSubstitutionMatrix(match = 2, mismatch = -2, baseOnly = TRUE)
   
@@ -294,14 +294,14 @@ extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_inte
   
   # iterate over unique sequences to translate
   for(row in 1:nrow(allele_table_unique_haps_tab)){
-    # if the target is in the loci of interest table then determine the calls per sequence 
-    if(allele_table_unique_haps_tab$target_id[row] %in% microhaps_intersected_with_loci_of_interest){
+    # if the target is in the snps of interest table then determine the calls per sequence 
+    if(allele_table_unique_haps_tab$target_id[row] %in% microhaps_intersected_with_snps_of_interest){
       # end-to-end align sequences 
       overlapAlign <- pwalign::pairwiseAlignment(Biostrings::DNAString(allele_table_unique_haps_tab$seq[row]), 
                                                  Biostrings::DNAString(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1]),
                                                  substitutionMatrix = mat, gapOpening = 5, gapExtension = 1, 
                                                  type="overlap") 
-      # get the loci for this target 
+      # get the snps for this target 
       snps_of_interest_for_target = snps_of_interest_tab[as.numeric(unlist(strsplit(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$intersected_snps_of_interest, ","))),] |> 
         mutate(rel_start = start - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1], 
                rel_end = end - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1])
@@ -349,7 +349,7 @@ extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_inte
 
 
 
-#' collapsed allele table with translated loci of interest that which might contain overlapping microhaplotypes 
+#' collapsed allele table with translated snps of interest that which might contain overlapping microhaplotypes 
 #'
 #' @param allele_table_to_collpase the allele_data to collapse for the SNPS calls 
 #' @param collapse_calls_by_summing whether to do the collapse by summing over overlapping microhaplotypes, default is to take the one with the highest read counts 
@@ -408,7 +408,7 @@ opts <- list(
   make_option(
     "--snps_of_interest", 
     help = str_c(
-      "a bed file containing the snps of interest to calculate pileup, is genomic location of the snp position so all loci should be of size 1, should have columns, #chrom, start, end, name, length, strand"
+      "a bed file containing the snps of interest to calculate pileup, is genomic location of the snp position so all snps should be of size 1, should have columns, #chrom, start, end, name, length, strand"
     )
   ), 
   make_option(
@@ -450,6 +450,91 @@ opts <- list(
 )
 
 
+#' validate the input data columns 
+#'
+#' @param ref_bed the ref bed locations table 
+#' @param snps_of_interest the snps of interest table
+#' @param allele_table the allele data table 
+#'
+#' @returns the warnings about the input 
+validate_columns_types <-function(ref_bed, snps_of_interest, allele_table){
+  warns = c()
+  # validate columns ref_bed
+  ref_bed_rules <- validate::validator(
+    is.character(`#chrom`), 
+    is.numeric(start),
+    is.numeric(end),
+    is.character(target_id), 
+    is.numeric(length), 
+    is.character(strand), 
+    is.character(ref_seq),
+    ! is.na(`#chrom`), 
+    ! is.na(start), 
+    ! is.na(end), 
+    ! is.na(target_id), 
+    ! is.na(length), 
+    ! is.na(strand), 
+    ! is.na(ref_seq)
+  )
+  ref_bed_fails <- validate::confront(ref_bed, ref_bed_rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  
+  if (nrow(ref_bed_fails) > 0) {
+    warns = paste0(
+      "Input ref_bed failed one or more validation checks: ", 
+      str_c(ref_bed_fails$expression, collapse = "\n")
+    )
+  }
+  
+  # validate columns snps_of_interest
+  snps_of_interest_rules <- validate::validator(
+    is.character(`#chrom`), 
+    is.numeric(start),
+    is.numeric(end),
+    is.character(name), 
+    is.numeric(length), 
+    is.character(strand), 
+    ! is.na(`#chrom`), 
+    ! is.na(start), 
+    ! is.na(end), 
+    ! is.na(name), 
+    ! is.na(length), 
+    ! is.na(strand)
+  )
+  snps_of_interest_fails <- validate::confront(snps_of_interest, snps_of_interest_rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(snps_of_interest_fails) > 0) {
+    warns = paste0(
+      "Input snps_of_interest failed one or more validation checks: ", 
+      str_c(snps_of_interest_fails$expression, collapse = "\n")
+    )
+  }
+  
+  # validate columns allele_table
+  allele_table_rules <- validate::validator(
+    is.character(specimen_id),
+    is.numeric(read_count),
+    is.character(target_id), 
+    is.character(seq),
+    ! is.na(specimen_id), 
+    ! is.na(read_count), 
+    ! is.na(target_id), 
+    ! is.na(seq)
+  )
+  allele_table_fails <- validate::confront(allele_table, allele_table_rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(allele_table_fails) > 0) {
+    warns = paste0(
+      "Input allele_table failed one or more validation checks: ", 
+      str_c(allele_table_fails$expression, collapse = "\n")
+    )
+  }
+  return(warns)
+}
+
 #' run a pileup count of specific snps that are covered by microhaplotypes
 #'
 #' @returns true if runs all the way through
@@ -473,7 +558,7 @@ run_pileup_specific_snps <-function(){
   ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
   warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand", "ref_seq"), arg$ref_bed))
   
-  # read in the loci of interest 
+  # read in the snps of interest 
   snps_of_interest = readr::read_tsv(arg$snps_of_interest, col_names = T)
   warnings = c(warnings, genWarningsMissCols(snps_of_interest, c("#chrom", "start", "end", "name", "length", "strand"), arg$snps_of_interest))
   
@@ -484,10 +569,10 @@ run_pileup_specific_snps <-function(){
     stop(paste0("\n", paste0(warnings, collapse = "\n")) )
   }
   warnings = c()
-  ## check to make sure loci are of length 1 only 
+  ## check to make sure snps are of length 1 only 
   for(row in 1:nrow(snps_of_interest)){
     if((snps_of_interest$end[row] - snps_of_interest$start[row]) != 1){
-      warnings  = c(warnings, paste0("loci of interest must be of length 1, locus: ", snps_of_interest$name[row], " is length: ",  snps_of_interest$length[row]))
+      warnings  = c(warnings, paste0("snps of interest must be of length 1, locus: ", snps_of_interest$name[row], " is length: ",  snps_of_interest$length[row]))
     }
   }
   
@@ -511,7 +596,7 @@ run_pileup_specific_snps <-function(){
   ref_allele_decomp = set_decompose(ref_bed$target_id, unique(allele_table$target_id))
   
   if(length(ref_allele_decomp$only_in_vectorB) > 0){
-    warnings = c(warnings, paste0("the following loci were missing from the reference location file ", arg$ref_bed, " but are in ", arg$allele_table,
+    warnings = c(warnings, paste0("the following snps were missing from the reference location file ", arg$ref_bed, " but are in ", arg$allele_table,
                                   "\n", paste0(ref_allele_decomp$only_in_vectorB, collapse = ",")
     ) 
     )
@@ -593,7 +678,7 @@ run_pileup_specific_snps <-function(){
   write_tsv(allele_table_out_collapsed, file.path(arg$output_directory,"collapsed_snp_calls.tsv.gz"))
   
   # writing covered by info 
-  write_tsv(snps_of_interest_out, file.path(arg$output_directory,"loci_covered_by_target_samples_info.tsv"))
+  write_tsv(snps_of_interest_out, file.path(arg$output_directory,"snps_covered_by_target_samples_info.tsv"))
   
   if(nrow(allele_table_out_uncallable) > 0){
     write_tsv(allele_table_out_uncallable, file.path(arg$output_directory,"allele_table_out_uncallable.tsv"))
