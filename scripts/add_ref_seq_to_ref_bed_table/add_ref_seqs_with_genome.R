@@ -66,6 +66,41 @@ genWarningsMissCols <- function(tib, cols, fnp){
 }
 
 
+#' Gen warns if ref_bed columns are not the expected types 
+#'
+#' @param ref_bed 
+#'
+#' @returns warnings about types and missingness 
+gen_warns_on_validate_ref_bed_cols <- function(ref_bed){
+  # validate columns
+  rules <- validate::validator(
+    is.character(`#chrom`), 
+    is.integer(start),
+    is.integer(end),
+    is.character(target_id), 
+    is.integer(length), 
+    is.character(strand), 
+    ! is.na(`#chrom`), 
+    ! is.na(start), 
+    ! is.na(end), 
+    ! is.na(target_id), 
+    ! is.na(length), 
+    ! is.na(strand)
+  )
+  fails <- validate::confront(ref_bed, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  warns = c()
+  if (nrow(fails) > 0) {
+    warns = paste0(
+      "Input input_data failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n")
+    )
+  }
+  return(warns)
+}
+
+
 # Parse arguments ------------------------------------------------------
 opts <- list(
   make_option(
@@ -97,60 +132,71 @@ opts <- list(
   )
 )
 
-required_arguments = c("ref_bed", "genome", "out")
-
-
-# parse arguments
-arg <- parse_args(OptionParser(option_list = opts))
-## check for required arguments
-checkOptparseRequiredArgsThrow(arg, required_arguments)
-
-# read in input data and gather warnings about columns and data formatting 
-warnings = c()
-
-# read in the panel reference information 
-ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
-warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand"), arg$ref_bed))
-
-if(file.exists(arg$out) & !arg$overwrite){
-  warnings = c(warnings, "file ", arg$out, " already exist, use --overwrite to over write it") 
-}
-if(length(warnings) > 0){
-  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
-}
-
-# check if multiple target_id loaded 
-ref_bed_name_sum_multi = ref_bed |> 
-  group_by(target_id) |> 
-  count() |> 
-  filter(n > 1)
-
-if(nrow(ref_bed_name_sum_multi) > 0){
-  warnings = c(warnings, paste0("found multi names for target_id in ", arg$ref_bed, " found the following multiple times: ", paste0(ref_bed_name_sum_multi$target_id, collapse = ",")) ) 
-}
-
-if(length(warnings) > 0){
-  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
-}
-
-
-loaded_genome = Biostrings::readDNAStringSet("/tank/data/genomes/plasmodium/genomes/pf/genomes/Pf3D7.fasta")
-names(loaded_genome) = gsub(" .*", "", names(loaded_genome))
-
-ref_bed$ref_seq = ""
-
-for(row in 1:nrow(ref_bed)){
-  if(ref_bed$`#chrom`[row] %in% names(loaded_genome)){
-    ref_seq = Biostrings::subseq(loaded_genome[ref_bed$`#chrom`[row]], ref_bed$start[row] + 1, width = ref_bed$length[row])
-    if('-' == ref_bed$`#chrom`[row]){
-      ref_seq = Biostrings::reverseComplement(ref_seq)
-    }
-    ref_bed$ref_seq[row] = ref_seq
-  } else { 
-    stop(paste0(ref_bed$`#chrom`[row], "not in ", arg$genome, " options: ", paste0(names(loaded_genome),collapse = ",")))
+#' Run adding reference seqs to a file by using the genome described in the reference bed file 
+#'
+#' @returns true if runs all the way through 
+run_add_ref_seqs_with_genome_to_ref_bed <-function(){
+  required_arguments = c("ref_bed", "genome", "out")
+  
+  # parse arguments
+  arg <- parse_args(OptionParser(option_list = opts))
+  ## check for required arguments
+  checkOptparseRequiredArgsThrow(arg, required_arguments)
+  
+  # read in input data and gather warnings about columns and data formatting 
+  warnings = c()
+  
+  # read in the panel reference information 
+  ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
+  
+  warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand"), arg$ref_bed))
+  
+  # check output options 
+  if(file.exists(arg$out) & !arg$overwrite){
+    warnings = c(warnings, "file ", arg$out, " already exist, use --overwrite to over write it") 
   }
+  if(length(warnings) > 0){
+    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+  }
+  warnings = c()
+
+  # check columns types 
+  warnings = c(warnings, gen_warns_on_validate_ref_bed_cols(ref_bed))
+  
+  # check if multiple target_id loaded 
+  ref_bed_name_sum_multi = ref_bed |> 
+    group_by(target_id) |> 
+    count() |> 
+    filter(n > 1)
+  if(nrow(ref_bed_name_sum_multi) > 0){
+    warnings = c(warnings, paste0("found multi names for target_id in ", arg$ref_bed, " found the following multiple times: ", paste0(ref_bed_name_sum_multi$target_id, collapse = ",")) ) 
+  }
+  
+  if(length(warnings) > 0){
+    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+  }
+  
+  # read in gnome 
+  loaded_genome = Biostrings::readDNAStringSet("/tank/data/genomes/plasmodium/genomes/pf/genomes/Pf3D7.fasta")
+  # remove whitespace and beyond in names 
+  names(loaded_genome) = gsub(" .*", "", names(loaded_genome))
+  
+  ref_bed$ref_seq = ""
+  
+  for(row in 1:nrow(ref_bed)){
+    if(ref_bed$`#chrom`[row] %in% names(loaded_genome)){
+      ref_seq = Biostrings::subseq(loaded_genome[ref_bed$`#chrom`[row]], ref_bed$start[row] + 1, width = ref_bed$length[row])
+      if('-' == ref_bed$`#chrom`[row]){
+        ref_seq = Biostrings::reverseComplement(ref_seq)
+      }
+      ref_bed$ref_seq[row] = ref_seq
+    } else { 
+      stop(paste0(ref_bed$`#chrom`[row], "not in ", arg$genome, " options: ", paste0(names(loaded_genome),collapse = ",")))
+    }
+  }
+  
+  write_tsv(ref_bed, arg$out)
+  return (T)
 }
 
-write_tsv(ref_bed, arg$out)
-
-
+run_add_ref_seqs_with_genome_to_ref_bed_status = run_add_ref_seqs_with_genome_to_ref_bed()
