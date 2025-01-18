@@ -483,6 +483,21 @@ run_translate_loci_of_interest <-function(){
   ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
   warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand", "ref_seq"), arg$ref_bed))
   
+  # read in the loci of interest 
+  loci_of_interest = readr::read_tsv(arg$loci_of_interest, col_names = T)
+  warnings = c(warnings, genWarningsMissCols(loci_of_interest, c("#chrom", "start", "end", "name", "length", "strand", "gene", "gene_id", "aa_position"), arg$loci_of_interest))
+  
+  # read in allele table for the microhaplotype data 
+  allele_table = readr::read_tsv(arg$allele_table)
+  warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_id","target_id","read_count","seq"), arg$allele_table))
+  warnings = c(warnings, check_warnings_for_subselecting_allele_table(allele_table, optional_sub_selections, arg$allele_table))
+  
+  if(length(warnings) > 0){
+    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+  }
+  warnings = c()
+  
+  # check to see if selected target ids 
   if(length(optional_sub_selections$select_target_ids) > 0 ){
     missing_sel_tars = setdiff(optional_sub_selections$select_target_ids, ref_bed$target_id)
     if(length(missing_sel_tars) > 0 ){
@@ -493,22 +508,12 @@ run_translate_loci_of_interest <-function(){
       filter(target_id %in% optional_sub_selections$select_target_ids)
   }
   
-  # read in the loci of interest 
-  loci_of_interest = readr::read_tsv(arg$loci_of_interest, col_names = T)
-  warnings = c(warnings, genWarningsMissCols(loci_of_interest, c("#chrom", "start", "end", "name", "length", "strand", "gene", "gene_id", "aa_position"), arg$loci_of_interest))
-  
   ## check to make sure loci are of length 3 only 
   for(row in 1:nrow(loci_of_interest)){
     if(loci_of_interest$length[row] != 3){
       warnings  = c(warnings, paste0("loci of interest must be of length 3, locus: ", loci_of_interest$name[row], " is length: ",  loci_of_interest$length[row]))
     }
   }
-  
-  # read in allele table for the microhaplotype data 
-  allele_table = readr::read_tsv(arg$allele_table)
-  warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_id","target_id","read_count","seq"), arg$allele_table))
-  warnings = c(warnings, check_warnings_for_subselecting_allele_table(allele_table, optional_sub_selections, arg$allele_table))
-  
   
   allele_table = filter_allele_table_for_optional_subselecting(allele_table, optional_sub_selections)
   
