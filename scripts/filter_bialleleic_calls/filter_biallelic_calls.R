@@ -65,6 +65,42 @@ genWarningsMissCols <- function(tib, cols, fnp){
   return (character(0))
 }
 
+#' Read in and check the amino acid calls 
+#'
+#' @param amino_acid_calls_fnp the filename path for the amino acid calls 
+#'
+#' @returns the amino acid calls 
+read_in_amino_acid_calls <-function(amino_acid_calls_fnp){
+  amino_acid_calls = readr::read_tsv(arg$amino_acid_calls)
+  
+  # check input warnings 
+  warnings = genWarningsMissCols(amino_acid_calls, c("gene_id", "aa_position", "ref_aa", "aa"))
+  if(length(warnings) > 0){
+    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+  }
+  
+  rules <- validate::validator(
+    is.character(gene_id), 
+    is.integer(aa_position), 
+    is.character(ref_aa), 
+    is.character(aa), 
+    ! is.na(gene_id), 
+    ! is.na(aa_position), 
+    ! is.na(ref_aa), 
+    ! is.na(aa)
+  )
+  fails <- validate::confront(amino_acid_calls, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input input_data failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+    )
+  }
+  return(amino_acid_calls)
+}
+
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -97,44 +133,52 @@ opts <- list(
   )
 )
 
-required_arguments = c("amino_acid_calls", "out")
+#' run filter biallelic calls
+#'
+#' @returns true if runs all the way through
+run_filter_biallelic_calls <-function(){
+  required_arguments = c("amino_acid_calls", "out")
+  
+  # parse arguments
+  arg <- parse_args(OptionParser(option_list = opts))
+  ## check for required arguments
+  checkOptparseRequiredArgsThrow(arg, required_arguments)
+  
+  # read in the amino acid calls 
+  amino_acid_calls = read_in_amino_acid_calls(arg$amino_acid_calls)
 
-
-
-
-# parse arguments
-arg <- parse_args(OptionParser(option_list = opts))
-## check for required arguments
-checkOptparseRequiredArgsThrow(arg, required_arguments)
-
-amino_acid_calls = readr::read_tsv(arg$amino_acid_calls)
-
-warnings = genWarningsMissCols(amino_acid_calls, c("gene_id", "aa_position", "ref_aa", "aa"))
-
-if(file.exists(arg$out) & !arg$overwrite){
-  warnings = c(warnings, "file ", arg$out, " already exist, use --overwrite to over write it") 
+  # check for writing options 
+  warnings = c()
+  if(file.exists(arg$out) & !arg$overwrite){
+    warnings = c(warnings, "file ", arg$out, " already exist, use --overwrite to over write it") 
+  }
+  if("out_nonbiallelic" %in% names(arg) && file.exists(arg$out_nonbiallelic) && !arg$overwrite){
+    warnings = c(warnings, "file ", arg$out_nonbiallelic, " already exist, use --overwrite to over write it") 
+  }
+  if(length(warnings) > 0){
+    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+  }
+  
+  # filtering 
+  amino_acid_calls = amino_acid_calls |> 
+    group_by(gene_id, aa_position, ref_aa) |> 
+    mutate(allele_calls = n_distinct(aa))
+  
+  amino_acid_calls_biallelic = amino_acid_calls |> 
+    filter(allele_calls <= 2)
+  
+  amino_acid_calls_more_than_biallelic = amino_acid_calls |> 
+    filter(allele_calls > 2)
+  
+  # writing out 
+  write_tsv(amino_acid_calls_biallelic, arg$out)
+  if("out_nonbiallelic"  %in% names(arg)){
+    write_tsv(amino_acid_calls_more_than_biallelic, arg$out_nonbiallelic)
+  }
+  return (TRUE)
 }
 
-if("out_nonbiallelic" %in% names(arg) && file.exists(arg$out_nonbiallelic) && !arg$overwrite){
-  warnings = c(warnings, "file ", arg$out_nonbiallelic, " already exist, use --overwrite to over write it") 
-}
+run_filter_biallelic_calls_status = run_filter_biallelic_calls()
 
-if(length(warnings) > 0){
-  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
-}
 
-amino_acid_calls = amino_acid_calls |> 
-  group_by(gene_id, aa_position, ref_aa) |> 
-  mutate(allele_calls = n_distinct(aa))
-
-amino_acid_calls_biallelic = amino_acid_calls |> 
-  filter(allele_calls <= 2)
-
-amino_acid_calls_more_than_biallelic = amino_acid_calls |> 
-  filter(allele_calls > 2)
-
-write_tsv(amino_acid_calls_biallelic, arg$out)
-if("out_nonbiallelic"  %in% names(arg)){
-  write_tsv(amino_acid_calls_more_than_biallelic, arg$out_nonbiallelic)
-}
 
