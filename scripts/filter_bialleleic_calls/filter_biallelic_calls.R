@@ -71,7 +71,7 @@ genWarningsMissCols <- function(tib, cols, fnp){
 #'
 #' @returns the amino acid calls 
 read_in_amino_acid_calls <-function(amino_acid_calls_fnp){
-  amino_acid_calls = readr::read_tsv(arg$amino_acid_calls)
+  amino_acid_calls = readr::read_tsv(amino_acid_calls_fnp)
   
   # check input warnings 
   warnings = genWarningsMissCols(amino_acid_calls, c("gene_id", "aa_position", "ref_aa", "aa"))
@@ -81,7 +81,7 @@ read_in_amino_acid_calls <-function(amino_acid_calls_fnp){
   
   rules <- validate::validator(
     is.character(gene_id), 
-    is.integer(aa_position), 
+    is.numeric(aa_position), 
     is.character(ref_aa), 
     is.character(aa), 
     ! is.na(gene_id), 
@@ -95,7 +95,7 @@ read_in_amino_acid_calls <-function(amino_acid_calls_fnp){
   if (nrow(fails) > 0) {
     stop(
       "Input input_data failed one or more validation checks: ", 
-      str_c(fails$expression, collapse = "\n"), 
+      str_c(fails$expression, collapse = "\n")
     )
   }
   return(amino_acid_calls)
