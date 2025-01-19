@@ -225,6 +225,10 @@ opts = list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
+# Arguments used for development
+if (interactive()) {
+  arg$allele_table <- "../../data/example2_allele_table.tsv"
+}
 
 # moire_wrapper functions ------------------------------------------------------
 
@@ -445,7 +449,7 @@ run_Moire <- function(moire_object) {
 #'   \item{\code{he_summary}}{Summarizes heterozygosity for each target, with columns:
 #'     \itemize{
 #'       \item \code{target_id}: Identifier for each genetic locus.
-#'       \item \code{he}: Mean posterior heterozygosity.}}
+#'       \item \code{he}: Mean posterior heterozygosity. Will be NA if locus was filtered out by Moire (either because it is uninformative or because all but one of the alleles are very low frequency.}}
 #'   \item{\code{allele_freq_summary}}{Summarizes allele frequencies for each target, with columns:
 #'     \itemize{
 #'       \item \code{target_id}: Identifier for each genetic locus.
@@ -533,7 +537,7 @@ summarize_and_write_results <- function(moire_object, mcmc_results) {
   allele_freq_summary = rbind(allele_freq_summary,
         one_allele_loci)
   
-  # Add removed loci to he_summary. Add 0 by default.
+  # Add removed loci to he_summary
   target_id_count <- moire_object$moire_data %>% 
     select(!sample_id) %>%
     group_by(locus) %>%         # Group by 'locus' and 'allele'
@@ -545,7 +549,7 @@ summarize_and_write_results <- function(moire_object, mcmc_results) {
   
   # Write summaries to files
   readr::write_tsv(coi_summary, "coi_summary.tsv")
-  readr::write_tsv(he_summary, "he_summary.tsv", na = '0')
+  readr::write_tsv(he_summary, "he_summary.tsv")
   readr::write_tsv(allele_freq_summary, "allele_freq_summary.tsv")
   readr::write_tsv(relatedness_summary, "relatedness_summary.tsv")
   readr::write_tsv(effective_coi_summary, "effective_coi_summary.tsv")
