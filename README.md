@@ -28,6 +28,8 @@ PGEcore/
 
 ## How to Contribute 
 
+To develop we use [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow). 
+
 1. Clone the Repository and checkout the `develop` branch:
 ```
   git clone https://github.com/PlasmoGenEpi/PGEcore.git
@@ -42,7 +44,7 @@ PGEcore/
 ```
 
 3. Add your script and documentation:
-* See [here](#script-requirements) for more information on this. 
+* See [here](#how-to-add-a-script) for more information on this. 
 
 4. Commit Your Changes:
 * Write clear and concise commit messages.
@@ -61,12 +63,15 @@ PGEcore/
 
 For an example please see `scripts/FreqEstimationModel_wrapper`.
 
-1. Create a directory under the `scripts/` folder. Make sure to give it an appropriate name. E.g. moire_wrapper.
+1. Create a directory under the `scripts/` folder.
+Make sure to give it an appropriate name. 
+    * If the script is to wrap an existing tool then include `_wrapper` at the end of the name E.g. `moire_wrapper`. 
+    * If it makes the tool name clearer then it can be camel cased (e.g. `FreqEstimationModel_wrapper`). 
+    * If it is a piece of bespoke code then keep to lower case separated by `_` (e.g. `estimate_coi_naive`)
     ```
     mkdir scripts/<my_dir>
     ```
-2. Add the script for running the tool under the directory you just created. 
-   Please follow the guidelines below when writting your code.
+2. Add the script for running the tool under the directory you just created. Keep the names of the script consistent with the directory you created above. Please follow the guidelines below when writting your code.
 3. Copy the template from `docs/README.md` into this directory. Fill in the sections of the README for your tool. 
     ```
     cp docs/template_README.md scripts/<my_dir>/README.md
