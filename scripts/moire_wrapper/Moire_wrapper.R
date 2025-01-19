@@ -225,6 +225,10 @@ opts = list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
+# Arguments used for development
+if (interactive()) {
+  arg$allele_table <- "../../data/example2_allele_table.tsv"
+}
 
 # moire_wrapper functions ------------------------------------------------------
 
@@ -445,7 +449,7 @@ run_Moire <- function(moire_object) {
 #'   \item{\code{he_summary}}{Summarizes heterozygosity for each target, with columns:
 #'     \itemize{
 #'       \item \code{target_id}: Identifier for each genetic locus.
-#'       \item \code{he}: Mean posterior heterozygosity.}}
+#'       \item \code{he}: Mean posterior heterozygosity. Will be NA if locus was filtered out by Moire (either because it is uninformative or because all but one of the alleles are very low frequency.}}
 #'   \item{\code{allele_freq_summary}}{Summarizes allele frequencies for each target, with columns:
 #'     \itemize{
 #'       \item \code{target_id}: Identifier for each genetic locus.
@@ -479,7 +483,8 @@ run_Moire <- function(moire_object) {
 #' @importFrom readr write_tsv
 #' @importFrom moire summarize_coi summarize_he summarize_allele_freqs summarize_relatedness summarize_effective_coi
 #' @export
-summarize_and_write_results <- function(mcmc_results) {
+summarize_and_write_results <- function(moire_object, mcmc_results) {
+  
   # Summarize statistics
   coi_summary <- moire::summarize_coi(mcmc_results) %>%
     rename(specimen_id = sample_id,
@@ -498,6 +503,50 @@ summarize_and_write_results <- function(mcmc_results) {
     rename(specimen_id = sample_id,
            ecoi = post_effective_coi_mean)
 
+  # Moire removes loci with only 1 allele. 
+  # Add removed loci to allele_freq_summary. Add freq 1 by default.
+  missing_target_ids = unique(moire_object$moire_data$locus[
+    !moire_object$moire_data$locus %in% allele_freq_summary$target_id])
+  present_target_ids = unique(moire_object$moire_data$locus[
+    moire_object$moire_data$locus %in% allele_freq_summary$target_id])
+  
+  assert(length(unique(moire_object$moire_data$locus)) == 
+           length(missing_target_ids) + length(present_target_ids))
+  assert(all(sort(present_target_ids) == sort(unique(allele_freq_summary$target_id))))
+  
+  one_allele_loci <- moire_object$moire_data[
+    moire_object$moire_data$locus %in% missing_target_ids,] %>%
+    select(-sample_id) %>%            # Remove the `sample_id` column
+    rename(target_id = locus,
+           seq = allele) %>%
+    distinct() %>%                    # Remove duplicated rows
+    mutate(
+      post_allele_freqs_lower = 1,    # Add new columns with value 1
+      post_allele_freqs_med = 1,
+      post_allele_freqs_upper = 1,
+      freq = 1
+    ) %>%
+    select(
+      post_allele_freqs_lower,        # Reorder to place the new columns at the beginning
+      post_allele_freqs_med,
+      post_allele_freqs_upper,
+      freq,
+      everything()
+    )
+  
+  allele_freq_summary = rbind(allele_freq_summary,
+        one_allele_loci)
+  
+  # Add removed loci to he_summary
+  target_id_count <- moire_object$moire_data %>% 
+    select(!sample_id) %>%
+    group_by(locus) %>%         # Group by 'locus' and 'allele'
+    summarise(sample_total = n(), .groups = 'drop') %>% # Count the occurrences and drop grouping
+    rename(target_id = locus)
+  
+  he_summary <- target_id_count %>%
+    full_join(he_summary, by = "target_id")
+  
   # Write summaries to files
   readr::write_tsv(coi_summary, "coi_summary.tsv")
   readr::write_tsv(he_summary, "he_summary.tsv")
@@ -536,8 +585,9 @@ moire_object <- create_Moire_input(arg$allele_table,
 )
 
 # Run Moire -------------------------------------------------------------------
+
 moire_results <- run_Moire(moire_object)
 
 # Generate summaries
-summarize_and_write_results(moire_results)
+summarize_and_write_results(moire_object, moire_results)
 
