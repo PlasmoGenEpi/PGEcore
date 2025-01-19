@@ -70,15 +70,11 @@ opts <- list(
 )
 arg <- parse_args(OptionParser(option_list = opts))
 # Arguments used for development
-# arg <- list(
-#   allele_table = "../../data/example_allele_table.tsv", 
-#   coi_table = "../../data/example_coi_table.tsv", 
-#   rnull = 0, 
-#   alpha = 0.05, 
-#   threads = 1, 
-#   seed = 1, 
-#   btwn_host_rel_output = "btwn_host_rel.tsv"
-# )
+if (interactive()) {
+  arg$allele_table <- "../../data/example_allele_table.tsv"
+  arg$coi_table <- "../../data/example_coi_table.tsv"
+  arg$btwn_host_rel_output <- "../../btwn_host_rel.tsv"
+}
 
 #' Read allele table into a tibble
 #'
