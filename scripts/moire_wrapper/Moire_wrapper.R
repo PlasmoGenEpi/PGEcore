@@ -221,6 +221,46 @@ opts = list(
     help = str_c(
       "Random number seed",
       "Default set to 1")
+  ),
+  make_option(
+    "--coi_summary",
+    default = "coi_summary.tsv",
+    help = str_c(
+      "TSV file for COI (complexity of infection) summary. ",
+      "This file will contain summarized COI information for each sample."
+    )
+  ),
+  make_option(
+    "--he_summary",
+    default = "he_summary.tsv",
+    help = str_c(
+      "TSV file for He (expected heterozygosity) summary. ",
+      "This file will provide He values calculated across all loci."
+    )
+  ),
+  make_option(
+    "--allele_freq_summary",
+    default = "allele_freq_summary.tsv",
+    help = str_c(
+      "TSV file for allele frequency summary. ",
+      "This file will include allele frequencies for all loci."
+    )
+  ),
+  make_option(
+    "--relatedness_summary",
+    default = "relatedness_summary.tsv",
+    help = str_c(
+      "TSV file for relatedness summary. ",
+      "This file will contain pairwise relatedness estimates for all samples."
+    )
+  ),
+  make_option(
+    "--effective_coi_summary",
+    default = "effective_coi_summary.tsv",
+    help = str_c(
+      "TSV file for effective COI summary. ",
+      "This file will provide the effective complexity of infection estimates."
+    )
   )
 )
 
@@ -228,6 +268,11 @@ arg <- parse_args(OptionParser(option_list = opts))
 # Arguments used for development
 if (interactive()) {
   arg$allele_table <- "../../data/example2_allele_table.tsv"
+  arg$coi_summary <- "coi_summary.tsv"
+  arg$he_summary <- "he_summary.tsv"
+  arg$allele_freq_summary <- "allele_freq_summary.tsv"
+  arg$relatedness_summary <- "relatedness_summary.tsv"
+  arg$effective_coi_summary <- "effective_coi_summary.tsv"
 }
 
 # moire_wrapper functions ------------------------------------------------------
@@ -358,9 +403,8 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
   assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$seed, any.missing = FALSE, null.ok = TRUE, len = 1)  # Allow NULL seed
-  
-  
+  assert_numeric(moire_object$moire_parameters$seed, any.missing = FALSE, null.ok = TRUE, len = 1)
+    
   # Confront the analysis_object with validation rules
   print("Confronting input data with validation rules")
   fails <- validate::confront(moire_object$moire_data, rules, raise = "all") %>%
@@ -433,57 +477,49 @@ run_Moire <- function(moire_object) {
   return(moire_res)
 }
 
-#' Summarize and Write MCMC Results
+#' Summarize and Write MoIre Analysis Results
 #'
-#' This function processes MCMC analysis results to generate summaries of key statistics and writes the results to TSV files.
+#' This function summarizes key metrics from MCMC results of a MoIre analysis and writes the summaries to specified output files. Missing loci are handled and added to the summaries with default values.
 #'
-#' @param mcmc_results A list containing the results of the MCMC analysis, structured for input to the `moire` package's summarization functions.
+#' @param moire_object A list containing MoIre data, including `moire_data` with columns such as `locus`, `allele`, and `sample_id`.
+#' @param mcmc_results The MCMC results from the MoIre analysis used to calculate summaries for COI, He, allele frequencies, relatedness, and effective COI.
+#' @param coi_summary_o A string specifying the output file path for the COI summary TSV file.
+#' @param he_summary_o A string specifying the output file path for the He summary TSV file.
+#' @param allele_freq_summary_o A string specifying the output file path for the allele frequency summary TSV file.
+#' @param relatedness_summary_o A string specifying the output file path for the relatedness summary TSV file.
+#' @param effective_coi_summary_o A string specifying the output file path for the effective COI summary TSV file.
+#'
+#' @return None. The function writes the updated summaries to the specified output files.
 #'
 #' @details
-#' The function computes the following summaries:
-#' \describe{
-#'   \item{\code{coi_summary}}{Summarizes the complexity of infection (COI) for each specimen, with columns:
-#'     \itemize{
-#'       \item \code{specimen_id}: Identifier for each specimen.
-#'       \item \code{coi}: Mean posterior COI.}}
-#'   \item{\code{he_summary}}{Summarizes heterozygosity for each target, with columns:
-#'     \itemize{
-#'       \item \code{target_id}: Identifier for each genetic locus.
-#'       \item \code{he}: Mean posterior heterozygosity. Will be NA if locus was filtered out by Moire (either because it is uninformative or because all but one of the alleles are very low frequency.}}
-#'   \item{\code{allele_freq_summary}}{Summarizes allele frequencies for each target, with columns:
-#'     \itemize{
-#'       \item \code{target_id}: Identifier for each genetic locus.
-#'       \item \code{freq}: Mean posterior allele frequency.}}
-#'   \item{\code{relatedness_summary}}{Summarizes within-host relatedness for each specimen, with columns:
-#'     \itemize{
-#'       \item \code{specimen_id}: Identifier for each specimen.
-#'       \item \code{within_host_rel}: Mean posterior within-host relatedness.}}
-#'   \item{\code{effective_coi_summary}}{Summarizes the effective complexity of infection for each specimen, with columns:
-#'     \itemize{
-#'       \item \code{specimen_id}: Identifier for each specimen.
-#'       \item \code{ecoi}: Mean posterior effective COI.}}
-#' }
-#'
-#' The function writes the summaries to the following files:
-#' \itemize{
-#'   \item \code{"coi_summary.tsv"}
-#'   \item \code{"he_summary.tsv"}
-#'   \item \code{"allele_freq_summary.tsv"}
-#'   \item \code{"relatedness_summary.tsv"}
-#'   \item \code{"effective_coi_summary.tsv"}
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Summarizes COI (complexity of infection), He (expected heterozygosity), allele frequencies, relatedness, and effective COI from the MCMC results using the appropriate MoIre functions.
+#'   \item Identifies loci missing from the allele frequency summary and adds them back with default frequency values.
+#'   \item Updates the He summary with the total sample count for each target.
+#'   \item Ensures consistency between MoIre data loci and the summaries, validating the presence of all loci.
+#'   \item Writes the finalized summaries to the specified file paths in TSV format.
 #' }
 #'
 #' @examples
-#' \dontrun{
 #' # Example usage:
-#' summarize_and_write_results(mcmc_results)
-#' }
+#' summarize_and_write_results(
+#'   moire_object = moire_object,
+#'   mcmc_results = mcmc_results,
+#'   coi_summary_o = "coi_summary.tsv",
+#'   he_summary_o = "he_summary.tsv",
+#'   allele_freq_summary_o = "allele_freq_summary.tsv",
+#'   relatedness_summary_o = "relatedness_summary.tsv",
+#'   effective_coi_summary_o = "effective_coi_summary.tsv"
+#' )
 #'
-#' @importFrom dplyr rename
-#' @importFrom readr write_tsv
+#' @import dplyr
+#' @import tidyr
+#' @import readr
 #' @importFrom moire summarize_coi summarize_he summarize_allele_freqs summarize_relatedness summarize_effective_coi
 #' @export
-summarize_and_write_results <- function(moire_object, mcmc_results) {
+
+summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_o, he_summary_o, allele_freq_summary_o, relatedness_summary_o, effective_coi_summary_o) {
   
   # Summarize statistics
   coi_summary <- moire::summarize_coi(mcmc_results) %>%
@@ -548,11 +584,11 @@ summarize_and_write_results <- function(moire_object, mcmc_results) {
     full_join(he_summary, by = "target_id")
   
   # Write summaries to files
-  readr::write_tsv(coi_summary, "coi_summary.tsv")
-  readr::write_tsv(he_summary, "he_summary.tsv")
-  readr::write_tsv(allele_freq_summary, "allele_freq_summary.tsv")
-  readr::write_tsv(relatedness_summary, "relatedness_summary.tsv")
-  readr::write_tsv(effective_coi_summary, "effective_coi_summary.tsv")
+  readr::write_tsv(coi_summary, coi_summary_o)
+  readr::write_tsv(he_summary, he_summary_o)
+  readr::write_tsv(allele_freq_summary, allele_freq_summary_o)
+  readr::write_tsv(relatedness_summary, relatedness_summary_o)
+  readr::write_tsv(effective_coi_summary, effective_coi_summary_o)
 }
 
 # Main-----------------------------------------------------------------
@@ -589,5 +625,5 @@ moire_object <- create_Moire_input(arg$allele_table,
 moire_results <- run_Moire(moire_object)
 
 # Generate summaries
-summarize_and_write_results(moire_object, moire_results)
+summarize_and_write_results(moire_object, moire_results, arg$coi_summary, arg$he_summary, arg$allele_freq_summary, arg$relatedness_summary, arg$effective_coi_summary)
 
