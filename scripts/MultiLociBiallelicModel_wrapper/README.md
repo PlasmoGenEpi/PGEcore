@@ -22,5 +22,5 @@ multiplicity of infection (MOI/COI) from SNP data. The functions here provide fu
 The script can be run using the following command:
 
 ```bash
-Rscript MultiLociBiallelicModel_wrapper.R --aa_calls <aa_calls.tsv>
+Rscript MultiLociBiallelicModel_wrapper.R --aa_calls <aa_calls.tsv> --loci_group_table <loci_group_table.tsv>
 ```
