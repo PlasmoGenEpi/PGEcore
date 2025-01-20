@@ -198,9 +198,6 @@ opts <- list(
     "--output", 
     help = "final stave output path"
   ),
-
-
-
   make_option(
     "--gap", 
     help = "how many iterations of no improvement before stopping"
