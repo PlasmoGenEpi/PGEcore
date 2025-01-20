@@ -5,7 +5,7 @@ library(optparse)
 library(stringr)
 library(tibble)
 
-alfy_create_SNP_slice_input <- function(input_path, output_ref, output_alt) {
+create_SNP_slice_input <- function(input_path, output_ref, output_alt) {
     # modified from a chatGPT conversion of a python script I wrote
     # Read the input file
     data <- read_tsv(input_path, show_col_types = FALSE)
@@ -46,8 +46,9 @@ alfy_create_SNP_slice_input <- function(input_path, output_ref, output_alt) {
     write.table(alt_counts, output_alt, sep = "\t", row.names = FALSE, quote = FALSE)
 }
 
-alfy_create_ref_alt <-function(input_path, amino_acids) {
-    # Read the input file
+create_ref_alt <-function(input_path, amino_acids) {
+    # Reads the input file and converts it to a list of all of the reference and
+    # alternate alleles that are present.
     data <- read_tsv(input_path, show_col_types = FALSE)
     ref_alt <- data %>%
       mutate(gene_pos = paste(gene_id, aa_position, sep = "_")) %>%
@@ -58,7 +59,7 @@ alfy_create_ref_alt <-function(input_path, amino_acids) {
 
 
 run_SNPslice_neg_binomial <- function(input_data_path1, input_data_path2, output_dir, gap, nmcmc = 10000, alpha = 2, rep = 1, script_path = "my_snpslicemain.R") {
-    #borrowed from Kathryn
+    #borrowed from Kathryn Murie
     model <- 3
     # tmp_file_path <- file.path(output_dir, "tmp_formatted_output.txt")
     # # If model is not 0 then need read counts, so need to alter this function to take a second input path
@@ -205,24 +206,25 @@ opts <- list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
-print('args are')
-print(arg)
-assignments <- "alt_alleles.tsv"
-
-alfy_create_ref_alt(arg$aa_calls, assignments)
-output_ref='ref_counts_R_v2.tsv'
-output_alt='alt_counts_R_v2.tsv'
-alfy_create_SNP_slice_input(arg$aa_calls, output_ref, output_alt)
-output_list=run_SNPslice_neg_binomial(output_alt, output_ref, getwd(), gap=arg$gap)
-freq=output_list[1]
+assignments <- 'alt_alleles.tsv'
+output_ref <- 'ref_counts_R.tsv'
+output_alt <- 'alt_counts_R.tsv'
 freq_estimates <- 'snp-slice_freqs.tsv'
-
-write.table(freq, freq_estimates, sep = "\t", row.names = FALSE, quote = FALSE)
-
-# File paths (update these accordingly)
 output_file <- arg$output
 
-# Read genotype mappings
+#creates a simplified table of the reference and alternative alleles associated
+#with each gene position
+create_ref_alt(arg$aa_calls, assignments)
+
+#reformats standardized input data to SNP-Slice format
+create_SNP_slice_input(arg$aa_calls, output_ref, output_alt)
+
+#runs SNP-Slice
+output_list=run_SNPslice_neg_binomial(output_alt, output_ref, getwd(), gap=arg$gap)
+freq=output_list[1]
+write.table(freq, freq_estimates, sep = "\t", row.names = FALSE, quote = FALSE)
+
+#loads ref_alt mappings into a dataframe
 genotype_mappings <- get_alternates(assignments, output_alt)
 # Execute the function
 genotypes_from_freqs(freq_estimates, output_file, genotype_mappings)

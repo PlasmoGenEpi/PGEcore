@@ -32,12 +32,24 @@ This package currently depends on R and the following R packages:
  - tibble
 
 ## Functions
- - alfy_create_ref_alt: converts standardized input tables into separate
- alternate and reference counts.
- - alfy_create_SNP_slice_input: converts amino acid tables into SNP-Slice input
- - run_SNPslice_neg_binomial
- - infer_SNPslice_freqs
- - get_alternates
- - genotype_to_stave
- - lookup_genotype
- - genotypes_from_freqs
+ - create_SNP_slice_input: converts amino acid tables into SNP-Slice input
+ - create_ref_alt: converts standardized input tables into one table per
+ amino acid position, with a single reference allele and a single alternate
+ allele associated with each position.
+ - run_SNPslice_neg_binomial: A function created by Kathryn Murie, borrowed here
+ to run the negative binomial model of SNP-Slice.
+ - infer_SNPslice_freqs: A second function created by Kathryn Murie to estimate
+ the frequencies of genotypes by counting the number of samples that contain
+ each genotype divided by the total number of genotype observations in the
+ population. Modified slightly to output the number of genotype observations in
+ the population.
+ - get_alternates: Reads the table created by create_ref_alt into an R data
+ frame
+ - genotype_to_stave: takes genotypes formatted as 1's and 0's, reference and
+ alternate alleles, and original locus amino acid names, and reformats genotypes
+ into STAVE format
+ - lookup_genotype - looks up whether each locus within the genotype should be
+ listed as reference or alternate, as well as the amino acid associated with
+ each
+ - genotypes_from_freqs - a wrapper function that creates final STAVE formatted
+ output datasets
