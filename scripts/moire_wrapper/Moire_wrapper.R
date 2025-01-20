@@ -585,7 +585,7 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
   
   # Write summaries to files
   readr::write_tsv(coi_summary, coi_summary_o)
-  readr::write_tsv(he_summary, he_summary_o)
+  readr::write_tsv(he_summary, he_summary_o, na = "0")
   readr::write_tsv(allele_freq_summary, allele_freq_summary_o)
   readr::write_tsv(relatedness_summary, relatedness_summary_o)
   readr::write_tsv(effective_coi_summary, effective_coi_summary_o)
