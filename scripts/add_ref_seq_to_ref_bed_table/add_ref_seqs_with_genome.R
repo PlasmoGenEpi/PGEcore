@@ -177,7 +177,7 @@ run_add_ref_seqs_with_genome_to_ref_bed <-function(){
   }
   
   # read in gnome 
-  loaded_genome = Biostrings::readDNAStringSet("/tank/data/genomes/plasmodium/genomes/pf/genomes/Pf3D7.fasta")
+  loaded_genome = Biostrings::readDNAStringSet(arg$genome)
   # remove whitespace and beyond in names 
   names(loaded_genome) = gsub(" .*", "", names(loaded_genome))
   
