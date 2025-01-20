@@ -1,4 +1,4 @@
-# Insert tool/ code title
+# Pileup SNPs from microhaplotype data
 
 Contents: 
 * [Tool Information](#tool-information)
