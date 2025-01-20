@@ -39,8 +39,8 @@ Options:
 
 
 ```bash
-./filter_biallelic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out biallelic_example2_amino_acid_calls.tsv.tsv.gz --overwrite
+./filter_biallelic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out biallelic_example2_amino_acid_calls.tsv.gz --overwrite
 
-./filter_biallelic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out biallelic_example2_amino_acid_calls.tsv.tsv.gz --overwrite --out_nonbiallelic nonbiallelic_example2_amino_acid_calls.tsv.tsv.gz
+./filter_biallelic_calls.R --amino_acid_calls ../../data/example2_amino_acid_calls.tsv --out biallelic_example2_amino_acid_calls.tsv.gz --overwrite --out_nonbiallelic nonbiallelic_example2_amino_acid_calls.tsv.gz
 ```
 
