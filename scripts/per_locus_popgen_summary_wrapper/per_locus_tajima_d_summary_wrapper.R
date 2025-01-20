@@ -10,10 +10,25 @@ opts = list(
       "TSV containing allele present/absent per specimen, with the
        columns: specimen_id, target_id, seq"
     )
+  ), 
+  make_option(
+    "--out",
+    default = "per_locus_popgen_summary.tsv",
+    help = str_c(
+      "the output path of the results"
+    )
+  ), 
+  make_option(
+    "--msa_method",
+    default = "Muscle",
+    help = str_c(
+      "the default is %default, options are 'ClustalW', 'ClustalOmega', 'Muscle'"
+    )
   )
 )
 
-arg <- parse_args(OptionParser(option_list = opts))
+
+
 
 # locus counting functions -----------------------------------------------------
 
@@ -85,6 +100,7 @@ create_locus_data <- function(input_path) {
 #' the number of segregating sites, and Tajima's D, for a set of allele sequences.
 #'
 #' @param allele_data A character vector containing allele sequences.
+#' @param msa_method the method used to create the multiple sequence alignment 
 #' @return A list containing:
 #' \describe{
 #'   \item{Nucleotide_Diversity}{Nucleotide diversity (π).}
@@ -101,14 +117,18 @@ create_locus_data <- function(input_path) {
 #' @importFrom pegas nuc.div seg.sites tajima.test
 #' @export
 
-calculate_popgen_stats <- function(allele_data) {
-  alignment <- msa::msa(allele_data, method = "ClustalW", type = "dna")
+calculate_popgen_stats <- function(allele_data, msa_method = "Muscle") {
+  alignment <- msa::msa(allele_data, method = msa_method, type = "dna")
   aligned_sequences <- msa::msaConvert(alignment, type = "ape::DNAbin")
   
   nucleotide_diversity <- nuc.div(aligned_sequences)
   segregating_sites <- length(seg.sites(aligned_sequences))
-  tajima_test <- tajima.test(aligned_sequences)
-  
+  if(segregating_sites == 0){
+    tajima_test = list(D = 0)
+  } else {
+    tajima_test <- tajima.test(aligned_sequences)
+  }
+ 
   # Return the results as a list
   return(list(
     Nucleotide_Diversity = nucleotide_diversity,
@@ -124,7 +144,8 @@ calculate_popgen_stats <- function(allele_data) {
 #' (nucleotide diversity, number of segregating sites, and Tajima's D) for each group.
 #'
 #' @param locus_data A data frame containing columns `sample_id`, `target_id`, and `allele`.
-#' @return Writes the results as a tab-separated file named `per_locus_popgen_summary.tsv`.
+#' @param msa_method the method used to create the multiple sequence alignment 
+#' @return a table of results.
 #' Each row corresponds to a `target_id`, and columns include:
 #' \describe{
 #'   \item{target_id}{The target identifier.}
@@ -142,21 +163,29 @@ calculate_popgen_stats <- function(allele_data) {
 #' @importFrom tidyr unnest_wider
 #' @importFrom readr write_tsv
 #' @export
-calculate_stats_by_target_id <- function(locus_data) {
+calculate_stats_by_target_id <- function(locus_data, msa_method = "Muscle") {
   results <- locus_data %>%
     dplyr::group_by(target_id) %>%
     dplyr::summarise(
-      stats = list(calculate_popgen_stats(allele))
+      stats = list(calculate_popgen_stats(allele, msa_method))
     ) %>%
     tidyr::unnest_wider(stats)
-  
-  readr::write_tsv(results, "per_locus_popgen_summary.tsv")
+  return(results)
 }
 
 # Main function ------------------------------------------------------
 # Load allele table/locus data
 #arg$allele_table = "/Users/jar4142/Desktop/PGEcore/data/example2_allele_table.tsv"
+arg <- parse_args(OptionParser(option_list = opts))
+
+if(!(arg$msa_method %in% c('ClustalW', 'ClustalOmega', 'Muscle'))){
+  stop(paste0("--msa_method must be 'ClustalW', 'ClustalOmega', or 'Muscle', not ", arg$msa_method))
+}
+
 locus_data = create_locus_data(arg$allele_table)
 
-# Calculate popgens
-calculate_stats_by_target_id(locus_data)
+# Calculate nuc gens
+res = calculate_stats_by_target_id(locus_data)
+colnames(res) = tolower(colnames(res))
+readr::write_tsv(res, arg$out)
+
