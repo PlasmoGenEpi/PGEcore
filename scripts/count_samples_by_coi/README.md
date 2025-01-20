@@ -10,7 +10,7 @@ This tool provides a naive summary of the distribution of COI calls across sampl
 
 ## Script Usage 
 ```
-Rscript naive_coi_distribution_wrapper.R \
+Rscript count_samples_by_coi.R \
   --coi_calls data/example_coi_table.tsv \
   --output coi_distribution.tsv
 ```
