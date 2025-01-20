@@ -13,5 +13,5 @@ This tool provides a simple count of alleles in the dataset. By locus, it counts
 
 ## Script Usage 
 ```
-Rscript allele_per_locus_summary_wrapper.R --allele_table <allele_table.tsv>
+Rscript allele_per_locus_summary.R --allele_table <allele_table.tsv>
 ```
