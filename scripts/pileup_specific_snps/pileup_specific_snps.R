@@ -14,7 +14,7 @@ options(dplyr.summarise.inform = FALSE)
 #' @param arg the parsed arguments from arg parse
 #' @param required_args the required arguments
 #'
-#' @returns returns void if all required arguments
+#' @return returns void if all required arguments
 checkOptparseRequiredArgsThrow <- function(arg, required_args){
   missing <- setdiff(required_args, names(arg))
   if(length(missing) > 0){
@@ -28,7 +28,7 @@ checkOptparseRequiredArgsThrow <- function(arg, required_args){
 #' @param vectorA the first vector
 #' @param vectorB the second vector
 #'
-#' @returns a list with 4 vectors, "only_in_vectorA" unique to vectorA, "only_in_vectorB" unique to vectorB, "shared_samples" shared between both vectorA and vectorB, "all" all values by combinng vectorA and vectorB 
+#' @return a list with 4 vectors, "only_in_vectorA" unique to vectorA, "only_in_vectorB" unique to vectorB, "shared_samples" shared between both vectorA and vectorB, "all" all values by combinng vectorA and vectorB 
 set_decompose <- function(vectorA, vectorB){
   ret = list()
   # Find unique and shared samples
@@ -44,7 +44,7 @@ set_decompose <- function(vectorA, vectorB){
 #' @param tib the tibble to check
 #' @param columns the columns to check for
 #'
-#' @returns returns any missing columns 
+#' @return returns any missing columns 
 returnMissingColumns <-function(tib, columns){
   setdiff(columns, colnames(tib))
 }
@@ -56,7 +56,7 @@ returnMissingColumns <-function(tib, columns){
 #' @param cols the columns to check for
 #' @param fnp the file name path from which the tibble was read from
 #'
-#' @returns adds a warning message about any missing columns 
+#' @return adds a warning message about any missing columns 
 genWarningsMissCols <- function(tib, cols, fnp){
   col_miss = returnMissingColumns(tib, cols)
   if(length(col_miss)> 0){
@@ -70,7 +70,7 @@ genWarningsMissCols <- function(tib, cols, fnp){
 #' @param aligned_seq the aligned seq with gaps
 #' @param pos the "real" position
 #'
-#' @returns the align position in the aligned_seq that corresponds to the real position
+#' @return the align position in the aligned_seq that corresponds to the real position
 getAlnPosPerRealPos <- function(aligned_seq, pos){
   gapless_pos <- which(strsplit(as.character(aligned_seq), NULL)[[1]] != "-")
   gapless_pos[pos]
@@ -81,7 +81,7 @@ getAlnPosPerRealPos <- function(aligned_seq, pos){
 #'
 #' @param pw_overlapAlign the overlap alignment
 #'
-#' @returns the aligned pattern with end gaps
+#' @return the aligned pattern with end gaps
 getAlignedPatternFromOverlapAlign <-function(pw_overlapAlign){
   overlapAlign_alignedPattern =  alignedPattern(pw_overlapAlign)
   
@@ -107,7 +107,7 @@ getAlignedPatternFromOverlapAlign <-function(pw_overlapAlign){
 #'
 #' @param pw_overlapAlign the overlap alignment 
 #'
-#' @returns the aligned subject with end gaps 
+#' @return the aligned subject with end gaps 
 getAlignedSubjectFromOverlapAlign <-function(pw_overlapAlign){
   overlapAlign_alignedSubject =  alignedSubject(pw_overlapAlign)
   
@@ -134,7 +134,7 @@ getAlignedSubjectFromOverlapAlign <-function(pw_overlapAlign){
 #' @param output_directory the output directory 
 #' @param overwrite_dir whether or not to overwrite it
 #'
-#' @returns none
+#' @return none
 ensure_output_directory <- function(output_directory, overwrite_dir = F){
   # create output directory and decided to overwrite or not if it exists 
   if(dir.exists(output_directory) & overwrite_dir){
@@ -150,7 +150,7 @@ ensure_output_directory <- function(output_directory, overwrite_dir = F){
 #'
 #' @param parsed_args 
 #'
-#' @returns a list with two named vectors, select_target_ids and select_specimen_ids
+#' @return a list with two named vectors, select_target_ids and select_specimen_ids
 check_subselecting_args <- function(parsed_args){
   select_target_ids = c()
   if("select_target_ids" %in% names(parsed_args)){
@@ -179,7 +179,7 @@ check_subselecting_args <- function(parsed_args){
 #' @param allele_data the allele data 
 #' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_ids and select_specimen_ids
 #'
-#' @returns a filtered allele_data table 
+#' @return a filtered allele_data table 
 filter_allele_table_for_optional_subselecting <- function (allele_data, opt_sub_sels){
   if(length(opt_sub_sels$select_specimen_ids) > 0 ){
     allele_data = allele_data |> 
@@ -200,7 +200,7 @@ filter_allele_table_for_optional_subselecting <- function (allele_data, opt_sub_
 #' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_ids and select_specimen_ids 
 #' @param allele_table_fnp the table the allele data was read from 
 #'
-#' @returns warnings about missing sub-selections
+#' @return warnings about missing sub-selections
 check_warnings_for_subselecting_allele_table <- function(allele_data, opt_sub_sels, allele_table_fnp){
   warns = c()
   if(length(opt_sub_sels$select_specimen_ids) > 0 ){
@@ -227,7 +227,7 @@ check_warnings_for_subselecting_allele_table <- function(allele_data, opt_sub_se
 #' @param ref_bed_tab the ref bed locations 
 #' @param snps_of_interest_tab the snps to intersect with 
 #'
-#' @returns the ref_bed table with a new column intersected_snps_of_interest with the row numbers of the covered snps of interest 
+#' @return the ref_bed table with a new column intersected_snps_of_interest with the row numbers of the covered snps of interest 
 add_intersected_snps_of_interest_to_ref_bed <-function(ref_bed_tab, snps_of_interest_tab){
   # find which snps and targets intersect
   ref_bed_tab$intersected_snps_of_interest = ""
@@ -253,7 +253,7 @@ add_intersected_snps_of_interest_to_ref_bed <-function(ref_bed_tab, snps_of_inte
 #' @param snps_of_interest_tab the snps to intersect with 
 #' @param ref_bed_tab the ref bed locations 
 #'
-#' @returns snps_of_interest with a new column, covered_by_target, which has which locations cover this snps 
+#' @return snps_of_interest with a new column, covered_by_target, which has which locations cover this snps 
 add_covered_by_target_to_snps_of_interest <-function(snps_of_interest_tab, ref_bed_tab){
   # find which snps and targets intersect
   snps_of_interest_tab$covered_by_target = ""
@@ -285,7 +285,7 @@ add_covered_by_target_to_snps_of_interest <-function(snps_of_interest_tab, ref_b
 #' @param ref_bed_by_loci_lookup the a list with a key for each microhaplotype location for the target_id 
 #' @param snps_of_interest_tab the table of interested snps to translate 
 #'
-#' @returns a table with the snps of interest for the covering microhaplotypes 
+#' @return a table with the snps of interest for the covering microhaplotypes 
 extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_intersected_with_snps_of_interest, ref_bed_by_loci_lookup, snps_of_interest_tab){
   # create substitution matrix 
   mat <- pwalign::nucleotideSubstitutionMatrix(match = 2, mismatch = -2, baseOnly = TRUE)
@@ -354,7 +354,7 @@ extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_inte
 #' @param allele_table_to_collpase the allele_data to collapse for the SNPS calls 
 #' @param collapse_calls_by_summing whether to do the collapse by summing over overlapping microhaplotypes, default is to take the one with the highest read counts 
 #'
-#' @returns the collapsed table 
+#' @return the collapsed table 
 #' 
 collapse_allele_table <- function(allele_table_to_collpase, collapse_calls_by_summing = F){
   if(collapse_calls_by_summing){
@@ -456,7 +456,7 @@ opts <- list(
 #' @param snps_of_interest the snps of interest table
 #' @param allele_table the allele data table 
 #'
-#' @returns the warnings about the input 
+#' @return the warnings about the input 
 validate_columns_types <-function(ref_bed, snps_of_interest, allele_table){
   warns = c()
   # validate columns ref_bed
@@ -537,7 +537,7 @@ validate_columns_types <-function(ref_bed, snps_of_interest, allele_table){
 
 #' run a pileup count of specific snps that are covered by microhaplotypes
 #'
-#' @returns true if runs all the way through
+#' @return true if runs all the way through
 run_pileup_specific_snps <-function(){
   required_arguments = c("allele_table", "ref_bed", "snps_of_interest", "output_directory")
   # parse arguments
