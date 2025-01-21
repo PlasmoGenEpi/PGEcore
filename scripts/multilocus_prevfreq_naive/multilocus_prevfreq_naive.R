@@ -8,7 +8,7 @@ library(validate)
 # may not always be backwards-compatible)
 if (!requireNamespace("variantstring", quietly = TRUE) ||
     packageVersion("variantstring") != "1.7.0") {
-  devtools::install_github("mrc-ide/variantstring@1.7.0")
+  remotes::install_github("mrc-ide/variantstring@1.7.0")
 }
 library(variantstring) 
 
