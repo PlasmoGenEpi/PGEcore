@@ -5,11 +5,16 @@ library(dcifer)
 # These will be referenced without the `package::` construct, and thus 
 # are loaded second to avoid masking
 library(doParallel)
+library(dplyr)
 library(magrittr)
 library(optparse)
 library(parallel)
 library(parallelly)
-library(tidyverse)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
