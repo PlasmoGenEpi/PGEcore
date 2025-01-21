@@ -24,10 +24,12 @@
 # ------------------------------------------------------------
 
 
-suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(readr))
+suppressPackageStartupMessages(library(stringr))
 library(optparse)
-# The moi_mle_idm.R script requires the tidyverse, openxlsx, and Rmpfr 
-# packages
+library(validate)
+# The moi_mle_idm.R script requires the openxlsx and Rmpfr packages
 library(openxlsx)
 library(Rmpfr)
 

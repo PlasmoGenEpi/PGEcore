@@ -1,6 +1,7 @@
-
-library(tidyverse)
+library(dplyr)
 library(optparse)
+library(readr)
+library(stringr)
 library(validate)
 
 # install a specific version of variantstring package (this is in development so
