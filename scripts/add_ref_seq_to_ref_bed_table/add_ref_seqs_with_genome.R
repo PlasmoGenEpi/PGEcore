@@ -186,7 +186,7 @@ run_add_ref_seqs_with_genome_to_ref_bed <-function(){
   for(row in 1:nrow(ref_bed)){
     if(ref_bed$`#chrom`[row] %in% names(loaded_genome)){
       ref_seq = Biostrings::subseq(loaded_genome[ref_bed$`#chrom`[row]], ref_bed$start[row] + 1, width = ref_bed$length[row])
-      if('-' == ref_bed$`#chrom`[row]){
+      if('-' == ref_bed$strand[row]){
         ref_seq = Biostrings::reverseComplement(ref_seq)
       }
       ref_bed$ref_seq[row] = ref_seq
