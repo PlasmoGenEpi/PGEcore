@@ -8,7 +8,7 @@ Contents:
 
 Requires: `mrc-ide/variantstring@develop`
 
-This tool provides a converter from multi-locus allele frequency data to single-locus allele frequency data. The input data is a table with columns: group_id, variant, freq, total. Variant column is in STAVE format. 
+This tool provides a converter from multi-locus allele frequency data to single-locus allele frequency data. The input data is a table with columns: group_id, variant, freq. Variant column is in STAVE format. 
 
 The output is a table with columns: group_id, gene, pos, aa, freq.
 

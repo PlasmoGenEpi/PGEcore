@@ -1,4 +1,3 @@
-remotes::install_github("nickjhathaway/variantstring@develop")
 library(variantstring)
 library(rlang)
 library(optparse)
