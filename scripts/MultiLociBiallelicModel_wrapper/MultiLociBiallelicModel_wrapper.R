@@ -4,6 +4,12 @@
 # first, and the wrapper script second.
 
 
+library(dplyr)
+library(optparse)
+library(purrr)
+library(stringr)
+
+
 ########################################################################
 # Beginning of code copied from SNPModel.R
 ########################################################################
@@ -781,10 +787,6 @@ samplwiseMOI <- function(X, est, M=10){
 ########################################################################
 # Beginning of wrapper script
 ########################################################################
-
-library(optparse)
-library(stringr)
-library(dplyr)
 
 # Parse arguments ------------------------------------------------------
 opts = list(
