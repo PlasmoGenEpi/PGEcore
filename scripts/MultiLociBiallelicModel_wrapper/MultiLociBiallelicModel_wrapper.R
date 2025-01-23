@@ -4,6 +4,12 @@
 # first, and the wrapper script second.
 
 
+library(dplyr)
+library(optparse)
+library(purrr)
+library(stringr)
+
+
 ########################################################################
 # Beginning of code copied from SNPModel.R
 ########################################################################
@@ -782,10 +788,6 @@ samplwiseMOI <- function(X, est, M=10){
 # Beginning of wrapper script
 ########################################################################
 
-library(optparse)
-library(stringr)
-library(dplyr)
-
 # Parse arguments ------------------------------------------------------
 opts = list(
   make_option(
@@ -1007,6 +1009,60 @@ run_MultiLociBiallelicModel <- function(inputToMLE) {
   )
 }
 
+#' Transform Variant String to Stave Format
+#'
+#' The `make_stave` function takes a variant string as input and reformats it
+#' by grouping mutations by their associated gene regions. The function extracts
+#' the gene, position, and mutation data, consolidates the information, and outputs
+#' a formatted string with positions and mutations combined per gene region.
+#'
+#' @param variant A character string containing variant data, where each mutation is
+#' separated by a semicolon (`;`). Each mutation must be in the format:
+#' `<gene>:<position>:<mutation>`.
+#'
+#' @return A character string in the stave format, where mutations for each gene
+#' region are grouped together. The output format is:
+#' `<gene>:<positions>:<mutations>;...` (e.g., `pfdhfr_1_150:51_59_108:NCS`).
+#'
+#' @details
+#' The function performs the following steps:
+#' 1. Splits the input string into individual mutations using `str_split`.
+#' 2. Extracts the gene, position, and mutation using a regular expression.
+#' 3. Groups the extracted data by gene and consolidates the positions and mutations.
+#' 4. Constructs the output string by concatenating the grouped results.
+#'
+#' @examples
+#' # Example variant string
+#' variant <- "pfdhfr_1_150:51:N;pfdhfr_1_150:59:C;pfdhfr_1_150:108:S;pfdhps_400_550:437:A;pfdhps_400_550:540:K"
+#' make_stave(variant)
+#' # Returns: "pfdhfr_1_150:51_59_108:NCS;pfdhps_400_550:437_540:AK"
+#'
+#' @importFrom stringr str_split str_match str_c
+#' @importFrom purrr map map_dfr
+#' @importFrom dplyr group_by summarize mutate
+#' @export
+make_stave <- function(variant) {
+  # Split the variant into parts by ";"
+  parts <- str_split(variant, ";")[[1]]
+  
+  # Extract gene, positions, and mutations
+  parsed <- parts %>%
+    map(~str_match(.x, "(.*):(\\d+):(\\w+)")) %>% # Regex to extract gene, position, and mutation
+    map_dfr(~tibble(gene = .x[2], position = .x[3], mutation = .x[4]))
+  
+  # Group by gene and format the result
+  parsed %>%
+    group_by(gene) %>%
+    summarize(
+      positions = str_c(position, collapse = "_"),
+      mutations = str_c(mutation, collapse = ""),
+      .groups = "drop"
+    ) %>%
+    mutate(formatted = str_c(gene, ":", positions, ":", mutations)) %>%
+    pull(formatted) %>%
+    str_c(collapse = ";")
+}
+
 #' Summarise Multi-Loci Biallelic Model Results
 #'
 #' This function processes and summarises results from a Multi-Loci Biallelic Model (MLBM) analysis.
@@ -1061,7 +1117,7 @@ summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
       sequence_df[[col]][i] = matching_rows$staves[matching_rows$state == sequence_df[[col]][i]]
     }
   }
-  
+
   # Convert the modified data frame back to a matrix if needed
   sequence_matrix_updated <- as.matrix(sequence_df)
   
@@ -1070,7 +1126,8 @@ summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
   # Add group_id column and rename columns
   MLBM_res$plsf_table <- MLBM_res$plsf_table %>%
     mutate(group_id = group_name, .before = 1) %>% # Add group_id at the beginning
-    rename(variant = sequence, freq = MLBM_frequency) # Rename columns
+    rename(variant = sequence, freq = MLBM_frequency)  %>%
+    mutate(variant = map_chr(variant, make_stave)) 
 }
 
 # Main -----------------------------------------------------------------
