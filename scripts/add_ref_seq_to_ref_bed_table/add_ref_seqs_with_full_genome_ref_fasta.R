@@ -110,9 +110,9 @@ opts <- list(
     )
   ), 
   make_option(
-    "--genome", 
+    "--genome_fasta", 
     help = str_c(
-      "a genome file to extract the ref_seq"
+      "a genome fasta file to extract the ref_seq"
     )
   ), 
   make_option(
@@ -136,7 +136,7 @@ opts <- list(
 #'
 #' @returns true if runs all the way through 
 run_add_ref_seqs_with_genome_to_ref_bed <-function(){
-  required_arguments = c("ref_bed", "genome", "out")
+  required_arguments = c("ref_bed", "genome_fasta", "out")
   
   # parse arguments
   arg <- parse_args(OptionParser(option_list = opts))
@@ -177,7 +177,7 @@ run_add_ref_seqs_with_genome_to_ref_bed <-function(){
   }
   
   # read in gnome 
-  loaded_genome = Biostrings::readDNAStringSet(arg$genome)
+  loaded_genome = Biostrings::readDNAStringSet(arg$genome_fasta)
   # remove whitespace and beyond in names 
   names(loaded_genome) = gsub(" .*", "", names(loaded_genome))
   
@@ -191,7 +191,7 @@ run_add_ref_seqs_with_genome_to_ref_bed <-function(){
       }
       ref_bed$ref_seq[row] = ref_seq
     } else { 
-      stop(paste0(ref_bed$`#chrom`[row], "not in ", arg$genome, " options: ", paste0(names(loaded_genome),collapse = ",")))
+      stop(paste0(ref_bed$`#chrom`[row], "not in ", arg$genome_fasta, " options: ", paste0(names(loaded_genome),collapse = ",")))
     }
   }
   
