@@ -7,8 +7,8 @@ library(validate)
 # install a specific version of variantstring package (this is in development so
 # may not always be backwards-compatible)
 if (!requireNamespace("variantstring", quietly = TRUE) ||
-    packageVersion("variantstring") != "1.7.0") {
-  remotes::install_github("mrc-ide/variantstring@1.7.0")
+    packageVersion("variantstring") != "1.8.0") {
+  remotes::install_github("mrc-ide/variantstring@1.8.0")
 }
 library(variantstring) 
 
@@ -106,46 +106,6 @@ aa_table_to_variant <- function(input_path) {
 }
 
 # ----------------------------------------------------------------------
-#' Get all component genotypes from a vector of variant strings
-#'
-#' @description
-#' Takes a vector of variant strings and extracts all multi-locus genotypes that
-#' can be unambiguously identified within these samples. Return these in variant
-#' string format, which will contain no heterozygous loci.
-#'
-#' @param variant_strings a vector of variant strings.
-#' 
-#' @return vector of component variant strings.
-
-get_component_variants <- function(variant_strings) {
-  
-  # Check input arguments
-  check_variant_string(variant_strings)
-  
-  # get all unique positions
-  pos_unique <- position_from_variant_string(variant_strings) |>
-    unique()
-  
-  # get all variant strings at all positions of interest
-  vs_allpos <- mapply(function(x) {
-    subset_position(position_string = x,
-                    variant_strings = variant_strings) |>
-      na.omit() |>
-      unique()
-  }, pos_unique, SIMPLIFY = FALSE) |>
-    unlist() |>
-    unique()
-  
-  # get targets as all component genotypes
-  targets <- get_consistent_variants(vs_allpos) |>
-    unlist() |>
-    na.omit() |>
-    unique()
-  
-  return(targets)
-}
-
-# ----------------------------------------------------------------------
 #' Get prevalence of a set of variants
 #'
 #' @description
@@ -222,7 +182,11 @@ args <- parse_args(OptionParser(option_list = opts))
 variant_strings <- aa_table_to_variant(input_path = args$input_path)
 
 # get the component genotypes that make up these samples
-component_variants <- get_component_variants(variant_strings = variant_strings)
+component_variants <- variantstring::get_component_variants(x = variant_strings) |>
+  unlist() |>
+  na.omit() |>
+  as.vector() |>
+  unique()
 
 # calculate prevalence
 df_prev <- calculate_variant_prevalence(target_variants = component_variants,
