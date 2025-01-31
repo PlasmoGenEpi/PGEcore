@@ -8,13 +8,15 @@ library(validate)
 
 # install a specific version of variantstring package (this is in development so
 # may not always be backwards-compatible)
-# if (!requireNamespace("variantstring", quietly = TRUE) ||
-#     packageVersion("variantstring") != "1.7.0") {
-#   remotes::install_github("mrc-ide/variantstring@1.7.0")
-# }
-# Above is commented until check for "." in gene names is removed
-if (!requireNamespace("variantstring", quietly = TRUE)) {
-  remotes::install_github("nickjhathaway/variantstring@develop")
+variantstring_version <- "1.8.0"
+if (!requireNamespace("variantstring", quietly = TRUE) ||
+      packageVersion("variantstring") != variantstring_version) {
+   stop(
+      "This script requires variantstring version ",  
+      variantstring_version, 
+      " and it is not installed", 
+      call. = FALSE
+    )
 }
 library(variantstring) 
 
@@ -190,7 +192,7 @@ aa_table_to_variant <- function(aa_table) {
 #' @param variant_strings a vector of variant strings.
 #' 
 #' @return vector of component variant strings.
-get_component_variants <- function(variant_strings) {
+extract_component_variants <- function(variant_strings) {
   
   # Check input arguments
   check_variant_string(variant_strings)
@@ -210,7 +212,7 @@ get_component_variants <- function(variant_strings) {
     unique()
   
   # get targets as all component genotypes
-  targets <- get_consistent_variants(vs_allpos) |>
+  targets <- get_component_variants(vs_allpos) |>
     unlist() |>
     na.omit() |>
     unique()
@@ -266,9 +268,10 @@ calculate_variant_prevalence <- function(target_variants,
 #' Given one tibble defining the loci in a group of interest and 
 #' another containing amino acid calls, this function finds the amino 
 #' acid calls corresponding to the group of interest, uses 
-#' `aa_table_to_variant()` and `get_component_variants()` to transform 
-#' the data into the formats needed by variantstring, and then calls 
-#' `calculate_variant_prevalence()` to compute frequency and prevalence.
+#' `aa_table_to_variant()` and `extract_component_variants()` to 
+#' transform the data into the formats needed by variantstring, and 
+#' then calls `calculate_variant_prevalence()` to compute frequency and 
+#' prevalence.
 #'
 #' @param group_loci A tibble defining a loci group of interest, with 
 #'   columns for gene_id and aa_position.
@@ -281,7 +284,7 @@ compute_prevfreq_for_group <- function(group_loci, aa_table) {
     # in this group
     inner_join(group_loci, by = c("gene" = "gene_id", "pos" = "aa_position")) |>
     aa_table_to_variant()
-  component_variants <- get_component_variants(variant_strings)
+  component_variants <- extract_component_variants(variant_strings)
   group_prev <- calculate_variant_prevalence(
     component_variants, 
     variant_strings
