@@ -1,4 +1,6 @@
-suppressPackageStartupMessages(library(dplyr))
+suppressMessages(library(here))
+source(here("scripts", "utils", "utils.R"))
+
 library(optparse)
 library(rlang)
 
@@ -75,14 +77,14 @@ parse_aa_calls <- function(path) {
   return(aa_dat)
 }
 
-convert_to_stave <- function(df) {
+# convert_to_stave <- function(df) {
 
-  df %>%
-    ungroup %>%
-    mutate(variant = paste(gene_id, aa_position, aa, sep = ":")) %>%
-    select(variant, prev)
+#   df %>%
+#     ungroup %>%
+#     mutate(variant = paste(gene_id, aa_position, aa, sep = ":")) %>%
+#     select(variant, prev)
 
-}
+# }
 
 aa_calls <- parse_aa_calls(args$aa_calls)
 
