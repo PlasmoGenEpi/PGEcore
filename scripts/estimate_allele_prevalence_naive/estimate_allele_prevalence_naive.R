@@ -1,3 +1,4 @@
+suppressPackageStartupMessages(library(dplyr))
 library(optparse)
 library(rlang)
 
@@ -74,8 +75,19 @@ parse_aa_calls <- function(path) {
   return(aa_dat)
 }
 
+convert_to_stave <- function(df) {
+
+  df %>%
+    ungroup %>%
+    mutate(variant = paste(gene_id, aa_position, aa, sep = ":")) %>%
+    select(variant, prev)
+
+}
+
 aa_calls <- parse_aa_calls(args$aa_calls)
 
 prevalence <- calculate_prevalence(aa_calls)
 
-readr::write_tsv(prevalence, args$output)
+prev_output <- convert_to_stave(prevalence)
+
+readr::write_tsv(prev_output, args$output)
