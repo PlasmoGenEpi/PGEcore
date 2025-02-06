@@ -7,7 +7,7 @@ options(dplyr.summarise.inform = FALSE)
 opts <- list(
   make_option(
     c("-i", "--mlaf_input"),
-    help = "TSV containing multi-locus allele frequency data with columns: group_id, variant, freq, total. Variant column is in STAVE format.",
+    help = "TSV containing multi-locus allele frequency data with columns: group_id, variant, freq. Variant column is in STAVE format.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -38,26 +38,20 @@ load_mlaf <- function(path) {
     col_types = readr::cols(
       group_id = readr::col_character(),
       variant = readr::col_character(),
-      freq = readr::col_double(),
-      total = readr::col_double()
+      freq = readr::col_double()
     ),
-    col_select = c("group_id", "variant", "freq", "total")
+    col_select = c("group_id", "variant", "freq")
   )
   return(mlaf)
 }
 
 convert_mlaf_to_slaf <- function(dat) {
   slaf <- dat |>
-    dplyr::mutate(variant_count = .data$freq * .data$total) |>
     dplyr::mutate(alleles = variantstring::variant_to_long(.data$variant)) |>
     tidyr::unnest("alleles") |>
     dplyr::group_by(.data$group_id, .data$gene, .data$pos, .data$aa) |>
-    dplyr::summarize(count = sum(.data$variant_count)) |>
+    dplyr::summarize(freq = sum(.data$freq)) |>
     dplyr::ungroup() |>
-    dplyr::group_by(.data$group_id, .data$gene, .data$pos) |>
-    dplyr::mutate(freq = .data$count / sum(.data$count)) |>
-    dplyr::ungroup() |>
-    dplyr::select(-"count") |>
     dplyr::arrange("group_id", "gene", "pos", "aa")
   return(slaf)
 }

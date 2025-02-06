@@ -93,7 +93,7 @@ gen_warnings_multiple_inputs <-function(ref_bed, dna_tab, arg){
     filter(n > 1)
   
   if(nrow(dna_tab_sum_multi) > 0){
-    warnings = c(warnings, paste0("found multi names for target_id in ", arg$fasta, " found the following multiple times: ", paste0(dna_tab_sum_multi$target_id, collapse = ",")) ) 
+    warnings = c(warnings, paste0("found multi names for target_id in ", arg$target_fasta, " found the following multiple times: ", paste0(dna_tab_sum_multi$target_id, collapse = ",")) ) 
   }
   
   return(warnings)
@@ -144,9 +144,9 @@ opts <- list(
     )
   ), 
   make_option(
-    "--fasta", 
+    "--target_fasta", 
     help = str_c(
-      "a fasta file with the ref sequences, the names of the records should match up with the target_id of the --ref_bed file"
+      "a fasta file with the ref sequences for the targets, the names of the records should match up with the target_id of the --ref_bed file"
     )
   ), 
   make_option(
@@ -171,7 +171,7 @@ opts <- list(
 #'
 #' @returns true if runs all the way through 
 run_add_ref_seqs_from_fasta <- function(){
-  required_arguments = c("ref_bed", "fasta", "out")
+  required_arguments = c("ref_bed", "target_fasta", "out")
   
   # parse arguments
   arg <- parse_args(OptionParser(option_list = opts))
@@ -190,7 +190,7 @@ run_add_ref_seqs_from_fasta <- function(){
   }
   
   # read in fasta file with the ref seqs 
-  dna <- Biostrings::readDNAStringSet(arg$fasta)
+  dna <- Biostrings::readDNAStringSet(arg$target_fasta)
   
   if(length(warnings) > 0){
     stop(paste0("\n", paste0(warnings, collapse = "\n")) )
@@ -203,7 +203,7 @@ run_add_ref_seqs_from_fasta <- function(){
   ref_allele_decomp = set_decompose(ref_bed$target_id, names(dna))
   
   if(length(ref_allele_decomp$only_in_vectorA) > 0){
-    warnings = c(warnings, paste0("the following loci were missing from the fasta file ", arg$fasta, " but are in ", arg$ref_bed,
+    warnings = c(warnings, paste0("the following loci were missing from the fasta file ", arg$target_fasta, " but are in ", arg$ref_bed,
                                   "\n", paste0(ref_allele_decomp$only_in_vectorA, collapse = ",")
     ) 
     )

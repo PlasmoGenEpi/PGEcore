@@ -182,6 +182,7 @@ aa_table_to_variant <- function(aa_table) {
   return(vs)
 }
 
+
 #' Get all component genotypes from a vector of variant strings
 #'
 #' @description
@@ -328,9 +329,11 @@ if (interactive()) {
   args$output_path <- "../../mlafp.tsv"
 }
 
+
 # Read in data
 aa_table <- create_aa_table_input(args$aa_table)
 loci_groups <- create_loci_group_input(args$loci_groups_input)
+
 
 # Compute frequency and prevalence for each group
 df_prev <- loci_groups |>

@@ -23,7 +23,7 @@ appears, and depends on the number of heterozygous loci:
   be present in the sample. From the relative read counts at this heterozygous locus we can obtain a
   rough estimate of the within-sample proportions of each genotype.
 - If there are **two or more heterozygous loci** then we cannot unambiguously state which genotypes
-  are present. Doing so would require running more complex methods that attempt to phase genotypes.
+  are present. Doing so would require running more advanced methods that attempt to phase genotypes.
 
 We can use these rules to obtain all known phased genotypes from the raw data.
 For example, imagine we have the following two samples, defined in
@@ -61,7 +61,7 @@ the following steps:
 
 1. Convert input data into variant string format
 2. Extract all unambiguous phased genotypes from the data
-3. Compare all phased genotypes against the data to estimate prevalence and frequency
+3. Compare all phased genotypes back against the data to estimate prevalence and frequency
 
 Genotype frequency in this case is obtained as the average of the within-sample
 genotype frequencies (WSGF) over all samples. This has the advantage of being an
@@ -71,7 +71,7 @@ without requiring a known complexity of infection for each sample.
 
 ## Script Usage
 
-The `multilocus_prevfreq_naive.R` script contains all the requisite functions to
+The `multilocus_prevfreq_naive.R` script contains all the functions needed to
 read in the data, calculate prevalence and frequency, and write results to file.
 
 An example of usage, executed from the root of this repo, would be:
