@@ -120,11 +120,9 @@ check_biallelic <- function(input_data){
   }
   only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
   alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,] #dataframe containing alt + ref calls for biallelic SNPs
-  num_count <- nrow(distinct(only_biallelic))
   return(list(
     only_biallelic,
-    alt_calls,
-    num_count))
+    alt_calls))
 }
 
 #' Reformat amino acid calls into the form required by FEM
@@ -187,7 +185,6 @@ create_FEM_input <- function(input_path, groups, group_id) {
   data_list <- check_biallelic(input_data)
   input_data <- data_list[[1]]
   alt_alleles <- data_list[[2]]
-  num_group <- data_list[[3]]
 
   unique_targets <- unique(input_data$unique_targets)
   unique_sample_ids <- unique(input_data$specimen_id)
@@ -223,6 +220,7 @@ create_FEM_input <- function(input_path, groups, group_id) {
     
     }
   }
+  num_group <- nrow(sample_matrix)
   return(list(
     sample_matrix,
     alt_alleles,
@@ -343,6 +341,10 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
             "CI_2.5" = summary(mcmc_frequency_chains)$quantiles[, 1],
             "CI_97.5" = CI_upper <- summary(mcmc_frequency_chains)$quantiles[, 5]
         )
+        pop_prev <- 1-(1-pop_freq)^median(mcmc_mois)
+        inf_prev <- t(apply(mcmc_As, 2, function(x) colMeans(x > 0)))
+        prev <- colMeans(inf_prev)
+        pop_freq <- cbind(pop_freq, prev)
     })
     # Convert row names to a new column named "sequence"
     sequence_column <- data.frame(sequence = rownames(pop_freq), stringsAsFactors = FALSE)
