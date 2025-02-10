@@ -35,5 +35,5 @@ https://github.com/aimeertaylor/FreqEstimationModel/blob/master/README.md.
 ## Script Usage 
 
 ```
-Rscript scripts/FreqEstimationModel_wrapper/FreqEstimationModel_wrapper.R --aa_calls data/example_amino_acid_calls.tsv --coi data/example_coi_table.tsv --groups data/example_loci_groups.tsv --mlaf_output output
+Rscript scripts/FreqEstimationModel_wrapper/FreqEstimationModel_wrapper.R --aa_calls data/example_amino_acid_calls.tsv --coi data/example_coi_table.tsv --groups data/example_loci_groups.tsv --mlaf_output output.tsv
 ```

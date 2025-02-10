@@ -39,8 +39,8 @@ opts <- list(
   make_option(
     "--mlaf_output", 
     help = str_c(
-      "TSV containing multilocus allele frequencies, with the columns: ", 
-      "variant, freq, total. Required."
+      "Output TSV to contain multilocus allele frequencies, with the columns: ", 
+      "variant, freq, median_freq, CI_2.5, CI_97.5, prev, sample_total. Required."
     )
   )
 )
@@ -434,7 +434,7 @@ format_single_group_output <- function(pop_freq_list){
   num_group <- pop_freq_list[[5]]
   
   input_list$variant <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
-  input_list$total <- num_group
+  input_list$sample_total <- num_group
   return(input_list)
 }
 
@@ -462,5 +462,4 @@ for(group in unique(groups$group_id)){
 overall_output <- apply(overall_output,2,as.character)
 overall_output <- overall_output[, 2:8] #remove sequence column
 overall_output_df <- data.frame(overall_output)
-path <- paste(output_dir, "plsf_table_grouped.tsv", sep="/")
-write_tsv(overall_output_df, path)
+write_tsv(overall_output_df, arg$mlaf_output)
