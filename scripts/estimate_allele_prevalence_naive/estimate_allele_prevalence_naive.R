@@ -82,6 +82,6 @@ aa_calls <- parse_aa_calls(args$aa_calls)
 
 prevalence <- calculate_prevalence(aa_calls)
 
-prev_output <- convert_prev_table_to_stave(prevalence)
+prev_output <- convert_single_locus_table_to_stave(prevalence, "prev")
 
 readr::write_tsv(prev_output, args$output)
