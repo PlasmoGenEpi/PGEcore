@@ -1,6 +1,9 @@
-suppressMessages(library(here))
-source(here("scripts", "utils", "utils.R"))
+# Get the script dir and make path to utils.R
+script_dir <- dirname(normalizePath(sub("--file=", "", commandArgs(trailingOnly = FALSE)[grep("--file=", commandArgs(trailingOnly = FALSE))])))
+# Construct the path to utils.R
+utils_path <- file.path(script_dir, "..", "utils", "utils.R")
 
+source(utils_path)
 library(optparse)
 library(rlang)
 
