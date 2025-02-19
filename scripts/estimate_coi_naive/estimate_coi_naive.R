@@ -1,7 +1,8 @@
 
-library(stringr)
-library(optparse)
 library(dplyr)
+library(optparse)
+library(readr)
+library(stringr)
 library(validate)
 
 # ----------------------------------------------------------------------
@@ -19,7 +20,7 @@ opts <- list(
   make_option(
     "--output_path",
     type = "character",
-    help = "Path to write a TSV file containing results, with the columns: specimin_id, coi"
+    help = "Path to write a TSV file containing results, with the columns: specimen_id, coi"
   ), 
   make_option(
     "--method",
@@ -190,9 +191,7 @@ write_coi_naive <- function(df_coi,
   stopifnot(is.character(output_path))
   
   # Write to file as TSV
-  write.table(x = df_coi,
-              file = output_path,
-              row.names = FALSE)
+  write_tsv(df_coi, output_path)
 }
 
 #------------------------------------------------------
