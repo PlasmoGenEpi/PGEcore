@@ -1,3 +1,8 @@
+# Get the script dir and make path to utils.R
+script_dir <- dirname(normalizePath(sub("--file=", "", commandArgs(trailingOnly = FALSE)[grep("--file=", commandArgs(trailingOnly = FALSE))])))
+utils_path <- file.path(script_dir, "..", "utils", "utils.R")
+
+source(utils_path)
 library(optparse)
 library(rlang)
 
@@ -74,8 +79,11 @@ parse_aa_calls <- function(path) {
   return(aa_dat)
 }
 
+
 aa_calls <- parse_aa_calls(args$aa_calls)
 
 prevalence <- calculate_prevalence(aa_calls)
 
-readr::write_tsv(prevalence, args$output)
+prev_output <- convert_single_locus_table_to_stave(prevalence, "prev")
+
+readr::write_tsv(prev_output, args$output)
