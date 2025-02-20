@@ -1,6 +1,6 @@
 # Moire
 
-Contents: 
+Contents:
 * [Tool Information](#tool-information)
 * [Script Usage](#script-usage)
 
@@ -51,11 +51,10 @@ Rscript Moire_wrapper.R --allele_table <allele_table.tsv> \
   --pt_num_threads 1 \
   --adapt_temp FALSE \
   --max_runtime Inf \
-  --seed 1 \
-  --coi_summary <coi_summary.tsv> \ 
+  --coi_summary <coi_summary.tsv> \
   --he_summary <he_summary.tsv> \
   --allele_freq_summary <allele_freq_summary.tsv> \
   --relatedness_summary <relatedness_summary.tsv> \
-  --effective_coi_summary <effective_coi_summary.tsv> 
+  --effective_coi_summary <effective_coi_summary.tsv>
 ```
 

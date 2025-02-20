@@ -215,14 +215,6 @@ opts = list(
     )
   ),
   make_option(
-    "--seed",
-    type = "integer",
-    default = 1,
-    help = str_c(
-      "Random number seed",
-      "Default set to 1")
-  ),
-  make_option(
     "--coi_summary",
     default = "coi_summary.tsv",
     help = str_c(
@@ -279,7 +271,7 @@ if (interactive()) {
 
 #' Create Moire Input Object
 #'
-#' This function reads input data, validates its format, and constructs a Moire input object 
+#' This function reads input data, validates its format, and constructs a Moire input object
 #' containing data and parameters required for downstream analysis.
 #'
 #' @param input_path Character. Path to the input data file (CSV format, tab-separated).
@@ -305,34 +297,33 @@ if (interactive()) {
 #' @param pt_num_threads Numeric. Number of threads for parallel tempering computations.
 #' @param adapt_temp Logical. Whether to adapt the temperature during parallel tempering.
 #' @param max_runtime Numeric. Maximum runtime allowed for the MCMC algorithm (in seconds).
-#' @param seed Numeric or NULL. Random seed for reproducibility. If NULL, no seed is set.
 #'
 #' @return A list containing the Moire data and parameters, ready for downstream analysis.
 #' @examples
 #' \dontrun{
 #' moire_input <- create_Moire_input(
-#'   input_path = "data.csv", allow_relatedness = TRUE, burnin = 1000, 
-#'   samples_per_chain = 5000, verbose = TRUE, eps_pos_alpha = 2, 
-#'   eps_pos_beta = 5, eps_neg_alpha = 2, eps_neg_beta = 5, r_alpha = 1, 
-#'   r_beta = 1, mean_coi_shape = 2, mean_coi_scale = 0.5, max_eps_pos = 0.1, 
-#'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, num_chains = 4, 
-#'   num_cores = 2, pt_chains = 2, pt_grad = 0.01, pt_num_threads = 2, 
-#'   adapt_temp = TRUE, max_runtime = 3600, seed = 42
+#'   input_path = "data.csv", allow_relatedness = TRUE, burnin = 1000,
+#'   samples_per_chain = 5000, verbose = TRUE, eps_pos_alpha = 2,
+#'   eps_pos_beta = 5, eps_neg_alpha = 2, eps_neg_beta = 5, r_alpha = 1,
+#'   r_beta = 1, mean_coi_shape = 2, mean_coi_scale = 0.5, max_eps_pos = 0.1,
+#'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, num_chains = 4,
+#'   num_cores = 2, pt_chains = 2, pt_grad = 0.01, pt_num_threads = 2,
+#'   adapt_temp = TRUE, max_runtime = 3600
 #' )
 #' }
 #' @export
 
-create_Moire_input <- function(input_path, allow_relatedness, burnin, 
-                               samples_per_chain, verbose, eps_pos_alpha, 
-                               eps_pos_beta, eps_neg_alpha, eps_neg_beta, 
-                               r_alpha, r_beta, mean_coi_shape, mean_coi_scale, 
-                               max_eps_pos, max_eps_neg, record_latent_genotypes, 
-                               num_chains, num_cores, pt_chains, pt_grad, 
-                               pt_num_threads, adapt_temp, max_runtime, seed) {
+create_Moire_input <- function(input_path, allow_relatedness, burnin,
+                               samples_per_chain, verbose, eps_pos_alpha,
+                               eps_pos_beta, eps_neg_alpha, eps_neg_beta,
+                               r_alpha, r_beta, mean_coi_shape, mean_coi_scale,
+                               max_eps_pos, max_eps_neg, record_latent_genotypes,
+                               num_chains, num_cores, pt_chains, pt_grad,
+                               pt_num_threads, adapt_temp, max_runtime) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
   moire_data <- input_data |>
-    dplyr::select(specimen_id, target_id, seq) |> 
+    dplyr::select(specimen_id, target_id, seq) |>
     dplyr::rename(sample_id = specimen_id, locus = target_id, allele = seq)
 
   print("Creating Moire object")
@@ -361,8 +352,7 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
       pt_grad = pt_grad,
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
-      max_runtime = max_runtime,
-      seed = seed
+      max_runtime = max_runtime
     )
   )
 
@@ -373,13 +363,13 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
     is.character(sample_id),
     is.character(locus),
     is.character(allele),
-  
+
     # Non-missing values
     !is.na(sample_id),
     !is.na(locus),
     !is.na(allele)
   )
-  
+
   # Validate parameters
   assert_logical(moire_object$moire_parameters$allow_relatedness, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$burnin, any.missing = FALSE, len = 1)
@@ -403,14 +393,13 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
   assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$seed, any.missing = FALSE, null.ok = TRUE, len = 1)
-    
+
   # Confront the analysis_object with validation rules
   print("Confronting input data with validation rules")
   fails <- validate::confront(moire_object$moire_data, rules, raise = "all") %>%
     validate::summary() %>%
     dplyr::filter(fails > 0)
-  
+
   # Raise an error if any validations fail
   if (nrow(fails) > 0) {
     stop(
@@ -419,7 +408,7 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
       call. = FALSE
     )
   }
- 
+
   print("Returning Moire object")
   return(moire_object)
 }
@@ -445,7 +434,6 @@ run_Moire <- function(moire_object) {
   moire_parameters = moire_object$moire_parameters
 
   runtime <- system.time({
-    set.seed(moire_parameters$seed)
     # Run the MCMC function
     moire_res <- moire::run_mcmc(
       moire_data, moire_data$is_missing,
@@ -473,7 +461,7 @@ run_Moire <- function(moire_object) {
       max_runtime = moire_parameters$max_runtime
     )
   })
-  
+
   return(moire_res)
 }
 
@@ -520,7 +508,7 @@ run_Moire <- function(moire_object) {
 #' @export
 
 summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_o, he_summary_o, allele_freq_summary_o, relatedness_summary_o, effective_coi_summary_o) {
-  
+
   # Summarize statistics
   coi_summary <- moire::summarize_coi(mcmc_results) %>%
     rename(specimen_id = sample_id,
@@ -529,7 +517,7 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
     rename(target_id = locus,
            he = post_stat_mean)
   allele_freq_summary <- moire::summarize_allele_freqs(mcmc_results) %>%
-    rename(target_id = locus, 
+    rename(target_id = locus,
            freq = post_allele_freqs_mean,
            seq = allele)
   relatedness_summary <- moire::summarize_relatedness(mcmc_results) %>%
@@ -539,17 +527,17 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
     rename(specimen_id = sample_id,
            ecoi = post_effective_coi_mean)
 
-  # Moire removes loci with only 1 allele. 
+  # Moire removes loci with only 1 allele.
   # Add removed loci to allele_freq_summary. Add freq 1 by default.
   missing_target_ids = unique(moire_object$moire_data$locus[
     !moire_object$moire_data$locus %in% allele_freq_summary$target_id])
   present_target_ids = unique(moire_object$moire_data$locus[
     moire_object$moire_data$locus %in% allele_freq_summary$target_id])
-  
-  assert(length(unique(moire_object$moire_data$locus)) == 
+
+  assert(length(unique(moire_object$moire_data$locus)) ==
            length(missing_target_ids) + length(present_target_ids))
   assert(all(sort(present_target_ids) == sort(unique(allele_freq_summary$target_id))))
-  
+
   one_allele_loci <- moire_object$moire_data[
     moire_object$moire_data$locus %in% missing_target_ids,] %>%
     select(-sample_id) %>%            # Remove the `sample_id` column
@@ -569,20 +557,20 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
       freq,
       everything()
     )
-  
+
   allele_freq_summary = rbind(allele_freq_summary,
         one_allele_loci)
-  
+
   # Add removed loci to he_summary
-  target_id_count <- moire_object$moire_data %>% 
+  target_id_count <- moire_object$moire_data %>%
     select(!sample_id) %>%
     group_by(locus) %>%         # Group by 'locus' and 'allele'
     summarise(sample_total = n(), .groups = 'drop') %>% # Count the occurrences and drop grouping
     rename(target_id = locus)
-  
+
   he_summary <- target_id_count %>%
     full_join(he_summary, by = "target_id")
-  
+
   # Write summaries to files
   readr::write_tsv(coi_summary, coi_summary_o)
   readr::write_tsv(he_summary, he_summary_o, na = "0")
@@ -616,8 +604,7 @@ moire_object <- create_Moire_input(arg$allele_table,
   arg$pt_grad,
   arg$pt_num_threads,
   arg$adapt_temp,
-  arg$max_runtime,
-  arg$seed
+  arg$max_runtime
 )
 
 # Run Moire -------------------------------------------------------------------
