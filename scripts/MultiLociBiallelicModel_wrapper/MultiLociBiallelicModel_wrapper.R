@@ -794,8 +794,7 @@ opts = list(
     "--aa_calls",
     type = "character", 
     help = str_c(
-      "TSV containing aminoacid calls per specimen, with the columns: specimen_id,
-      target_id, specimen_id, gene_id, aa_position, ref_aa, and aa."
+      "TSV containing aminoacid calls per specimen, with the columns: specimen_id, gene_id, aa_position, ref_aa, and aa."
     )
   ),
   make_option(
@@ -857,7 +856,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
   
   MLBM_data <- input_data %>%
-    mutate(identifier = paste(target_id, aa_position, sep = ":")) %>%
+    mutate(identifier = paste(gene_id, aa_position, sep = ":")) %>%
     group_by(specimen_id, identifier) %>%
     mutate(value = case_when(
       n_distinct(aa) > 2 ~ NA_real_,                      # More than two distinct amino acids
@@ -885,7 +884,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
   
   staves_data <- input_data %>%
     mutate(
-      staves = paste(target_id, aa_position, aa, sep = ":"),
+      staves = paste(gene_id, aa_position, aa, sep = ":"),
       state = if_else(
         substr(staves, nchar(staves), nchar(staves)) == ref_aa, 
         0, 
@@ -895,7 +894,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     distinct(staves, .keep_all = TRUE) %>%
     select(staves, state) %>%
     mutate(prestave = sub(":([^:]+)$", "", staves))
-  
+
   MLBM_object = list(MLBM_data = MLBM_data, 
                      staves_data = staves_data)
   
@@ -930,8 +929,8 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
   
   #Matching groups to create lists of loci
   match_group = input_data %>% 
-    select(target_id, gene_id, aa_position) %>%
-    mutate(identifier = paste(target_id, aa_position, sep = ":")) 
+    select(gene_id, aa_position) %>%
+    mutate(identifier = paste(gene_id, aa_position, sep = ":")) 
   
   merged_data <- match_group %>%
     inner_join(loci_groups, by = c("gene_id", "aa_position"), relationship = "many-to-many")
@@ -948,7 +947,6 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     subtable <- MLBM_data %>% select(all_of(columns))
     return(subtable)
   })
-  
   # Name the list elements
   names(result_tables) <- names(result_list)
   MLBM_object$by_group_table <- result_tables
@@ -1055,7 +1053,7 @@ make_stave <- function(variant) {
     group_by(gene) %>%
     summarize(
       positions = str_c(position, collapse = "_"),
-      mutations = str_c(mutation, collapse = ""),
+      mutations = str_c(mutation, collapse = "_"),
       .groups = "drop"
     ) %>%
     mutate(formatted = str_c(gene, ":", positions, ":", mutations)) %>%

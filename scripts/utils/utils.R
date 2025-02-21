@@ -29,12 +29,11 @@ convert_single_locus_table_to_stave <- function(df, additional_columns=NULL) {
   df %>%
     ungroup %>%
     mutate(variant = paste(gene_id, aa_position, aa, sep = ":")) %>%
-    mutate(ref = paste(gene_id, aa_position, ref_aa, sep = ":")) %>%
     { 
       if (is.null(additional_columns)) {
-        select(., variant, ref)
+        select(., variant)
       } else {
-        select(., variant, ref, all_of(additional_columns))
+        select(., variant, all_of(additional_columns))
       }
     }
 
