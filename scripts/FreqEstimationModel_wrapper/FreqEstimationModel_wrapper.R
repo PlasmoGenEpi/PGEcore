@@ -45,11 +45,11 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
-#arg <- list(groups = "example_loci_groups.tsv",
-#            coi = "example_coi_table.tsv",
-#            aa_calls = "example_amino_acid_calls.tsv",
-#            seed = 1,
-#            mlaf_output = "output")
+arg <- list(groups = "example_loci_groups.tsv",
+            coi = "example_coi_table.tsv",
+            aa_calls = "example_amino_acid_calls.tsv",
+            seed = 1,
+            mlaf_output = "output")
 
 
 #' Returns average COI from COI tsv file path
@@ -111,6 +111,7 @@ read_groups <- function(groups_path){
 #' 
 #' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){
+  #tidy
   mutants <- input_data[input_data$ref_aa != input_data$aa,]
   mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
   mutants <- mutants_ignoring_sample
@@ -177,6 +178,7 @@ create_FEM_input <- function(input_path, groups, group_id) {
     )
   }
   
+  #tidy
   input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position, sep=":")
   groups <- groups[groups$group_id == group_id,]
   group_targets <- paste(groups$gene_id, groups$aa_position, sep=":")
@@ -304,8 +306,8 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
             frequency_hyperparameter = frequency_hyperparameter,
             frequency_initial = frequency_initial
         )
-        seed <- seed
-        set.seed(seed)
+        
+        set.seed(arg$seed)
 
         # Run MCMC - works up to here
         results <- mcmc_sampling_parallel(processed_data_list,
@@ -371,6 +373,7 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
 #' 
 #' @return string of the STAVE format for a given string
 bin2STAVE <- function(chars, names, alt_alleles){
+  #tidy FIRST
   name <- ""
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
@@ -428,6 +431,7 @@ bin2STAVE <- function(chars, names, alt_alleles){
 #' 
 #' @return formatted dataframe
 format_single_group_output <- function(pop_freq_list){
+  #tidy
   input_list <- pop_freq_list[[1]]
   names <- pop_freq_list[[3]]
   alt_alleles <- pop_freq_list[[4]]
@@ -438,22 +442,15 @@ format_single_group_output <- function(pop_freq_list){
   return(input_list)
 }
 
-#arg assignments
-COI <- arg$coi
-groups <- arg$groups
-output_dir <- arg$mlaf_output
-input_dir <- arg$aa_calls
-seed <- arg$seed
 
-#create base dataframe
-groups <- read_groups(groups)
-COI <- calculate_avg_COI(COI)
+groups <- read_groups(arg$groups)
+COI <- calculate_avg_COI(arg$coi)
 overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
                              "CI_2.5"=c(),	"CI_97.5"=c())
 #run FEM separately for each group
 for(group in unique(groups$group_id)){
   #will be one output file
-  fem_results <- run_FreqEstimationModel(input_dir, groups, COI, group)
+  fem_results <- run_FreqEstimationModel(arg$aa_calls, groups, COI, group)
   fem_plsf <- format_single_group_output(fem_results)
   fem_plsf$group_id <- group
   overall_output <- rbind(overall_output, fem_plsf)
@@ -462,4 +459,5 @@ for(group in unique(groups$group_id)){
 overall_output <- apply(overall_output,2,as.character)
 overall_output <- overall_output[, 2:8] #remove sequence column
 overall_output_df <- data.frame(overall_output)
-write_tsv(overall_output_df, arg$mlaf_output)
+write_tsv(overall_output_df, paste(arg$mlaf_output, "FEM_output.tsv", sep="/"))
+
