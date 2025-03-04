@@ -66,6 +66,12 @@ opts <- list(
     help = "Random number seed. Optional."
   ), 
   make_option(
+    c("-v", "--verbose"), 
+    action = "store_true", 
+    default = FALSE, 
+    help = "Print detailed process output"
+  ), 
+  make_option(
     "--btwn_host_rel_output", 
     help = str_c(
       "Path of TSV file to contain relatedness results, with the columns: ", 
@@ -372,7 +378,11 @@ run_dcifer <- function(
     }
     
     if (is.null(getDefaultCluster())) {
-        cl <- makeCluster(total_cores)
+        if (arg$verbose) {
+          cl <- makeCluster(total_cores, outfile = "")
+        } else {
+          cl <- makeCluster(total_cores)
+        }
         setDefaultCluster(cl)
         registerDoParallel(cl)
     } else {
