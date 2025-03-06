@@ -11,6 +11,8 @@ library(magrittr)
 library(stringr)
 library(optparse)
 library(readr)
+library(purrr)
+library(variantstring)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -378,6 +380,17 @@ bin2STAVE <- function(chars, names, alt_alleles){
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
   gene_list <- c()
+  
+  long_form <- tibble(
+    gene = character(),
+    pos = numeric(),
+    n_aa = numeric(),
+    het = logical(),
+    phased = logical(),
+    aa = character(),
+    read_count = numeric()
+  )
+  
   for(char in chars_split){
     if(char==1){call <- "aa"}
     else {call <- "ref_aa"}
@@ -385,14 +398,23 @@ bin2STAVE <- function(chars, names, alt_alleles){
     formatted_name <- gsub(" ", ":", name)
     alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
     gene_current <- str_split(names[char_ix], ":")[[1]][1] ###split appropriately
+    pos_current <- str_split(names[char_ix], ":")[[1]][2] ###split appropriately
     gene_list <- append(gene_list, gene_current)
     alt_current <- alt_current[1, call]
+    alt_current <- as.character(alt_current)
     name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=":"), sep=";")
     char_ix <- char_ix + 1
+    long_form <- long_form %>% 
+      add_row(gene = gene_current,
+              pos = as.numeric(pos_current),
+              n_aa = NA,
+              het = NA,
+              phased = FALSE,
+              aa = alt_current,
+              read_count = NA,)
   }
-  #removing initial colon
-  name <- substring(name, 2, nchar(name))
-  #collapsing into true STAVE format
+  #single_locus_STAVE, into multi-locus stave
+  #adding if calls are het or not in the given locus
   return_name <- ""
   cut_name <- str_split(name, ";")[[1]]
   for(unique_gene in unique(gene_list)){
@@ -411,16 +433,18 @@ bin2STAVE <- function(chars, names, alt_alleles){
 
     }
     if(length(pos)==1){
-      return_name <- paste(return_name, cut_cut_name, ";", sep="")
+      n_aa_here <- 1
     }
     else {
-      ind_name <- paste(unique_gene, paste(pos, collapse="_"), paste(aa, collapse=""), sep=":")
-      return_name <- paste(return_name, ind_name, ";", sep="")
+      n_aa_here <- 2
     }
+    long_form <- long_form %>% mutate(n_aa = if_else(gene==unique_gene, n_aa_here, n_aa))
     
   }
-  return_name <- substr(return_name, 1, nchar(return_name)-1)
-  return(return_name)
+  long_form <- long_form %>% mutate(het = if_else(n_aa>1, TRUE, FALSE))
+  string_output <- long_to_variant(list(long_form))
+
+  return(string_output)
 }
 
 #' Formats a single output from run_FEM
@@ -437,8 +461,10 @@ format_single_group_output <- function(pop_freq_list){
   alt_alleles <- pop_freq_list[[4]]
   num_group <- pop_freq_list[[5]]
   
-  input_list$variant <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
-  input_list$sample_total <- num_group
+  input_list <- input_list %>% 
+    mutate(variant=map_chr(sequence, bin2STAVE, names, alt_alleles),
+                        sample_total=num_group) %>% 
+    as_tibble()
   return(input_list)
 }
 
@@ -457,7 +483,8 @@ for(group in unique(groups$group_id)){
 }
 #format and write output to disk
 overall_output <- apply(overall_output,2,as.character)
-overall_output <- overall_output[, 2:8] #remove sequence column
 overall_output_df <- data.frame(overall_output)
 write_tsv(overall_output_df, paste(arg$mlaf_output, "FEM_output.tsv", sep="/"))
+
+
 
