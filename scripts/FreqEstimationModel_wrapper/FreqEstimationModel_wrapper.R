@@ -27,7 +27,7 @@ opts <- list(
     "--coi", 
     help = str_c(
       "TSV containing COI for each specimen, with the columns: specimen_id, ", 
-      "coi. Required."
+      "coi, or numeric input of COI. Required."
     )
   ), 
   make_option(
@@ -48,7 +48,8 @@ opts <- list(
 )
 arg <- parse_args(OptionParser(option_list = opts))
 arg <- list(groups = "example_loci_groups.tsv",
-            coi = "example_coi_table.tsv",
+            #coi = "example_coi_table.tsv",
+            coi = 3,
             aa_calls = "example_amino_acid_calls.tsv",
             seed = 1,
             mlaf_output = "output")
@@ -63,6 +64,9 @@ arg <- list(groups = "example_loci_groups.tsv",
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
+  if(is.numeric(coi_path)){
+    return(coi_path)
+  }
   COI_table <- read_tsv(coi_path, col_types=list(
     "specimen_id"=col_character(),
     "coi"=col_number()))
@@ -375,12 +379,9 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
 #' 
 #' @return string of the STAVE format for a given string
 bin2STAVE <- function(chars, names, alt_alleles){
-  #tidy FIRST
-  name <- ""
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
   gene_list <- c()
-  
   long_form <- tibble(
     gene = character(),
     pos = numeric(),
@@ -394,56 +395,31 @@ bin2STAVE <- function(chars, names, alt_alleles){
   for(char in chars_split){
     if(char==1){call <- "aa"}
     else {call <- "ref_aa"}
-      #gene;position;aa:gene;position;aa
-    formatted_name <- gsub(" ", ":", name)
     alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
     gene_current <- str_split(names[char_ix], ":")[[1]][1] ###split appropriately
     pos_current <- str_split(names[char_ix], ":")[[1]][2] ###split appropriately
     gene_list <- append(gene_list, gene_current)
     alt_current <- alt_current[1, call]
     alt_current <- as.character(alt_current)
-    name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=":"), sep=";")
     char_ix <- char_ix + 1
     long_form <- long_form %>% 
       add_row(gene = gene_current,
               pos = as.numeric(pos_current),
               n_aa = NA,
               het = NA,
-              phased = FALSE,
+              phased = TRUE,
               aa = alt_current,
               read_count = NA,)
   }
   #single_locus_STAVE, into multi-locus stave
   #adding if calls are het or not in the given locus
-  return_name <- ""
-  cut_name <- str_split(name, ";")[[1]]
-  for(unique_gene in unique(gene_list)){
-    pos <- c()
-    aa <- c()
-    ix <- 1
-    for(gene in gene_list){
-      if(gene==unique_gene){
-        cut_cut_name <- cut_name[ix]
-        pos_ind <- str_split(cut_cut_name, ":")[[1]][2]
-        aa_ind <- str_split(cut_cut_name, ":")[[1]][3]
-        pos <- append(pos, pos_ind)
-        aa <- append(aa, aa_ind)
-      }
-      ix <- ix + 1
-
-    }
-    if(length(pos)==1){
-      n_aa_here <- 1
-    }
-    else {
-      n_aa_here <- 2
-    }
-    long_form <- long_form %>% mutate(n_aa = if_else(gene==unique_gene, n_aa_here, n_aa))
+  long_form <- long_form %>% 
+    group_by(gene, pos) %>%
+    mutate(n_aa = n())
     
-  }
-  long_form <- long_form %>% mutate(het = if_else(n_aa>1, TRUE, FALSE))
+  long_form <- long_form %>%
+    mutate(het = if_else(n_aa>1, TRUE, FALSE))
   string_output <- long_to_variant(list(long_form))
-
   return(string_output)
 }
 
