@@ -36,10 +36,12 @@ load_coi_calls <- function(path) {
     path,
     col_types = readr::cols(
       specimen_id = readr::col_character(),
-      coi = readr::col_integer()
+      coi = readr::col_double()
     ),
     col_select = c("specimen_id", "coi")
   )
+  # round coi to integer
+  coi_dat$coi <- round(coi_dat$coi)
   return(coi_dat)
 }
 
