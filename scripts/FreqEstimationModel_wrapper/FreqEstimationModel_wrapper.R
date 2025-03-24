@@ -122,7 +122,6 @@ read_groups <- function(groups_path){
 #' 
 #' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){
-  #tidy
   mutants <- input_data[input_data$ref_aa != input_data$aa,]
   mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
   mutants <- mutants_ignoring_sample
@@ -188,8 +187,6 @@ create_FEM_input <- function(input_path, groups, group_id) {
       call. = FALSE
     )
   }
-  
-  #tidy
   input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position, sep=":")
   groups <- groups[groups$group_id == group_id,]
   group_targets <- paste(groups$gene_id, groups$aa_position, sep=":")
@@ -436,7 +433,6 @@ bin2STAVE <- function(chars, names, alt_alleles){
 #' 
 #' @return formatted dataframe
 format_single_group_output <- function(pop_freq_list){
-  #tidy
   input_list <- pop_freq_list[[1]]
   names <- pop_freq_list[[3]]
   alt_alleles <- pop_freq_list[[4]]
