@@ -34,7 +34,7 @@ opts <- list(
     "--groups", 
     help = str_c(
       "TSV containing which regions should be analyzed for each group, with the columns:
-      group_id, gene_id, aa_position Required."
+      group_id, gene_id, aa_position. Required."
     )
   ),
   make_option("--seed", type = "integer", help = "Random number seed. Optional.", default=1), 
@@ -47,20 +47,25 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
-#arg <- list(groups = "example_loci_groups.tsv",
-#            #coi = "example_coi_table.tsv",
-#            coi = 3,
-#            aa_calls = "example_amino_acid_calls.tsv",
-#            seed = 1,
-#            mlaf_output = "output")
 
+
+if(interactive()){
+  arg$groups <- "example_loci_groups.tsv"
+  arg$coi <- 3
+  arg$seed <-  1
+  arg$aa_calls <- "example_amino_acid_calls.tsv"
+  arg$mlaf_output <- "output"
+}
 
 #' Returns average COI from COI tsv file path
 #'
-#' Takes in the COI table for the specimens and calculates the average COI
+#' Takes in the COI table for the specimens and calculates the average COI,
+#' or returns the COI value if given directly.
 #'
 #' @param coi_path Path of TSV file with COI for each specimen. It should 
-#' have two columns, "specimen_id" and "coi"
+#' have two columns, "specimen_id" and "coi." Alternatively, you can provide
+#' the numeric value of the average COI. Parsing of which option is done 
+#' automatically.
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
