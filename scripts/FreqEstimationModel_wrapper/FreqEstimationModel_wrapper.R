@@ -461,7 +461,7 @@ for(group in unique(groups$group_id)){
 #format and write output to disk
 overall_output <- apply(overall_output,2,as.character)
 overall_output_df <- data.frame(overall_output)
-write_tsv(overall_output_df, paste(arg$mlaf_output, "FEM_output.tsv", sep="/"))
+write_tsv(overall_output_df, arg$mlaf_output)
 
 
 
