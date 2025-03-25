@@ -69,25 +69,28 @@ if(interactive()){
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
-  if(is.numeric(coi_path)){
+  coi <- try(as.numeric(coi_path), silent = TRUE)
+  if(class(coi)!= "try-error"){
     return(coi_path)
   }
-  COI_table <- read_tsv(coi_path, col_types=list(
-    "specimen_id"=col_character(),
-    "coi"=col_number()))
-  rules <- validate::validator(
-    ! is.na(specimen_id), 
-    ! is.na(coi)
-  )
-  fails <- validate::confront(COI_table, rules, raise = "all") %>%
-    validate::summary() %>%
-    dplyr::filter(fails > 0)
-  if (nrow(fails) > 0) {
-    stop(
-      "Input input_data failed one or more validation checks: ", 
-      str_c(fails$expression, collapse = "\n"), 
-      call. = FALSE
+  else{
+    COI_table <- read_tsv(coi_path, col_types=list(
+      "specimen_id"=col_character(),
+      "coi"=col_number()))
+    rules <- validate::validator(
+      ! is.na(specimen_id), 
+      ! is.na(coi)
     )
+    fails <- validate::confront(COI_table, rules, raise = "all") %>%
+      validate::summary() %>%
+      dplyr::filter(fails > 0)
+    if (nrow(fails) > 0) {
+      stop(
+        "Input input_data failed one or more validation checks: ", 
+        str_c(fails$expression, collapse = "\n"), 
+        call. = FALSE
+      )
+    }
   }
   
   vals <- COI_table$coi
@@ -125,7 +128,7 @@ check_biallelic <- function(input_data){
   mutants <- input_data %>% filter(ref_aa != aa,) %>%
     distinct(unique_targets, aa, keep.all=T)
   bad_targets <- mutants %>% filter(unique_targets %in% duplicated(unique_targets)) #remove targets that have >1 non-reference call
-  if(length(bad_targets)>0){
+  if(nrow(bad_targets)>0){
     warning("Not biallelic, dropped", bad_targets)
   }
   only_biallelic <- input_data %>% filter(!(unique_targets %in% bad_targets))
