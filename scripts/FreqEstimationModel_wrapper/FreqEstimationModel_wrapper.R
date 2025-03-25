@@ -54,7 +54,7 @@ if(interactive()){
   arg$coi <- 3
   arg$seed <-  1
   arg$aa_calls <- "example_amino_acid_calls.tsv"
-  arg$mlaf_output <- "output"
+  arg$mlaf_output <- "output/FEM_output.tsv"
 }
 
 #' Returns average COI from COI tsv file path
@@ -122,15 +122,15 @@ read_groups <- function(groups_path){
 #' 
 #' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){
-  mutants <- input_data[input_data$ref_aa != input_data$aa,]
-  mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
-  mutants <- mutants_ignoring_sample
-  bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)] #remove targets that have >1 non-reference call
+  mutants <- input_data %>% filter(ref_aa != aa,) %>%
+    distinct(unique_targets, aa, keep.all=T)
+  bad_targets <- mutants %>% filter(unique_targets %in% duplicated(unique_targets)) #remove targets that have >1 non-reference call
   if(length(bad_targets)>0){
     warning("Not biallelic, dropped", bad_targets)
   }
-  only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
-  alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,] #dataframe containing alt + ref calls for biallelic SNPs
+  only_biallelic <- input_data %>% filter(!(unique_targets %in% bad_targets))
+  alt_calls <- only_biallelic %>% 
+    filter(ref_aa != aa) #dataframe containing alt + ref calls for biallelic SNPs
   return(list(
     only_biallelic,
     alt_calls))
