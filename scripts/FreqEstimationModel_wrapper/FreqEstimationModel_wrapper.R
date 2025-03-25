@@ -70,10 +70,10 @@ if(interactive()){
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
   coi <- try(as.numeric(coi_path), silent = TRUE)
-  if(class(coi)!= "try-error"){
+  if(coi != "NA"){
     return(coi_path)
   }
-  else{
+  else{ #if NA with casting the string to numeric, we were given a path
     COI_table <- read_tsv(coi_path, col_types=list(
       "specimen_id"=col_character(),
       "coi"=col_number()))
