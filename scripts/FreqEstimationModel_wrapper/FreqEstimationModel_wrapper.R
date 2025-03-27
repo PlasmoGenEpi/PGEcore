@@ -51,8 +51,8 @@ arg <- parse_args(OptionParser(option_list = opts))
 
 if(interactive()){
   arg$groups <- "example_loci_groups.tsv"
-  arg$coi <- 3
-  arg$seed <-  1
+  arg$coi <- "example_coi_table.tsv"
+  arg$seed <-  "1"
   arg$aa_calls <- "example_amino_acid_calls.tsv"
   arg$mlaf_output <- "output/FEM_output.tsv"
 }
@@ -70,8 +70,8 @@ if(interactive()){
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
   coi <- as.numeric(coi_path)
-  if(coi != "NA"){
-    return(coi_path)
+  if(!is.na(coi)){
+    return(as.numeric(coi_path))
   }
   else{ #if NA with casting the string to numeric, we were given a path
     COI_table <- read_tsv(coi_path, col_types=list(
@@ -318,7 +318,7 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
             frequency_initial = frequency_initial
         )
         
-        set.seed(arg$seed)
+        set.seed(as.numeric(arg$seed))
 
         # Run MCMC - works up to here
         results <- mcmc_sampling_parallel(processed_data_list,
