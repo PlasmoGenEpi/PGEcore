@@ -69,7 +69,7 @@ if(interactive()){
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
-  coi <- try(as.numeric(coi_path), silent = TRUE)
+  coi <- as.numeric(coi_path)
   if(coi != "NA"){
     return(coi_path)
   }
