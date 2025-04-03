@@ -11,6 +11,8 @@ library(magrittr)
 library(stringr)
 library(optparse)
 library(readr)
+library(purrr)
+library(variantstring)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -25,14 +27,14 @@ opts <- list(
     "--coi", 
     help = str_c(
       "TSV containing COI for each specimen, with the columns: specimen_id, ", 
-      "coi. Required."
+      "coi, or numeric input of COI. Required."
     )
   ), 
   make_option(
     "--groups", 
     help = str_c(
       "TSV containing which regions should be analyzed for each group, with the columns:
-      group_id, gene_id, aa_position Required."
+      group_id, gene_id, aa_position. Required."
     )
   ),
   make_option("--seed", type = "integer", help = "Random number seed. Optional.", default=1), 
@@ -45,38 +47,50 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
-#arg <- list(groups = "example_loci_groups.tsv",
-#            coi = "example_coi_table.tsv",
-#            aa_calls = "example_amino_acid_calls.tsv",
-#            seed = 1,
-#            mlaf_output = "output")
 
+
+if(interactive()){
+  arg$groups <- "example_loci_groups.tsv"
+  arg$coi <- "example_coi_table.tsv"
+  arg$seed <-  "1"
+  arg$aa_calls <- "example_amino_acid_calls.tsv"
+  arg$mlaf_output <- "output/FEM_output.tsv"
+}
 
 #' Returns average COI from COI tsv file path
 #'
-#' Takes in the COI table for the specimens and calculates the average COI
+#' Takes in the COI table for the specimens and calculates the average COI,
+#' or returns the COI value if given directly.
 #'
 #' @param coi_path Path of TSV file with COI for each specimen. It should 
-#' have two columns, "specimen_id" and "coi"
+#' have two columns, "specimen_id" and "coi." Alternatively, you can provide
+#' the numeric value of the average COI. Parsing of which option is done 
+#' automatically.
 #' 
 #' @return average COI across all samples in the file
 calculate_avg_COI <- function(coi_path){
-  COI_table <- read_tsv(coi_path, col_types=list(
-    "specimen_id"=col_character(),
-    "coi"=col_number()))
-  rules <- validate::validator(
-    ! is.na(specimen_id), 
-    ! is.na(coi)
-  )
-  fails <- validate::confront(COI_table, rules, raise = "all") %>%
-    validate::summary() %>%
-    dplyr::filter(fails > 0)
-  if (nrow(fails) > 0) {
-    stop(
-      "Input input_data failed one or more validation checks: ", 
-      str_c(fails$expression, collapse = "\n"), 
-      call. = FALSE
+  coi <- as.numeric(coi_path)
+  if(!is.na(coi)){
+    return(as.numeric(coi_path))
+  }
+  else{ #if NA with casting the string to numeric, we were given a path
+    COI_table <- read_tsv(coi_path, col_types=list(
+      "specimen_id"=col_character(),
+      "coi"=col_number()))
+    rules <- validate::validator(
+      ! is.na(specimen_id), 
+      ! is.na(coi)
     )
+    fails <- validate::confront(COI_table, rules, raise = "all") %>%
+      validate::summary() %>%
+      dplyr::filter(fails > 0)
+    if (nrow(fails) > 0) {
+      stop(
+        "Input input_data failed one or more validation checks: ", 
+        str_c(fails$expression, collapse = "\n"), 
+        call. = FALSE
+      )
+    }
   }
   
   vals <- COI_table$coi
@@ -111,15 +125,15 @@ read_groups <- function(groups_path){
 #' 
 #' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){
-  mutants <- input_data[input_data$ref_aa != input_data$aa,]
-  mutants_ignoring_sample <- distinct(mutants, unique_targets, aa, keep.all=T)
-  mutants <- mutants_ignoring_sample
-  bad_targets <- mutants$unique_targets[duplicated(mutants$unique_targets)] #remove targets that have >1 non-reference call
-  if(length(bad_targets)>0){
+  mutants <- input_data %>% filter(ref_aa != aa,) %>%
+    distinct(unique_targets, aa, keep.all=T)
+  bad_targets <- mutants %>% filter(unique_targets %in% duplicated(unique_targets)) #remove targets that have >1 non-reference call
+  if(nrow(bad_targets)>0){
     warning("Not biallelic, dropped", bad_targets)
   }
-  only_biallelic <- input_data[!(input_data$unique_targets %in% bad_targets),]
-  alt_calls <- only_biallelic[only_biallelic$ref_aa != only_biallelic$aa,] #dataframe containing alt + ref calls for biallelic SNPs
+  only_biallelic <- input_data %>% filter(!(unique_targets %in% bad_targets))
+  alt_calls <- only_biallelic %>% 
+    filter(ref_aa != aa) #dataframe containing alt + ref calls for biallelic SNPs
   return(list(
     only_biallelic,
     alt_calls))
@@ -176,7 +190,6 @@ create_FEM_input <- function(input_path, groups, group_id) {
       call. = FALSE
     )
   }
-  
   input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position, sep=":")
   groups <- groups[groups$group_id == group_id,]
   group_targets <- paste(groups$gene_id, groups$aa_position, sep=":")
@@ -304,8 +317,8 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
             frequency_hyperparameter = frequency_hyperparameter,
             frequency_initial = frequency_initial
         )
-        seed <- seed
-        set.seed(seed)
+        
+        set.seed(as.numeric(arg$seed))
 
         # Run MCMC - works up to here
         results <- mcmc_sampling_parallel(processed_data_list,
@@ -371,53 +384,48 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
 #' 
 #' @return string of the STAVE format for a given string
 bin2STAVE <- function(chars, names, alt_alleles){
-  name <- ""
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
   gene_list <- c()
+  long_form <- tibble(
+    gene = character(),
+    pos = numeric(),
+    n_aa = numeric(),
+    het = logical(),
+    phased = logical(),
+    aa = character(),
+    read_count = numeric()
+  )
+  
   for(char in chars_split){
     if(char==1){call <- "aa"}
     else {call <- "ref_aa"}
-      #gene;position;aa:gene;position;aa
-    formatted_name <- gsub(" ", ":", name)
     alt_current <- alt_alleles[alt_alleles$unique_targets == names[char_ix],]
     gene_current <- str_split(names[char_ix], ":")[[1]][1] ###split appropriately
+    pos_current <- str_split(names[char_ix], ":")[[1]][2] ###split appropriately
     gene_list <- append(gene_list, gene_current)
     alt_current <- alt_current[1, call]
-    name <- paste(formatted_name, paste(names[char_ix], alt_current, sep=":"), sep=";")
+    alt_current <- as.character(alt_current)
     char_ix <- char_ix + 1
+    long_form <- long_form %>% 
+      add_row(gene = gene_current,
+              pos = as.numeric(pos_current),
+              n_aa = NA,
+              het = NA,
+              phased = TRUE,
+              aa = alt_current,
+              read_count = NA,)
   }
-  #removing initial colon
-  name <- substring(name, 2, nchar(name))
-  #collapsing into true STAVE format
-  return_name <- ""
-  cut_name <- str_split(name, ";")[[1]]
-  for(unique_gene in unique(gene_list)){
-    pos <- c()
-    aa <- c()
-    ix <- 1
-    for(gene in gene_list){
-      if(gene==unique_gene){
-        cut_cut_name <- cut_name[ix]
-        pos_ind <- str_split(cut_cut_name, ":")[[1]][2]
-        aa_ind <- str_split(cut_cut_name, ":")[[1]][3]
-        pos <- append(pos, pos_ind)
-        aa <- append(aa, aa_ind)
-      }
-      ix <- ix + 1
-
-    }
-    if(length(pos)==1){
-      return_name <- paste(return_name, cut_cut_name, ";", sep="")
-    }
-    else {
-      ind_name <- paste(unique_gene, paste(pos, collapse="_"), paste(aa, collapse=""), sep=":")
-      return_name <- paste(return_name, ind_name, ";", sep="")
-    }
+  #single_locus_STAVE, into multi-locus stave
+  #adding if calls are het or not in the given locus
+  long_form <- long_form %>% 
+    group_by(gene, pos) %>%
+    mutate(n_aa = n())
     
-  }
-  return_name <- substr(return_name, 1, nchar(return_name)-1)
-  return(return_name)
+  long_form <- long_form %>%
+    mutate(het = if_else(n_aa>1, TRUE, FALSE))
+  string_output <- long_to_variant(list(long_form))
+  return(string_output)
 }
 
 #' Formats a single output from run_FEM
@@ -433,33 +441,30 @@ format_single_group_output <- function(pop_freq_list){
   alt_alleles <- pop_freq_list[[4]]
   num_group <- pop_freq_list[[5]]
   
-  input_list$variant <- lapply(input_list$sequence, bin2STAVE, names, alt_alleles)
-  input_list$sample_total <- num_group
+  input_list <- input_list %>% 
+    mutate(variant=map_chr(sequence, bin2STAVE, names, alt_alleles),
+                        sample_total=num_group) %>% 
+    as_tibble()
   return(input_list)
 }
 
-#arg assignments
-COI <- arg$coi
-groups <- arg$groups
-output_dir <- arg$mlaf_output
-input_dir <- arg$aa_calls
-seed <- arg$seed
 
-#create base dataframe
-groups <- read_groups(groups)
-COI <- calculate_avg_COI(COI)
+groups <- read_groups(arg$groups)
+COI <- calculate_avg_COI(arg$coi)
 overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
                              "CI_2.5"=c(),	"CI_97.5"=c())
 #run FEM separately for each group
 for(group in unique(groups$group_id)){
   #will be one output file
-  fem_results <- run_FreqEstimationModel(input_dir, groups, COI, group)
+  fem_results <- run_FreqEstimationModel(arg$aa_calls, groups, COI, group)
   fem_plsf <- format_single_group_output(fem_results)
   fem_plsf$group_id <- group
   overall_output <- rbind(overall_output, fem_plsf)
 }
 #format and write output to disk
 overall_output <- apply(overall_output,2,as.character)
-overall_output <- overall_output[, 2:8] #remove sequence column
 overall_output_df <- data.frame(overall_output)
 write_tsv(overall_output_df, arg$mlaf_output)
+
+
+
