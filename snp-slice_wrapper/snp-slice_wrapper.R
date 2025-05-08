@@ -1,3 +1,8 @@
+#Usage: Rscript snp-slice_wrapper.R --gap 50 --aa_calls
+#/home/alfred/github_pipelines/PGEcore/data/example_amino_acid_calls.tsv
+#--output final_stave2.tsv --snp_slice_dir /home/alfred/github_pipelines/snp-slice
+#--model 3
+
 library(dplyr)
 library(tidyr)
 library(readr)
@@ -6,6 +11,7 @@ library(stringr)
 library(tibble)
 
 create_SNP_slice_input <- function(input_path, output_ref, output_alt) {
+    dir.create(file.path('inputdata'), showWarnings = FALSE)
     # modified from a chatGPT conversion of a python script I wrote
     # Read the input file
     data <- read_tsv(input_path, show_col_types = FALSE)
@@ -57,10 +63,11 @@ create_ref_alt <-function(input_path, amino_acids) {
     write_tsv(ref_alt, amino_acids)
 }
 
-
-run_SNPslice_neg_binomial <- function(input_data_path1, input_data_path2, output_dir, gap, nmcmc = 10000, alpha = 2, rep = 1, script_path = "my_snpslicemain.R") {
+run_SNPslice_neg_binomial <- function(gap, script_path, model = 3, nmcmc = 10000, alpha = 2, rep = 1) {
+    #setwd('/home/alfred/github_pipelines/snp-slice')
+    output_dir='output' #this output folder is hardcoded in snpslicemain.R so needs to be hardcoded as the same value here
+    dir.create(file.path(output_dir), showWarnings = FALSE)
     #borrowed from Kathryn Murie
-    model <- 3
     # tmp_file_path <- file.path(output_dir, "tmp_formatted_output.txt")
     # # If model is not 0 then need read counts, so need to alter this function to take a second input path
     # create_SNPslice_input(input_data_path, tmp_file_path)
@@ -68,7 +75,6 @@ run_SNPslice_neg_binomial <- function(input_data_path1, input_data_path2, output
     command <- paste(
         "Rscript ", script_path,
         " model=", model, " nmcmc=", nmcmc, " alpha=", alpha, " gap=", gap,
-        " input=", input_data_path1, " input2=", input_data_path2, " output_dir=", output_dir,
         sep = ""
     )
     print(command)
@@ -77,8 +83,8 @@ run_SNPslice_neg_binomial <- function(input_data_path1, input_data_path2, output
     })
     # file.remove(tmp_file_path)
     # Infer the output
-    D_filename <- paste("neg_D_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
-    A_filename <- paste("neg_A_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
+    D_filename <- paste(output_dir, "/example_neg_D_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
+    A_filename <- paste(output_dir, "/example_neg_A_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
     haplotype_dict_path <- D_filename
     host_strain_association <- A_filename
     plsf_table <- infer_SNPslice_freqs(haplotype_dict_path, host_strain_association)
@@ -119,10 +125,9 @@ infer_SNPslice_freqs <- function(haplotype_dict, host_strain_association) {
 
 # Function to get alternates
 get_alternates <- function(assignments, alt_counts) {
-  alt_dict <- read_tsv(assignments, col_names = c("gene_pos", "ref_aa", "alt_aa")) %>%
+  alt_dict <- read_tsv(assignments, col_names = c("gene_pos", "ref_aa", "alt_aa"), show_col_types = FALSE) %>%
     select(gene_pos, ref_aa, alt_aa)
-  
-  loci <- read_tsv(alt_counts, n_max = 1) %>%
+  loci <- read_tsv(alt_counts, n_max = 1, show_col_types = FALSE) %>%
     colnames() %>%
     .[-1]
   
@@ -167,10 +172,11 @@ lookup_genotype <- function(genotype, genotype_mappings) {
 
 # Process frequencies and generate output
 genotypes_from_freqs <- function(freq_estimates, output_file, genotype_mappings) {
-  freqs <- read_tsv(freq_estimates)
+  freqs <- read_tsv(freq_estimates, show_col_types = FALSE)
   
   header_dict <- names(freqs)
-  
+
+
   output <- freqs %>%
     rowwise() %>%
     mutate(
@@ -202,29 +208,57 @@ opts <- list(
   make_option(
     "--gap", 
     help = "how many iterations of no improvement before stopping"
+  ),
+  make_option(
+    "--snp_slice_dir", 
+    help = "path to cloned snp-slice github repo"
+  ),
+  make_option(
+    "--model", 
+    help = "which model number to use, see snp-slice github for documentation"
   )
 )
 
+working_directory <- getwd()
 arg <- parse_args(OptionParser(option_list = opts))
 assignments <- 'alt_alleles.tsv'
-output_ref <- 'ref_counts_R.tsv'
-output_alt <- 'alt_counts_R.tsv'
+output_ref <- 'inputdata/example_read0.txt'
+output_alt <- 'inputdata/example_read1.txt'
 freq_estimates <- 'snp-slice_freqs.tsv'
+
+#this block is only used for testing purposes (arguments not from command line)
+#aa_calls <- '/home/alfred/github_pipelines/PGEcore/data/example_amino_acid_calls.tsv'
+#gap <- '50'
+#create_ref_alt(aa_calls, assignments)
+#create_SNP_slice_input(aa_calls, output_ref, output_alt)
+#output_list=run_SNPslice_neg_binomial(output_alt, output_ref, getwd(), gap=gap)
+#output_file <- 'final_stave2.tsv'
+
+
+
+#the blocks below use arguments from the command line
 output_file <- arg$output
+#reformats standardized input data to SNP-Slice format
+
+setwd(arg$snp_slice_dir)
 
 #creates a simplified table of the reference and alternative alleles associated
 #with each gene position
 create_ref_alt(arg$aa_calls, assignments)
-
-#reformats standardized input data to SNP-Slice format
 create_SNP_slice_input(arg$aa_calls, output_ref, output_alt)
-
 #runs SNP-Slice
-output_list=run_SNPslice_neg_binomial(output_alt, output_ref, getwd(), gap=arg$gap)
-freq=output_list[1]
-write.table(freq, freq_estimates, sep = "\t", row.names = FALSE, quote = FALSE)
+output_list=run_SNPslice_neg_binomial(gap=arg$gap, 
+  script_path=paste(arg$snp_slice_dir, "/snpslicemain.R", sep=""),
+  model=arg$model)
 
+#these blocks use inputs from the steps above and don't depend directly on any
+#command line arguments.
+freq=output_list[1]
 #loads ref_alt mappings into a dataframe
 genotype_mappings <- get_alternates(assignments, output_alt)
+
+setwd(working_directory)
+write.table(freq, freq_estimates, sep = "\t", row.names = FALSE, quote = FALSE)
+
 # Execute the function
 genotypes_from_freqs(freq_estimates, output_file, genotype_mappings)
