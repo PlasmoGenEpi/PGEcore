@@ -395,8 +395,11 @@ run_dcifer <- function(
             .packages = c("dcifer", "foreach", "iterators")
           ) %dopar% {
         total_pairs <- nrow(sample_pairs)
-        begin_idx <- ((i - 1) * total_pairs / total_cores) + 1
-        end_idx <- (i * total_pairs / total_cores)
+        # Use floor to avoid off-by-one error when these equations 
+        # don't yield a whole number. All pairs will still be included 
+        # because end_idx will be a whole number when i = total_cores.
+        begin_idx <- floor(((i - 1) * total_pairs / total_cores) + 1)
+        end_idx <- floor((i * total_pairs / total_cores))
         pairs <- sample_pairs[begin_idx:end_idx, ]
         out <- foreach(pair = iter(pairs, by = "row"), .combine = rbind) %do% {
             ix <- pair$Var1
