@@ -14,8 +14,8 @@ Allele frequency is estimated in two ways:
 
 ## Script Usage 
 ```
-Rscript estimate_allele_frequency_naive.R \
+Rscript scripts/estimate_allele_frequency_naive/estimate_allele_frequency_naive.R \
   --aa_calls data/example_amino_acid_calls.tsv \
-  --method read_count_prop \ # or presence_absence
+  --method read_count_prop \
   --output allele_freqs.tsv
 ```
