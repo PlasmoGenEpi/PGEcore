@@ -1,3 +1,8 @@
+# Get the script dir and make path to utils.R
+script_dir <- dirname(normalizePath(sub("--file=", "", commandArgs(trailingOnly = FALSE)[grep("--file=", commandArgs(trailingOnly = FALSE))])))
+utils_path <- file.path(script_dir, "..", "utils", "utils.R")
+
+source(utils_path)
 library(optparse)
 library(rlang)
 
@@ -122,5 +127,5 @@ out <- switch(
   read_count_prop = calculate_af_read_count_prop(aa_calls),
   presence_absence = calculate_af_presence_absence(aa_calls)
 )
-
-readr::write_tsv(out, args$output)
+freq_output <- convert_single_locus_table_to_stave(out, "freq")
+readr::write_tsv(freq_output, args$output)

@@ -1,3 +1,9 @@
+# Get the script dir and make path to utils.R
+script_dir <- dirname(normalizePath(sub("--file=", "", commandArgs(trailingOnly = FALSE)[grep("--file=", commandArgs(trailingOnly = FALSE))])))
+utils_path <- file.path(script_dir, "..", "utils", "utils.R")
+
+source(utils_path)
+
 library(variantstring)
 library(rlang)
 library(optparse)
@@ -52,10 +58,13 @@ convert_mlaf_to_slaf <- function(dat) {
     dplyr::group_by(.data$group_id, .data$gene, .data$pos, .data$aa) |>
     dplyr::summarize(freq = sum(.data$freq)) |>
     dplyr::ungroup() |>
-    dplyr::arrange("group_id", "gene", "pos", "aa")
+    dplyr::rename(gene_id = gene) |> 
+    dplyr::rename(aa_position = pos) |> 
+    dplyr::arrange("group_id", "gene_id", "aa_position", "aa")
   return(slaf)
 }
 
 mlaf <- load_mlaf(args$mlaf_input)
 slaf <- convert_mlaf_to_slaf(mlaf)
-readr::write_tsv(slaf, args$output)
+slaf_output <- convert_single_locus_table_to_stave(slaf, "freq")
+readr::write_tsv(slaf_output, args$output)
