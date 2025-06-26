@@ -24,5 +24,5 @@ The script can be run using the following command:
 ```bash
 Rscript scripts/MultiLociBiallelicModel_wrapper/MultiLociBiallelicModel_wrapper.R \
     --aa_calls data/example_amino_acid_calls.tsv --loci_group_table \
-    data/example_loci_groups.tsv
+    data/example_loci_groups.tsv --mlaf_output mlaf.tsv
 ```

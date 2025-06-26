@@ -804,6 +804,14 @@ opts = list(
       "TSV containing loci groups, with the columns: group_id, gene_id, 
       aa_position."
     )
+  ), 
+  make_option(
+    "--mlaf_output", 
+    type = "character", 
+    help = str_c(
+      "TSV to contain multilocus allele frequency estimates, with the ", 
+      "columns group_id, variant, and freq"
+    )
   )
 )
 
@@ -1143,7 +1151,7 @@ for (group_name in MLBM_object$groups) {
   MLBM_res[[group_name]] <- summarise_MLBM_results(MLBM_tmp, MLBM_object, group_name)
 }
 
-readr::write_tsv(bind_rows(MLBM_res), "MLBM_summary.tsv")
+readr::write_tsv(bind_rows(MLBM_res), arg$mlaf_output)
 
 ########################################################################
 # End of wrapper script
