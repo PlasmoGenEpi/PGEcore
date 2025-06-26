@@ -305,6 +305,8 @@ create_allele_freq_input <- function(allele_freq_path, allele_list) {
 #'
 #' @inheritParams dcifer::ibdDat
 #' @param total_cores Integer specifying the number of cores to use.
+#' @param verbose If TRUE, output from each parallel process will be 
+#'   printed.
 #'
 #' @return A tibble with a character sample_a column, a character 
 #'   sample_b column, and a double estimate column. If `pval = TRUE`, 
@@ -335,7 +337,8 @@ run_dcifer <- function(
                             alpha = 0.05, 
                             nr = 1000, 
                             reval = NULL, 
-                            total_cores = NULL) {
+                            total_cores = NULL, 
+                            verbose = FALSE) {
 
     dwithin <- is.null(dsmp2)
     if (confint) {
@@ -378,7 +381,7 @@ run_dcifer <- function(
     }
     
     if (is.null(getDefaultCluster())) {
-        if (arg$verbose) {
+        if (verbose) {
           cl <- makeCluster(total_cores, outfile = "")
         } else {
           cl <- makeCluster(total_cores)
@@ -401,7 +404,11 @@ run_dcifer <- function(
         begin_idx <- floor(((i - 1) * total_pairs / total_cores) + 1)
         end_idx <- floor((i * total_pairs / total_cores))
         pairs <- sample_pairs[begin_idx:end_idx, ]
-        out <- foreach(pair = iter(pairs, by = "row"), .combine = rbind) %do% {
+        out <- foreach(
+                pair = iter(pairs, by = "row"), 
+                .combine = rbind, 
+                .verbose = verbose
+              ) %do% {
             ix <- pair$Var1
             iy <- pair$Var2
             rxy <- ibdPair(list(dsmp[[ix]], dsmp2[[iy]]), c(
@@ -483,6 +490,7 @@ run_dcifer(
     confint = TRUE, 
     rnull = arg$rnull, 
     alpha = arg$alpha, 
-    total_cores = arg$threads
+    total_cores = arg$threads, 
+    verbose = arg$verbose
   ) %>%
   write_dcifer_output(arg$btwn_host_rel_output)
