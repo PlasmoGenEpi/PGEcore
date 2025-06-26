@@ -96,7 +96,11 @@ run_estimate_coi_naive <- function(input_path,
   stopifnot((quantile_threshold >= 0) & (quantile_threshold <= 1))
   
   # Read allele calls from file
-  df_alleles <- read.table(file = input_path, header = TRUE)
+  df_alleles <- read_tsv(
+    input_path, 
+    col_types = cols(.default = col_character(), read_count = col_integer()), 
+    progress = FALSE
+  )
   
   # Validate input format
   rules <- validate::validator(is.character(specimen_id),
