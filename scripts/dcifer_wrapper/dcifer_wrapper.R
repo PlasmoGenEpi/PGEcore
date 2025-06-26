@@ -304,6 +304,7 @@ create_allele_freq_input <- function(allele_freq_path, allele_list) {
 #' execution.
 #'
 #' @inheritParams dcifer::ibdDat
+#' @param coi Vector of COI values with specimen_id names.
 #' @param total_cores Integer specifying the number of cores to use.
 #' @param verbose If TRUE, output from each parallel process will be 
 #'   printed.
@@ -373,8 +374,11 @@ run_dcifer <- function(
     nsmp2 <- length(dsmp2)
     snames2 <- names(dsmp2)
 
-    sample_pairs <- expand.grid(1:nsmp, 1:nsmp2) |>
-        dplyr::filter(Var1 < Var2)
+    sample_pairs_matrix <- combn(names(dsmp), 2)
+    sample_pairs <- tibble(
+      sample_a = sample_pairs_matrix[1,], 
+      sample_b = sample_pairs_matrix[2,]
+    )
 
     if (is.null(total_cores)) {
         total_cores <- parallelly::availableCores() - 1
@@ -409,24 +413,33 @@ run_dcifer <- function(
                 .combine = rbind, 
                 .verbose = verbose
               ) %do% {
-            ix <- pair$Var1
-            iy <- pair$Var2
-            rxy <- ibdPair(list(dsmp[[ix]], dsmp2[[iy]]), c(
-                coi[ix],
-                coi2[iy]
-            ), afreq,
-            M = 1, pval = pval, confreg = confint,
-            rnull = rnull, alpha = alpha, mnewton = mnewton,
-            freqlog = TRUE, reval = reval, tol = tol, logr = logr,
-            neval = neval, inull = inull, nloc = nloc
+            sample_a <- pair$sample_a
+            sample_b <- pair$sample_b
+            rxy <- ibdPair(
+              list(dsmp[[sample_a]], dsmp[[sample_b]]), 
+              c(coi[sample_a], coi[sample_b]), 
+              afreq,
+              M = 1, 
+              pval = pval, 
+              confreg = confint,
+              rnull = rnull, 
+              alpha = alpha, 
+              mnewton = mnewton,
+              freqlog = TRUE, 
+              reval = reval, 
+              tol = tol, 
+              logr = logr,
+              neval = neval, 
+              inull = inull, 
+              nloc = nloc
             )
             estimate <- rxy$rhat
             p_value <- rxy$pval
             CI_lower <- range(rxy$confreg)[1]
             CI_upper <- range(rxy$confreg)[2]
             tibble::tibble(
-              sample_a = names(dsmp)[ix], 
-              sample_b = names(dsmp)[iy], 
+              sample_a = sample_a, 
+              sample_b = sample_b, 
               estimate = estimate, 
               p_value = p_value, 
               CI_lower = CI_lower, 
@@ -468,6 +481,9 @@ dcifer_alleles <- create_allele_table_input(arg$allele_table)
 # If no COI input was provided, use Dcifer's built-in naive estimation
 if (is.null(arg$coi_table)) {
   coi <- dcifer::getCOI(dcifer_alleles)
+  # Remove locus used for estimation from vector names
+  names(coi) <- names(coi) %>%
+    str_split_i("\\.", 1)
 } else {
   coi <- create_coi_input(arg$coi_table, dcifer_alleles)
 }
