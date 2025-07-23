@@ -307,7 +307,7 @@ extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_inte
                rel_end = end - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1])
       
       snps_of_interest_for_target_for_microhap = tibble()
-      # get the relative position of the codon within the aligned sequence and translate 
+      # get the relative position of the snp within the aligned sequence and translate 
       for(snps_of_interest_for_target_row in 1:nrow(snps_of_interest_for_target)){
         aln_pos = getAlnPosPerRealPos(getAlignedSubjectFromOverlapAlign(overlapAlign), snps_of_interest_for_target$rel_start[snps_of_interest_for_target_row] + 1)
         seq_base = Biostrings::DNAString(substr(getAlignedPatternFromOverlapAlign(overlapAlign), aln_pos, aln_pos + snps_of_interest_for_target$length[snps_of_interest_for_target_row] -1))
