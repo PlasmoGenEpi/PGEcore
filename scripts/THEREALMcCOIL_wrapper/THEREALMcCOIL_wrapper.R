@@ -542,11 +542,11 @@ prep_input_categorical <- function(df) {
     select(-count) %>%
     pivot_wider(names_from = target_id, values_from = score, )
 
-	df_mat <- data.frame(df_wide[, -1])
-	dim(df_mat)
-	dim(df_wide)
-	rownames(df_mat) <-  pull(df_wide, specimen_id)
-	return (df_mat)
+  df_mat <- data.frame(df_wide[, -1])
+  dim(df_mat)
+  dim(df_wide)
+  rownames(df_mat) <- pull(df_wide, specimen_id)
+  return(df_mat)
 }
 
 df_input <- prep_input_categorical(df_sim)
@@ -558,3 +558,25 @@ McCOIL_categorical(
   totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
   err_method = 3, path = getwd(), output = "output_test.txt")
 
+# ============== format output ================
+
+format_output <- function() {
+  df_mccoil <- read.table("./output_test.txt_summary.txt", sep = '\t', header = TRUE)
+
+  df_slaf <- df_mccoil %>% filter(CorP == "P") %>%
+    select(name, median) %>%
+    rename(variant = name, freq = median)
+
+  df_coi <- df_mccoil %>% filter(CorP == "C") %>%
+    select(name, median) %>%
+    rename(specimen_id = name, coi = median)
+
+  return(list(slaf = df_mccoil, coi = df_coi))
+}
+
+df_formated <- format_output()
+
+write_output <- function(df_formated) {
+	df_formated$slaf %>% write_csv("output_slaf.tsv")
+	df_formated$coi %>% write_csv("output_coi.tsv")
+}
