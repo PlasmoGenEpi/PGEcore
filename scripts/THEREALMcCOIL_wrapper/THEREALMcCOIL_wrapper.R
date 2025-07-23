@@ -1,3 +1,7 @@
+library(dplyr)
+library(readr)
+library(tidyr)
+
 # ========================= C Code from THEREALMcCOIL repo =================
 #
 #
@@ -422,12 +426,135 @@ McCOIL_categorical = function(data,
 
 # ============================ test code =========================
 
-input_fn <- "./THEREALMcCOIL/categorical_method/input_test.txt"
-data0 <- read.table(input_fn, head = TRUE)
-data <- data0[, -1]
-rownames(data) <- data0[, 1]
+# input_fn <- "./THEREALMcCOIL/categorical_method/input_test.txt"
+# data0 <- read.table(input_fn, head = TRUE)
+# data <- data0[, -1]
+# rownames(data) <- data0[, 1]
+
+# McCOIL_categorical(
+#   data, maxCOI = 25, threshold_ind = 20, threshold_site = 20,
+#   totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
+#   err_method = 3, path = getwd(), output = "output_test.txt")
+
+
+# ======================== AmpSeq data processing ========================
+# df <- read.table("../../data/example_allele_table.tsv", sep = '\t', header = TRUE)
+# colnames(df)
+# unique(df$seq) # 14 alleles not work for McCOIL which assume biallelic data
+
+
+simulate_test_data <- function() {
+  set.seed(41)
+  sample_list <- c()
+  site_lst <- c()
+  allele_lst <- c()
+  count_lst <- c()
+
+  for (isite in 1:300) {
+    site <- paste0("site", isite)
+    nallele <- rpois(1, 2)
+    if (nallele < 2) {
+      next
+    }
+    freqs <- rep(0, nallele)
+    for (i in 1:(nallele - 1)) {
+      if (i == 1) {
+        freqs[i] <- runif(1, 0, 1)
+        freqs[i] <- runif(1, 0, 0.01)
+      } else {
+        freqs[i] <- runif(1, 0, 1 - sum(freqs))
+      }
+    }
+    freqs[nallele] <- 1 - sum(freqs[1:(nallele - 1)])
+
+    for (isample in 1:30) {
+      sample <- paste0("sample", isample)
+      depth <- rpois(1, 30)
+      is_monoclonal <- runif(1) < 0.8
+      alleles <- paste0("a", 1:nallele)
+      if (is_monoclonal) {
+        sample_list <- c(sample_list, rep(sample, 1))
+        site_lst <- c(site_lst, rep(site, 1))
+        allele <- sample(alleles, size = 1)
+        allele_lst <- c(allele_lst, allele)
+        count_lst <- c(count_lst, depth)
+
+      } else {
+        counts <- as.integer(depth * freqs)
+        sample_list <- c(sample_list, rep(sample, nallele))
+        site_lst <- c(site_lst, rep(site, nallele))
+        allele_lst <- c(allele_lst, alleles)
+        count_lst <- c(count_lst, counts)
+      }
+    }
+  }
+
+  return(data.frame(specimen_id = sample_list,
+    target_id = site_lst, seq = allele_lst,
+    read_count = count_lst))
+}
+
+df_sim <- simulate_test_data()
+
+
+prep_input_categorical <- function(df) {
+  # data filtering
+  colnames(df)
+
+  biallelic_sites <- df %>%
+    distinct(target_id, seq) %>%
+    group_by(target_id) %>%
+    count() %>%
+    filter(n == 2) %>%
+    pull(target_id)
+
+
+  df <- df %>% filter(target_id %in% biallelic_sites)
+
+  # get site major allele
+  major_allele <- df %>%
+    group_by(target_id, seq) %>%
+    summarize(total = sum(read_count)) %>%
+    group_by(target_id) %>%
+    slice_max(total, n = 1, with_ties = FALSE) %>%
+    select(target_id, seq) %>%
+    rename(major_allele = seq)
+
+  df_recode <- df %>%
+    left_join(major_allele) %>%
+    mutate(allele_idx = if_else(seq == major_allele, 1, 0)) %>%
+    select(specimen_id, target_id, "allele_idx") %>%
+    group_by(specimen_id, target_id) %>%
+    summarise(
+      count = n(),
+      score = case_when(
+        count == 0 ~ -1,
+        all(allele_idx == 0) ~ 0,
+        all(allele_idx == 1) ~ 1,
+        TRUE ~ 0.5
+      ),
+      .groups = "drop"
+    )
+
+  df_recode %>% distinct(score)
+
+  df_wide <- df_recode %>%
+    select(-count) %>%
+    pivot_wider(names_from = target_id, values_from = score, )
+
+	df_mat <- data.frame(df_wide[, -1])
+	dim(df_mat)
+	dim(df_wide)
+	rownames(df_mat) <-  pull(df_wide, specimen_id)
+	return (df_mat)
+}
+
+df_input <- prep_input_categorical(df_sim)
+
+# ============== CALL mccoil =================
 
 McCOIL_categorical(
-  data, maxCOI = 25, threshold_ind = 20, threshold_site = 20,
+  df_input, maxCOI = 25, threshold_ind = 20, threshold_site = 20,
   totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
   err_method = 3, path = getwd(), output = "output_test.txt")
+
