@@ -46,13 +46,15 @@ Options:
 		Show this help message and exit
 ```
 
-Two required options of `--snp_table` and `--output_fnp `. Details below
+Two required options of `--snp_table` and `--output_fnp `. Details below for `--snp_table`. 
 
 
 ### \-\-snp_table 
 The expected input is the collapsed SNP calls from `pileup_specific_snps/pileup_specific_snps.R` though any table with columns of `specimen_id, target_id, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic` will work as long as the input has only 1 call per `specimen_id` and `seq_base` (e.g. SNP calls that have the same SNPs accross different target will cause the script to throw an error). 
 
 #### Example
+
+Here is example SNP table that could be input into the script. 
 
 |specimen\_id|target\_id|chrom|pos|snp\_name|ref\_base|seq\_base|best\_target\_id|covered\_by\_target\_ids|read\_count|isBiallelic|
 |:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
@@ -61,6 +63,9 @@ The expected input is the collapsed SNP calls from `pileup_specific_snps/pileup_
 |Laos2017-01|Pf3D7\_07\_v3-0403499-0403683|Pf3D7\_07\_v3|403611|Pf3D7\_07\_v3-403611-403612|T|T|Pf3D7\_07\_v3-0403499-0403683|Pf3D7\_07\_v3-0403499-0403683,Pf3D7\_07\_v3-0403507-0403717|5884|TRUE|
 |Laos2017-01|Pf3D7\_07\_v3-0403499-0403683|Pf3D7\_07\_v3|403612|Pf3D7\_07\_v3-403612-403613|G|G|Pf3D7\_07\_v3-0403499-0403683|Pf3D7\_07\_v3-0403499-0403683,Pf3D7\_07\_v3-0403507-0403717|5884|TRUE|
 
+### Output
+
+The output will be a filtered table of the input so it will look the same as the input table. 
 
 ### Example Script Usage
 
