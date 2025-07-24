@@ -141,7 +141,7 @@ ensure_output_directory <- function(output_directory, overwrite_dir = F){
   if(dir.exists(output_directory) & overwrite_dir){
     unlink(output_directory, recursive = T)
   } else if(dir.exists(output_directory)){
-    stop(paste0(output_directory, " already exist, use --", overwrite_dir, " to overwrite"))
+    stop(paste0(output_directory, " already exist, use --overwrite_dir to overwrite"))
   }
   dir.create(output_directory)
 }
@@ -372,14 +372,14 @@ collapse_allele_table <- function(allele_table_to_filter, collapse_calls_by_summ
     allele_table_out_collapsed = allele_table_to_filter |> 
       group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa) |> 
       summarise(read_count = sum(read_count), 
-                target_id = paste0(target_id, collapse = ","))
+                target_id = paste0(sort(target_id), collapse = ","))
   } else { 
     allele_table_out_winnerTarget = allele_table_to_filter |> 
       group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, target_id) |> 
       summarise(read_count = sum(read_count)) |> 
       arrange(desc(read_count)) |> 
       mutate(read_count_rank = row_number(), 
-             covered_by_target_ids = paste0(target_id, collapse = ",")) |> 
+             covered_by_target_ids = paste0(sort(target_id), collapse = ",")) |> 
       filter(read_count_rank == 1) |> 
       ungroup() |> 
       select(-read_count_rank) |> 

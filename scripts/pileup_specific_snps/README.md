@@ -94,7 +94,7 @@ The output will have 3-4 files.
 
 *  [snp\_calls.tsv.gz](#snp_callstsvgz)
 *  [collapsed\_snp\_calls.tsv.gz](#collapsed_snp_callstsvgz)  
-*  [snps\_covered\_by\_target\_samples\_info.tsv](snps_covered_by_target_samples_infotsv)  
+*  [snps\_covered\_by\_target\_samples\_info.tsv](#snps_covered_by_target_samples_infotsv)  
 
 #### snp\_calls.tsv.gz 
 

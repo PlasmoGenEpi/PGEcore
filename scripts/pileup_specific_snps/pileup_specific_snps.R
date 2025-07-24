@@ -140,7 +140,7 @@ ensure_output_directory <- function(output_directory, overwrite_dir = F){
   if(dir.exists(output_directory) & overwrite_dir){
     unlink(output_directory, recursive = T)
   } else if(dir.exists(output_directory)){
-    stop(paste0(output_directory, " already exist, use --", overwrite_dir, " to overwrite"))
+    stop(paste0(output_directory, " already exist, use --overwrite_dir to overwrite"))
   }
   dir.create(output_directory)
 }
@@ -361,14 +361,14 @@ collapse_allele_table <- function(allele_table_to_collpase, collapse_calls_by_su
     allele_table_out_collapsed = allele_table_to_collpase |> 
       group_by(specimen_id, chrom, pos, snp_name, ref_base, seq_base) |> 
       summarise(read_count = sum(read_count), 
-                target_id = paste0(target_id, collapse = ","))
+                target_id = paste0(sort(target_id), collapse = ","))
   } else { 
     allele_table_out_winnerTarget = allele_table_to_collpase |> 
       group_by(specimen_id, chrom, pos, snp_name, ref_base, target_id) |> 
       summarise(read_count = sum(read_count)) |> 
       arrange(desc(read_count)) |> 
       mutate(read_count_rank = row_number(), 
-             covered_by_target_ids = paste0(target_id, collapse = ",")) |> 
+             covered_by_target_ids = paste0(sort(target_id), collapse = ",")) |> 
       filter(read_count_rank == 1) |> 
       ungroup() |> 
       select(-read_count_rank) |> 
@@ -665,11 +665,11 @@ run_pileup_specific_snps <-function(){
   # adding biallelic info 
   allele_table_out = allele_table_out %>% 
     group_by(chrom, pos, snp_name, ref_base) %>% 
-    mutate(isBiallelic = n_distinct(seq_base) <=2)
+    mutate(is_biallelic = n_distinct(seq_base) <=2)
   
   allele_table_out_collapsed = allele_table_out_collapsed %>% 
     group_by(chrom, pos, snp_name, ref_base) %>% 
-    mutate(isBiallelic = n_distinct(seq_base) <=2)
+    mutate(is_biallelic = n_distinct(seq_base) <=2)
   
   # writing output results 
   write_tsv(allele_table_out, file.path(arg$output_directory, "snp_calls.tsv.gz"))
