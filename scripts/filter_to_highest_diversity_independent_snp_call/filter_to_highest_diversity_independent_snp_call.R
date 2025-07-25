@@ -127,16 +127,142 @@ check_warnings_for_subselecting_snp_table <- function(snp_data, opt_sub_sels, sn
   return (warns)
 }
 
+
+
+
+#' validate the input data columns 
+#'
+#' @param snp_table the snp data table 
+#'
+#' @return the warnings about the input 
+validate_columns_types <-function(snp_table){
+  warns = c()
+  # validate columns snp_table
+  snp_table_rules <- validate::validator(
+    is.character(specimen_id),
+    is.numeric(read_count),
+    is.character(target_id), 
+    is.character(ref_base),
+    is.character(seq_base), 
+    is.character(chrom),
+    is.character(snp_name),
+    is.numeric(pos),
+    is.logical(is_biallelic),
+    ! is.na(specimen_id), 
+    ! is.na(read_count), 
+    ! is.na(target_id), 
+    ! is.na(ref_base),
+    ! is.na(seq_base), 
+    ! is.na(chrom),
+    ! is.na(snp_name),
+    ! is.na(pos),
+    ! is.na(is_biallelic)
+  )
+  snp_table_fails <- validate::confront(snp_table, snp_table_rules, raise = "all") |>
+    validate::summary() |>
+    dplyr::filter(fails > 0)
+  if (nrow(snp_table_fails) > 0) {
+    warns = paste0(
+      "Input snp_table failed one or more validation checks: ", 
+      str_c(snp_table_fails$expression, collapse = "\n")
+    )
+  }
+  return(warns)
+}
+
+
+#' Filter SNPs so there is a minimum distance between SNPs
+#'
+#' @param snp_table_in the input SNP table to filter 
+#' @param mindist_between_snps the minimum distance between SNPs
+#' @param only_biallelic whether or not to filter to only biallelic SNPs
+#' @param only_informative whether or not to filter to only SNPs with variation
+#'
+#' @returns the input table filtered to highest diversity SNPs more than a certain distance from each other
+filter_to_highest_diversity_independent_snp_call <-function(snp_table_in, 
+                                                            mindist_between_snps = 10000, 
+                                                            only_biallelic = F, 
+                                                            only_informative = F){
+  # filter to biallelic SNPs too if set 
+  if(only_biallelic){
+    snp_table_in = snp_table_in |>
+      filter(is_biallelic)
+  }
+  # for counts and he calc to work, SNPs need to be collapsed already 
+  snp_table_counts_per_specimen_id = snp_table_in |> 
+    group_by(specimen_id, chrom, pos, snp_name, ref_base, seq_base) |> 
+    mutate(n = n())
+  
+  warnings = c()
+  snp_table_counts_per_specimen_id_multi = snp_table_counts_per_specimen_id |> 
+    filter(n > 1)
+  if(nrow(snp_table_counts_per_specimen_id_multi) > 0){
+    warnings = c(warnings, paste0("the following snps were found to have multiple calls per specimen_id for the same seq_base, make sure calls are collapsed", 
+                                  ":\n", 
+                                  paste0(unique(snp_table_counts_per_specimen_id_multi$snp_name), collapse = ",")))
+  }
+  if(length(warnings) > 0){
+    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+  }
+  
+  # get expected heterozygosity (he) of SNPs 
+  snp_table_freqs = snp_table_in |> 
+    group_by(chrom, pos, snp_name, ref_base, seq_base) |> 
+    summarise(allele_count = n()) |> 
+    group_by(chrom, pos, snp_name, ref_base) |> 
+    mutate(allele_total = sum(allele_count)) |> 
+    mutate(allele_freq = allele_count/allele_total)
+  
+  snp_table_he = snp_table_freqs |> 
+    group_by(chrom, pos, snp_name, ref_base) |> 
+    summarise(he = 1 - sum(allele_freq^2)) |> 
+    arrange(desc(he))
+  
+  # filtering table by getting max he and then taking the next best he that doesn't come within the min distance
+  snp_table_he$keep = T
+  for(row in 2:nrow(snp_table_he)){
+    for(filt_row in 1:(row -1)){
+      if(snp_table_he$keep[filt_row] & 
+         snp_table_he$chrom[filt_row] == snp_table_he$chrom[row] & 
+         abs(snp_table_he$pos[filt_row] - snp_table_he$pos[row]) < mindist_between_snps){
+        snp_table_he$keep[row] = F
+        break
+      }
+    }
+  }
+  snp_table_he_filt = snp_table_he |> 
+    filter(keep) |> 
+    mutate(snp_id = paste0(chrom, "-", pos))
+  
+  if(only_informative){
+    # if turned on, filter only to informative SNPs e.g. those with variation
+    snp_table_he_filt = snp_table_he_filt |> 
+      filter(he > 0)
+  }
+  # join back and get the max per target_id 
+  snp_table_in = snp_table_in |> 
+    left_join(snp_table_he |> 
+                select(-keep), by = c("chrom", "pos", "snp_name", "ref_base"))
+  
+  # filter to the max he with no ties (first come first out slicing)
+  # to get the best snp for each target
+  snp_table_out = snp_table_in |> 
+    filter(paste0(chrom, "-", pos)  %in%  snp_table_he_filt$snp_id)
+  
+  return(snp_table_out)
+}
+
+
 # Parse arguments ------------------------------------------------------
 opts <- list(
   make_option(
-    "--snp_table", 
+    "--snp_table_in", 
     help = str_c(
       "TSV containing at least the columns: specimen_id, target_id, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic"
     )
   ),
   make_option(
-    "--output_fnp", 
+    "--snp_table_out", 
     help = str_c(
       "the output filename path for the output filtered file"
     )
@@ -190,156 +316,49 @@ opts <- list(
   )
 )
 
+# Main body of script 
 
-#' validate the input data columns 
-#'
-#' @param snp_table the snp data table 
-#'
-#' @return the warnings about the input 
-validate_columns_types <-function(snp_table){
-  warns = c()
-  # validate columns snp_table
-  snp_table_rules <- validate::validator(
-    is.character(specimen_id),
-    is.numeric(read_count),
-    is.character(target_id), 
-    is.character(ref_base),
-    is.character(seq_base), 
-    is.character(chrom),
-    is.character(snp_name),
-    is.numeric(pos),
-    is.logical(is_biallelic),
-    ! is.na(specimen_id), 
-    ! is.na(read_count), 
-    ! is.na(target_id), 
-    ! is.na(ref_base),
-    ! is.na(seq_base), 
-    ! is.na(chrom),
-    ! is.na(snp_name),
-    ! is.na(pos),
-    ! is.na(is_biallelic)
-  )
-  snp_table_fails <- validate::confront(snp_table, snp_table_rules, raise = "all") |>
-    validate::summary() |>
-    dplyr::filter(fails > 0)
-  if (nrow(snp_table_fails) > 0) {
-    warns = paste0(
-      "Input snp_table failed one or more validation checks: ", 
-      str_c(snp_table_fails$expression, collapse = "\n")
-    )
-  }
-  return(warns)
+required_arguments = c("snp_table_in", "snp_table_out")
+# parse arguments
+arg <- parse_args(OptionParser(option_list = opts))
+
+## check for required arguments
+checkOptparseRequiredArgsThrow(arg, required_arguments)
+
+# check if output exists and if it does throw if not overwriting 
+if(file.exists(arg$snp_table_out) & !arg$overwrite){
+  stop(paste0("file ", arg$snp_table_out, " exits, use --overwrite to over write it"))
 }
 
-#' run filtering SNPs to the highest diversity SNP per microhaplotype target
-#'
-#' @return true if runs all the way through
-run_filter_to_highest_diversity_snp_call <-function(){
-  required_arguments = c("snp_table", "output_fnp")
-  # parse arguments
-  arg <- parse_args(OptionParser(option_list = opts))
-  
-  ## check for required arguments
-  checkOptparseRequiredArgsThrow(arg, required_arguments)
-  
-  # check if output exists and if it does throw if not overwriting 
-  if(file.exists(arg$output_fnp) & !arg$overwrite){
-    stop(paste0("file ", arg$output_fnp, " exits, use --overwrite to over write it"))
-  }
-  
-  # process if only processing specific targets and specimens
-  optional_sub_selections = check_subselecting_args(arg)
-  
-  # read in input data and gather warnings about columns and data formatting 
-  warnings = c()
+# process if only processing specific targets and specimens
+optional_sub_selections = check_subselecting_args(arg)
 
-  # read in snp table for the microhaplotype data 
-  snp_table = readr::read_tsv(arg$snp_table)
-  
-  # sanity check the input
-  warnings = c(warnings, genWarningsMissCols(snp_table, c("specimen_id", "target_id", "chrom", "pos", "snp_name", "ref_base", "seq_base", "read_count", "is_biallelic"), arg$snp_table))
-  if(length(warnings) > 0){
-    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
-  }
-  warnings = c()
-  warnings = c(warnings, check_warnings_for_subselecting_snp_table(snp_table, optional_sub_selections, arg$snp_table))
-  if(length(warnings) > 0){
-    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
-  }
-  
-  # filter snp table for optional sub-selecting
-  snp_table = filter_snp_table_for_optional_subselecting(snp_table, optional_sub_selections)
-  
-  # filter to biallelic SNPs too if set 
-  if(arg$only_biallelic){
-    snp_table = snp_table |>
-      filter(is_biallelic)
-  }
-  
-  # for counts and he calc to work, SNPs need to be collapsed already 
-  snp_table_counts_per_specimen_id = snp_table |> 
-    group_by(specimen_id, chrom, pos, snp_name, ref_base, seq_base) |> 
-    mutate(n = n())
-  
-  warnings = c()
-  snp_table_counts_per_specimen_id_multi = snp_table_counts_per_specimen_id |> 
-    filter(n > 1)
-  if(nrow(snp_table_counts_per_specimen_id_multi) > 0){
-    warnings = c(warnings, paste0("the following snps were found to have multiple calls per specimen_id for the same seq_base, make sure calls are collapsed", 
-                                  ":\n", 
-                                  paste0(unique(snp_table_counts_per_specimen_id_multi$snp_name), collapse = ",")))
-  }
-  if(length(warnings) > 0){
-    stop(paste0("\n", paste0(warnings, collapse = "\n")) )
-  }
-  
-  # get expected heterozygosity (he) of SNPs 
-  snp_table_freqs = snp_table |> 
-    group_by(chrom, pos, snp_name, ref_base, seq_base) |> 
-    summarise(allele_count = n()) |> 
-    group_by(chrom, pos, snp_name, ref_base) |> 
-    mutate(allele_total = sum(allele_count)) |> 
-    mutate(allele_freq = allele_count/allele_total)
-  
-  snp_table_he = snp_table_freqs |> 
-    group_by(chrom, pos, snp_name, ref_base) |> 
-    summarise(he = 1 - sum(allele_freq^2)) |> 
-    arrange(desc(he))
-  
-  # filtering table by getting max he and then taking the next best he that doesn't come within the min distance
-  snp_table_he$keep = T
-  for(row in 2:nrow(snp_table_he)){
-    for(filt_row in 1:(row -1)){
-      if(snp_table_he$chrom[filt_row] == snp_table_he$chrom[row] & 
-         abs(snp_table_he$pos[filt_row] - snp_table_he$pos[row]) < arg$mindist_between_snps){
-        snp_table_he$keep[row] = F
-        break
-      }
-    }
-  }
-  snp_table_he_filt = snp_table_he |> 
-    filter(keep) |> 
-    mutate(snp_id = paste0(chrom, "-", pos))
-  
-  if(arg$only_informative){
-    # if turned on, filter only to informative SNPs e.g. those with variation
-    snp_table_he_filt = snp_table_he_filt |> 
-      filter(he > 0)
-  }
-  # join back and get the max per target_id 
-  snp_table = snp_table |> 
-    left_join(snp_table_he |> 
-                select(-keep), by = c("chrom", "pos", "snp_name", "ref_base"))
-  
-  # filter to the max he with no ties (first come first out slicing)
-  # to get the best snp for each target
-  snp_table_out = snp_table |> 
-    filter(paste0(chrom, "-", pos)  %in%  snp_table_he_filt$snp_id)
+# read in input data and gather warnings about columns and data formatting 
+warnings = c()
 
-  # writing output results 
-  write_tsv(snp_table_out, arg$output_fnp)
-  
-  return(T)
+# read in snp table for the microhaplotype data 
+snp_table_in = readr::read_tsv(arg$snp_table_in)
+
+# sanity check the input
+warnings = c(warnings, genWarningsMissCols(snp_table_in, c("specimen_id", "target_id", "chrom", "pos", "snp_name", "ref_base", "seq_base", "read_count", "is_biallelic"), arg$snp_table_in))
+if(length(warnings) > 0){
+  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
+}
+warnings = c()
+warnings = c(warnings, check_warnings_for_subselecting_snp_table(snp_table_in, optional_sub_selections, arg$snp_table_in))
+if(length(warnings) > 0){
+  stop(paste0("\n", paste0(warnings, collapse = "\n")) )
 }
 
-run_status = run_filter_to_highest_diversity_snp_call()
+# filter snp table for optional sub-selecting
+snp_table_in = filter_snp_table_for_optional_subselecting(snp_table_in, optional_sub_selections)
+
+# filter the snp table 
+snp_table_out = filter_to_highest_diversity_independent_snp_call(snp_table_in, 
+                                                                 arg$mindist_between_snps, 
+                                                                 arg$only_biallelic, 
+                                                                 arg$only_informative)
+
+# writing output results 
+write_tsv(snp_table_out, arg$snp_table_out)
+

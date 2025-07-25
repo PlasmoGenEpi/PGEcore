@@ -18,10 +18,10 @@ Usage: ./filter_to_highest_diversity_independent_snp_call.R [options]
 
 
 Options:
-	--snp_table=SNP_TABLE
+	--snp_table_in=SNP_TABLE_IN
 		TSV containing at least the columns: specimen_id, target_id, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic
 
-	--output_fnp=OUTPUT_FNP
+	--snp_table_out=SNP_TABLE_OUT
 		the output filename path for the output filtered file
 
 	--mindist_between_snps=MINDIST_BETWEEN_SNPS
@@ -46,7 +46,7 @@ Options:
 		Show this help message and exit
 ```
 
-Two required options of `--snp_table` and `--output_fnp `. Details below for `--snp_table`. 
+Two required options of `--snp_table_in` and `--snp_table_out`. Details below for `--snp_table_in`. 
 
 
 ### \-\-snp_table 
@@ -76,10 +76,10 @@ Using the files in the github `data/` folder and run within the same folder of `
 ./../pileup_specific_snps/pileup_specific_snps.R --allele_table ../../data/example2_allele_table.tsv --ref_bed ../../data/example_PMO_insert_locs_of_panel.bed --output_directory testing --snps_of_interest ../../data/MAD4HATTER_coveredSnps.bed  --overwrite_dir
 
 # filter SNPS 
-./filter_to_highest_diversity_independent_snp_call.R --snp_table testing/collapsed_snp_calls.tsv.gz --out independent_collapsed_snp_calls.tsv.gz
+./filter_to_highest_diversity_independent_snp_call.R --snp_table_in testing/collapsed_snp_calls.tsv.gz --snp_table_out independent_collapsed_snp_calls.tsv.gz
 
 ## use only biallelic and only informative snps 
-./filter_to_highest_diversity_independent_snp_call.R --snp_table testing/collapsed_snp_calls.tsv.gz --out independent_collapsed_snp_calls.tsv.gz --only_biallelic --only_informative --overwrite
+./filter_to_highest_diversity_independent_snp_call.R --snp_table_in testing/collapsed_snp_calls.tsv.gz --snp_table_out independent_collapsed_snp_calls.tsv.gz --only_biallelic --only_informative --overwrite
 
 ```
 
