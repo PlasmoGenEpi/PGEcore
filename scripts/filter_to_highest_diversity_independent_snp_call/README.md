@@ -73,13 +73,25 @@ Using the files in the github `data/` folder and run within the same folder of `
 
 ```bash
 # run a pileup of SNPs 
-./../pileup_specific_snps/pileup_specific_snps.R --allele_table ../../data/example2_allele_table.tsv --ref_bed ../../data/example_PMO_insert_locs_of_panel.bed --output_directory testing --snps_of_interest ../../data/MAD4HATTER_coveredSnps.bed  --overwrite_dir
+./../pileup_specific_snps/pileup_specific_snps.R --allele_table \
+    ../../data/example2_allele_table.tsv --ref_bed \
+    ../../data/example_PMO_insert_locs_of_panel.bed --output_directory testing \
+    --snps_of_interest ../../data/MAD4HATTER_coveredSnps.bed  --overwrite_dir
 
 # filter SNPS 
-./filter_to_highest_diversity_independent_snp_call.R --snp_table_in testing/collapsed_snp_calls.tsv.gz --snp_table_out independent_collapsed_snp_calls.tsv.gz
+./filter_to_highest_diversity_independent_snp_call.R --snp_table_in \
+    testing/collapsed_snp_calls.tsv.gz --snp_table_out \
+    independent_collapsed_snp_calls.tsv.gz
 
-## use only biallelic and only informative snps 
-./filter_to_highest_diversity_independent_snp_call.R --snp_table_in testing/collapsed_snp_calls.tsv.gz --snp_table_out independent_collapsed_snp_calls.tsv.gz --only_biallelic --only_informative --overwrite
+# use only biallelic and only informative snps 
+./filter_to_highest_diversity_independent_snp_call.R --snp_table_in \
+    testing/collapsed_snp_calls.tsv.gz --snp_table_out \
+    independent_collapsed_snp_calls.tsv.gz --only_biallelic --only_informative \
+    --overwrite
 
+# using the SNP pileup output example dataset
+./filter_to_highest_diversity_independent_snp_call.R --snp_table_in \
+    data/example_collapsed_snp_calls.tsv --snp_table_out \
+    independent_collapsed_snp_calls.tsv.gz
 ```
 
