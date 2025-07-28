@@ -2092,7 +2092,11 @@ get_value_of_required_argument <- function(arg, opt, choices = c()) {
     stop(paste0("--", opt, " must be set"))
   } else {
     if ((length(choices) > 0) && !(arg[[opt]] %in% choices)) {
-      stop(paste0("--", opt, " must be one of ", paste(choices, "|")))
+      stop(paste0(
+        "--", opt, " must be one of ",
+        paste(choices, collapse = "|"
+        )
+      ))
     }
   }
   return(arg[[opt]])
@@ -2114,7 +2118,9 @@ get_value_of_optional_argument <- function(
     return(default_val)
   } else {
     if ((length(choices) > 0) && !(arg[[opt]] %in% choices)) {
-      stop(paste0("--", opt, " must be one of ", paste(choices, "|")))
+      stop(paste0(
+        "--", opt, " must be one of ",
+        paste(choices, collapse = "|")))
     }
     return(arg[[opt]])
   }
@@ -2139,8 +2145,8 @@ get_optparse_args <- function() {
       default = "categorical",
       help = str_c(
         "categorial or proprotional. ",
-        "The categorical one [C] models heterozygous/homozygous calls; ",
-        "the proportional one [P] models frequency data",
+        "The `categorical` one models heterozygous/homozygous calls; ",
+        "the `proportional` one models frequency data",
         "Default: %default"
       )
     ),
@@ -2148,47 +2154,72 @@ get_optparse_args <- function() {
       "--maxCOI",
       type = "integer",
       default = "25",
-      help = str_c("[C/P] Default: %default")
+      help = str_c(
+        "Upper bound for COI. ",
+        "Can be used in both models. ",
+        "Default: %default")
     ),
     make_option(
       "--threshold_ind",
       type = "integer",
       default = "20",
-      help = str_c("[C] Default: %default")
+      help = str_c(
+        "The minimum number of sites for a sample to be considered. ",
+        "Used only in the categorical model. ",
+        "Default: %default"
+      )
     ),
     make_option(
       "--threshold_site",
       type = "integer",
       default = "20",
-      help = str_c("[C] Default: %default")
+      help = str_c(
+        "The minimum number of samples for a locus to be considered. ",
+        "Used only in the categorical model. ",
+        "Default: %default")
     ),
     make_option("--totalrun",
       type = "integer",
       default = "10000",
-      help = str_c("[C/P] Default: %default")
+      help = str_c(
+        "The total number of MCMC iterations. ",
+        "Can be used in both models. ",
+        "Default: %default")
     ),
     make_option(
       "--burnin",
       type = "integer",
       default = "1000",
-      help = str_c("[C/P] Default: %default")
+      help = str_c(
+        "The total number of burnin iterations",
+        "Can be used in both models. ",
+        "Default: %default")
     ),
     make_option(
       "--M0",
       type = "integer",
       default = "15",
-      help = str_c("[C/P] Default: %default")
+      help = str_c(
+        "Initial COI",
+        "Can be used in both models. ",
+        "Default: %default")
     ),
     make_option("--e1",
       type = "double",
       default = "0.05",
-      help = str_c("[C] Default: %default")
+      help = str_c(
+        "The probability of calling homozygous loci heterozygous. ",
+        "Used only in the categorical model. ",
+        "Default: %default")
     ),
     make_option(
       "--e2",
       type = "double",
       default = "0.05",
-      help = str_c("[C] Default: %default")
+      help = str_c(
+        "The probability of calling heterozygous loci homozygous",
+        "Used only in the categorical model. ",
+        "Default: %default")
     ),
     make_option(
       "--epsilon",
@@ -2200,7 +2231,11 @@ get_optparse_args <- function() {
       "--err_method",
       type = "integer",
       default = "1",
-      help = str_c("[C/P] Default: %default")
+      help = str_c(
+        "1: use pre-specified e1 and e2 and treat them as constants; ",
+        "3: e1 and e2 are estimated with COI and allele frequencies",
+        "Can be used in both models. ",
+        "Default: %default")
     ),
     make_option(
       "--slaf_output",
@@ -2358,24 +2393,28 @@ call_mccoil <- function(df, args) {
     #   totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
     #   err_method = 3, path = getwd(), output = "McCOIL_out.txt"
     # )
+    err_method <- get_value_of_optional_argument(
+      args, "err_method", 1, c(1, 3))
     McCOIL_categorical(
       mccoil_cat_input,
       maxCOI = args$maxCOI, threshold_ind = args$threshold_ind,
       threshold_site = args$threshold_site,
       totalrun = args$totalrun, burnin = args$burnin,
       M0 = args$M0, e1 = args$e1, e2 = args$e2,
-      err_method = args$err_method,
+      err_method = err_method,
       path = getwd(), output = "McCOIL_out.txt"
     )
   } else {
     compile_mccoil_prop_c_code()
     write_mccoil_fitted_data()
     mccoil_prop_input <- prep_input_prop(df)
+    err_method <- get_value_of_optional_argument(
+      args, "err_method", 1, c(1, 3))
     McCOIL_proportional(mccoil_prop_input$a1, mccoil_prop_input$a2,
       maxCOI = args$maxCOI,
       totalrun = args$totalrun, burnin = args$burnin,
       M0 = args$M0, epsilon = args$epsilon,
-      err_method = args$err_method,
+      err_method = err_method,
       path = getwd(), output = "McCOIL_out.txt"
     )
   }
