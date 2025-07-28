@@ -1,8 +1,15 @@
-library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
 library(readr)
 library(tidyr)
+library(optparse)
+suppressPackageStartupMessages(library(validate))
+library(stringr)
 
-use_categorial <- FALSE
+options(readr.show_col_types = FALSE)
+
+options(error = function() {
+  traceback()
+})
 
 # ========================= C Code from THEREALMcCOIL repo =================
 #
@@ -11,7 +18,10 @@ use_categorial <- FALSE
 # llfunction_het.c and  McCOIL_categorical_code.c files
 #
 # See: https://github.com/EPPIcenter/THEREALMcCOIL/tree/master/categorical_method
-mccoil_categorial_c_code <- '
+
+
+compile_mccoil_cat_c_code <- function() {
+  mccoil_categorial_c_code <- '
 #include <R.h>
 #include <Rmath.h>
 #include <stdio.h>
@@ -262,19 +272,28 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 	fprintf(V0,"\\n");
 
 	t2 = time(NULL);
-	Rprintf("Time = %.2f s\\n", difftime(t2, t1));
+  // comment out to avoid printing this information
+	// Rprintf("Time = %.2f s\\n", difftime(t2, t1));
 	fclose(V0);
 	PutRNGstate();
 }
 '
 
-mccoil_categorical_c_file <- "McCOIL_categorical_code.c"
-writeLines(mccoil_categorial_c_code, mccoil_categorical_c_file)
+  mccoil_categorical_c_file <- "McCOIL_categorical_code.c"
+  writeLines(mccoil_categorial_c_code, mccoil_categorical_c_file)
 
-cmd <- paste("R CMD SHLIB", mccoil_categorical_c_file)
-system(cmd)
+  cmd_out <- system2("R",
+    args = c("CMD", "SHLIB", mccoil_categorical_c_file),
+    stdout = TRUE, stderr = TRUE)
+  status <- attr(cmd_out, "status") # NULL means success
+  if (!is.null(status) && status != 0) {
+    cat("Build failed:\n")
+    cat(cmd_out, sep = "\n")
+  }
+}
 
-mccoil_prop_c_code <- '
+compile_mccoil_prop_c_code <- function() {
+  mccoil_prop_c_code <- '
 #include <R.h>
 #include <Rmath.h>
 #include <stdio.h>
@@ -428,8 +447,9 @@ void McCOIL_prop(int *max, int *iterations, int *n0, int *k0, double *A1,
   }
 
   for (i = 1; i <= iter; i++) {
-    if (i % (iter / 10) == 0)
-      Rprintf("Iter %d out of %d\\n", i, iter);
+    // commented to not print this information
+    // if (i % (iter / 10) == 0)
+    //  Rprintf("Iter %d out of %d\\n", i, iter);
 
     for (j = 1; j <= n; j++) {
       prime = rbinom(1, 0.5);
@@ -598,21 +618,30 @@ void McCOIL_prop(int *max, int *iterations, int *n0, int *k0, double *A1,
   fprintf(V0, "\\n");
 
   t2 = time(NULL);
-  Rprintf("Time = %.2f s\\n", difftime(t2, t1));
+  // avoid printing this information
+  // Rprintf("Time = %.2f s\\n", difftime(t2, t1));
 
   fclose(V0);
   PutRNGstate();
 }
 '
 
-mccoil_prop_c_file <- "McCOIL_prop_code.c"
-writeLines(mccoil_prop_c_code, mccoil_prop_c_file)
+  mccoil_prop_c_file <- "McCOIL_prop_code.c"
+  writeLines(mccoil_prop_c_code, mccoil_prop_c_file)
 
-cmd <- paste("R CMD SHLIB", mccoil_prop_c_file)
-system(cmd)
+  cmd_out <- system2("R",
+    args = c("CMD", "SHLIB", mccoil_prop_c_file),
+    stdout = TRUE, stderr = TRUE)
+  status <- attr(cmd_out, "status") # NULL means success
+  if (!is.null(status) && status != 0) {
+    cat("Build failed:\n")
+    cat(cmd_out, sep = "\n")
+  }
+}
 
 # ====================== Fitted data from THEREALMcCOIL ==============
-fitted_data_str <- 'MOI	Freq	A	B
+write_mccoil_fitted_data <- function() {
+  fitted_data_str <- "MOI	Freq	A	B
 2	0.01	1.0190187950627	1.07675339023791
 2	0.02	0.983231105745988	0.968055007697213
 2	0.03	0.965766995333277	0.979565374461366
@@ -1812,67 +1841,70 @@ fitted_data_str <- 'MOI	Freq	A	B
 25	0.47	5.57304327520758	6.27803306686569
 25	0.48	5.64060586871093	6.12021038832346
 25	0.49	5.91327153347654	6.15191380869017
-25	0.5	5.95269974744936	5.93828984453485'
+25	0.5	5.95269974744936	5.93828984453485"
 
-# a data file needed by the THEREALMcCOIL/proportional_method
-read_tsv(fitted_data_str) %>% write_tsv("fitted_beta_grid_25.txt")
+  # a data file needed by the THEREALMcCOIL/proportional_method
+  read_tsv(fitted_data_str) %>% write_tsv("fitted_beta_grid_25.txt")
+}
 
 # ======================== R code from THEREALMcCOIL =====================
 #
-McCOIL_categorical = function(data,
-                              maxCOI = 25,
-                              threshold_ind = 20,
-                              threshold_site = 20,
-                              totalrun = 10000,
-                              burnin = 1000,
-                              M0 = 15,
-                              e1 = 0.05,
-                              e2 = 0.05,
-                              err_method = 1,
-                              path = getwd(),
-                              output = "output.txt") {
-  mcCoil_categorical_code_location = '/McCOIL_categorical_code.so'
-  if (Sys.info()['sysname'] == 'Windows') {
-    mcCoil_categorical_code_location = '/McCOIL_categorical_code.dll'
+McCOIL_categorical <- function(data,
+                               maxCOI = 25,
+                               threshold_ind = 20,
+                               threshold_site = 20,
+                               totalrun = 10000,
+                               burnin = 1000,
+                               M0 = 15,
+                               e1 = 0.05,
+                               e2 = 0.05,
+                               err_method = 1,
+                               path = getwd(),
+                               output = "output.txt") {
+  mcCoil_categorical_code_location <- "/McCOIL_categorical_code.so"
+  if (Sys.info()["sysname"] == "Windows") {
+    mcCoil_categorical_code_location <- "/McCOIL_categorical_code.dll"
   }
 
-  In_ind = rep(NA, nrow(data))
-  In_site = rep(NA, ncol(data))
+  In_ind <- rep(NA, nrow(data))
+  In_site <- rep(NA, ncol(data))
   for (i in (1:nrow(data))) {
-    if ((length(data[i, ]) - sum(data[i, ] == -1)) >= threshold_ind)
-      In_ind[i] = TRUE
-    else
-      In_ind[i] = FALSE
+    if ((length(data[i, ]) - sum(data[i, ] == -1)) >= threshold_ind) {
+      In_ind[i] <- TRUE
+    } else {
+      In_ind[i] <- FALSE
+    }
   }
   for (i in (1:ncol(data))) {
-    if ((length(data[, i]) - sum(data[, i] == -1)) >= threshold_site)
-      In_site[i] = TRUE
-    else
-      In_site[i] = FALSE
+    if ((length(data[, i]) - sum(data[, i] == -1)) >= threshold_site) {
+      In_site[i] <- TRUE
+    } else {
+      In_site[i] <- FALSE
+    }
   }
 
   ## remove sites and individuals with too much missing data
-  simpleS = data[In_ind, ]
-  simpleS = simpleS[, In_site]
+  simpleS <- data[In_ind, ]
+  simpleS <- simpleS[, In_site]
 
   ## remove sites with P=0 or 1
-  P = rep(NA, ncol(simpleS))
+  P <- rep(NA, ncol(simpleS))
   for (j in (1:ncol(simpleS))) {
-    temp = simpleS[, j]
-    P[j] = (sum(temp == 1) + 0.5 * sum(temp != 0 &
+    temp <- simpleS[, j]
+    P[j] <- (sum(temp == 1) + 0.5 * sum(temp != 0 &
       temp != 1 & temp != -1)) / sum(temp != -1)
   }
-  In = (P != Inf & P != "NaN" & P != 0 & P != 1)
-  simpleS2 = simpleS[, In]
+  In <- (P != Inf & P != "NaN" & P != 0 & P != 1)
+  simpleS2 <- simpleS[, In]
 
-  select_pos = colnames(data)[In_site][In]
-  select_ind = rownames(data)[In_ind]
+  select_pos <- colnames(data)[In_site][In]
+  select_ind <- rownames(data)[In_ind]
 
-  n = nrow(simpleS2)
-  k = ncol(simpleS2)
-  simpleS2_vec = as.vector(t(simpleS2))
-  P0 = P[In]
-  M0 = rep(M0, n)
+  n <- nrow(simpleS2)
+  k <- ncol(simpleS2)
+  simpleS2_vec <- as.vector(t(simpleS2))
+  P0 <- P[In]
+  M0 <- rep(M0, n)
 
   if ((n > 10 & k > 10)) {
     dyn.load(paste(path, mcCoil_categorical_code_location, sep = ""))
@@ -1897,37 +1929,41 @@ McCOIL_categorical = function(data,
   }
 
   ## summarize results
-  outputMCMC1 = read.table(paste(path, "/", output, sep = ""), head = F)
-  meanM = as.numeric(round(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, mean)))
-  meanP = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, mean))
-  medianM = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, median))
-  medianP = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, median))
-  M975 = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, function(x)
-    quantile(x, probs = 0.975)))
-  P975 = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x)
-    quantile(x, probs = 0.975)))
-  M025 = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, function(x)
-    quantile(x, probs = 0.025)))
-  P025 = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x)
-    quantile(x, probs = 0.025)))
-  sdM = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, sd))
-  sdP = as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, sd))
+  outputMCMC1 <- read.table(paste(path, "/", output, sep = ""), head = F)
+  meanM <- as.numeric(round(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, mean)))
+  meanP <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, mean))
+  medianM <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, median))
+  medianP <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, median))
+  M975 <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, function(x) {
+    quantile(x, probs = 0.975)
+  }))
+  P975 <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x) {
+    quantile(x, probs = 0.975)
+  }))
+  M025 <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, function(x) {
+    quantile(x, probs = 0.025)
+  }))
+  P025 <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x) {
+    quantile(x, probs = 0.025)
+  }))
+  sdM <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, (1:n) + 1], 2, sd))
+  sdP <- as.numeric(apply(outputMCMC1[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, sd))
 
   if (err_method == 3) {
-    mean_e1 = as.numeric(mean(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)]))
-    median_e1 = as.numeric(median(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)]))
-    e1_975 = as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)], probs = 0.975))
-    e1_025 = as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)], probs = 0.025))
-    sd_e1 = as.numeric(sd(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)]))
+    mean_e1 <- as.numeric(mean(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)]))
+    median_e1 <- as.numeric(median(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)]))
+    e1_975 <- as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)], probs = 0.975))
+    e1_025 <- as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)], probs = 0.025))
+    sd_e1 <- as.numeric(sd(outputMCMC1[(burnin + 1):totalrun, (k + n + 2)]))
 
-    mean_e2 = as.numeric(mean(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)]))
-    median_e2 = as.numeric(median(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)]))
-    e2_975 = as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)], probs = 0.975))
-    e2_025 = as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)], probs = 0.025))
-    sd_e2 = as.numeric(sd(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)]))
+    mean_e2 <- as.numeric(mean(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)]))
+    median_e2 <- as.numeric(median(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)]))
+    e2_975 <- as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)], probs = 0.975))
+    e2_025 <- as.numeric(quantile(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)], probs = 0.025))
+    sd_e2 <- as.numeric(sd(outputMCMC1[(burnin + 1):totalrun, (k + n + 3)]))
   }
   if ((err_method == 1) | (err_method == 2)) {
-    output_sum = data.frame(cbind(
+    output_sum <- data.frame(cbind(
       rep(output, (n + k)),
       c(rep("C", n), rep("P", k)),
       c(select_ind, select_pos),
@@ -1937,9 +1973,8 @@ McCOIL_categorical = function(data,
       c(M025, P025),
       c(M975, P975)
     ))
-  }
-  else {
-    output_sum = data.frame(cbind(
+  } else {
+    output_sum <- data.frame(cbind(
       rep(output, (n + k + 2)),
       c(rep("C", n), rep("P", k), "e1", "e2"),
       c(select_ind, select_pos, "e1", "e2"),
@@ -1950,14 +1985,16 @@ McCOIL_categorical = function(data,
       c(M975, P975, e1_975, e2_975)
     ))
   }
-  colnames(output_sum) = c("file",
+  colnames(output_sum) <- c(
+    "file",
     "CorP",
     "name",
     "mean",
     "median",
     "sd",
     "quantile0.025",
-    "quantile0.975")
+    "quantile0.975"
+  )
   write.table(
     output_sum,
     paste(path, "/", output, "_summary.txt", sep = ""),
@@ -1966,161 +2003,282 @@ McCOIL_categorical = function(data,
     row.names = F,
     quote = F
   )
-
 }
 
-McCOIL_proportional = function(dataA1, dataA2, maxCOI = 25, totalrun = 10000, burnin = 1000, M0 = 15, epsilon = 0.02, err_method = 1, path = getwd(), output = "output.txt") {
-
-  mcCoil_prop_code_location = '/McCOIL_prop_code.so'
-  if (Sys.info()['sysname'] == 'Windows') {
-    mcCoil_prop_code_location = '/McCOIL_prop_code.dll'
+McCOIL_proportional <- function(dataA1, dataA2, maxCOI = 25, totalrun = 10000, burnin = 1000, M0 = 15, epsilon = 0.02, err_method = 1, path = getwd(), output = "output.txt") {
+  mcCoil_prop_code_location <- "/McCOIL_prop_code.so"
+  if (Sys.info()["sysname"] == "Windows") {
+    mcCoil_prop_code_location <- "/McCOIL_prop_code.dll"
   }
 
-  grid = read.table(paste(path, "/fitted_beta_grid_25.txt", sep = ""), head = T)
-  n = nrow(dataA1)
-  k = ncol(dataA1)
-  M0 = rep(M0, n)
-  P0 = rep(0.5, k)
-  A1 = as.vector(t(dataA1))
-  A2 = as.vector(t(dataA2))
+  grid <- read.table(paste(path, "/fitted_beta_grid_25.txt", sep = ""), head = T)
+  n <- nrow(dataA1)
+  k <- ncol(dataA1)
+  M0 <- rep(M0, n)
+  P0 <- rep(0.5, k)
+  A1 <- as.vector(t(dataA1))
+  A2 <- as.vector(t(dataA2))
 
   if ((n > 10 & k > 10)) {
     dyn.load(paste(path, mcCoil_prop_code_location, sep = ""))
-    Kc <- .C("McCOIL_prop", as.integer(maxCOI), as.integer(totalrun), as.integer(n), as.integer(k), as.double(A1), as.double(A2), as.integer(M0), as.double(P0), as.double(grid$A), as.double(grid$B), as.double(epsilon), as.character(output), as.character(path), as.integer(err_method))
+    Kc <- .C(
+      "McCOIL_prop",
+      as.integer(maxCOI),
+      as.integer(totalrun),
+      as.integer(n),
+      as.integer(k),
+      as.double(A1),
+      as.double(A2),
+      as.integer(M0),
+      as.double(P0),
+      as.double(grid$A),
+      as.double(grid$B),
+      as.double(epsilon),
+      as.character(output),
+      as.character(path),
+      as.integer(err_method)
+    )
     dyn.unload(paste(path, mcCoil_prop_code_location, sep = ""))
-
-  } else { stop(paste("Sample size is too small (n=", n, ", k=", k, ").", sep = ""))}
+  } else {
+    stop(paste("Sample size is too small (n=", n, ", k=", k, ").", sep = ""))
+  }
 
   ## summarize results
-  outputMCMC2 = read.table(paste(path, "/", output, sep = ""), head = F)
-  meanM = as.numeric(round(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, mean)))
-  meanP = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, mean))
-  medianM = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, median))
-  medianP = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, median))
-  M975 = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, function(x) quantile(x, probs = 0.975)))
-  P975 = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x) quantile(x, probs = 0.975)))
-  M025 = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, function(x) quantile(x, probs = 0.025)))
-  P025 = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x) quantile(x, probs = 0.025)))
-  sdM = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, sd))
-  sdP = as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, sd))
+  outputMCMC2 <- read.table(paste(path, "/", output, sep = ""), head = F)
+  meanM <- as.numeric(round(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, mean)))
+  meanP <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, mean))
+  medianM <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, median))
+  medianP <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, median))
+  M975 <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, function(x) quantile(x, probs = 0.975)))
+  P975 <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x) quantile(x, probs = 0.975)))
+  M025 <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, function(x) quantile(x, probs = 0.025)))
+  P025 <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, function(x) quantile(x, probs = 0.025)))
+  sdM <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, (1:n) + 1], 2, sd))
+  sdP <- as.numeric(apply(outputMCMC2[(burnin + 1):totalrun, ((1:k) + n + 1)], 2, sd))
 
 
   if (err_method == 3) {
-    mean_e3 = as.numeric(mean(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)]))
-    median_e3 = as.numeric(median(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)]))
-    e3_975 = as.numeric(quantile(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)], probs = 0.975))
-    e3_025 = as.numeric(quantile(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)], probs = 0.025))
-    sd_e3 = as.numeric(sd(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)]))
+    mean_e3 <- as.numeric(mean(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)]))
+    median_e3 <- as.numeric(median(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)]))
+    e3_975 <- as.numeric(quantile(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)], probs = 0.975))
+    e3_025 <- as.numeric(quantile(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)], probs = 0.025))
+    sd_e3 <- as.numeric(sd(outputMCMC2[(burnin + 1):totalrun, (k + n + 2)]))
   }
   if ((err_method == 1) | (err_method == 2)) {
-    output_sum = data.frame(cbind(rep(output, (n + k)), c(rep("C", n), rep("P", k)), c(rownames(dataA1), colnames(dataA1)), c(meanM, meanP), c(medianM, medianP), round(c(sdM, sdP), digits = 5), c(M025, P025), c(M975, P975)))
+    output_sum <- data.frame(cbind(rep(output, (n + k)), c(rep("C", n), rep("P", k)), c(rownames(dataA1), colnames(dataA1)), c(meanM, meanP), c(medianM, medianP), round(c(sdM, sdP), digits = 5), c(M025, P025), c(M975, P975)))
+  } else {
+    output_sum <- data.frame(cbind(rep(output, (n + k + 1)), c(rep("C", n), rep("P", k), "epsilon"), c(rownames(dataA1), colnames(dataA1), "epsilon"), c(meanM, meanP, mean_e3), c(medianM, medianP, median_e3), round(c(sdM, sdP, sd_e3), digits = 5), c(M025, P025, e3_025), c(M975, P975, e3_975)))
   }
-  else {
-    output_sum = data.frame(cbind(rep(output, (n + k + 1)), c(rep("C", n), rep("P", k), "epsilon"), c(rownames(dataA1), colnames(dataA1), "epsilon"), c(meanM, meanP, mean_e3), c(medianM, medianP, median_e3), round(c(sdM, sdP, sd_e3), digits = 5), c(M025, P025, e3_025), c(M975, P975, e3_975)))
-  }
-  colnames(output_sum) = c("file", "CorP", "name", "mean", "median", "sd", "quantile0.025", "quantile0.975")
+  colnames(output_sum) <- c("file", "CorP", "name", "mean", "median", "sd", "quantile0.025", "quantile0.975")
   write.table(output_sum, paste(path, "/", output, "_summary.txt", sep = ""), sep = "\t", col.names = T, row.names = F, quote = F)
-
 }
 
-# ============================ test code =========================
+# ======================= WRAPPER CODE =======================================
 
-# input_fn <- "./THEREALMcCOIL/categorical_method/input_test.txt"
-# data0 <- read.table(input_fn, head = TRUE)
-# data <- data0[, -1]
-# rownames(data) <- data0[, 1]
+# ================= Parameter parsing ======================
 
-# McCOIL_categorical(
-#   data, maxCOI = 25, threshold_ind = 20, threshold_site = 20,
-#   totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
-#   err_method = 3, path = getwd(), output = "output_test.txt")
-
-
-# ======================== AmpSeq data processing ========================
-# df <- read.table("../../data/example_allele_table.tsv", sep = '\t', header = TRUE)
-# colnames(df)
-# unique(df$seq) # 14 alleles not work for McCOIL which assume biallelic data
-
-
-simulate_test_data <- function() {
-  set.seed(41)
-  sample_list <- c()
-  site_lst <- c()
-  allele_lst <- c()
-  count_lst <- c()
-
-  for (isite in 1:300) {
-    site <- paste0("site", isite)
-    nallele <- rpois(1, 2)
-    if (nallele < 2) {
-      next
-    }
-    freqs <- rep(0, nallele)
-    for (i in 1:(nallele - 1)) {
-      if (i == 1) {
-        freqs[i] <- runif(1, 0, 1)
-        freqs[i] <- runif(1, 0, 0.01)
-      } else {
-        freqs[i] <- runif(1, 0, 1 - sum(freqs))
-      }
-    }
-    freqs[nallele] <- 1 - sum(freqs[1:(nallele - 1)])
-
-    for (isample in 1:30) {
-      sample <- paste0("sample", isample)
-      depth <- rpois(1, 30)
-      is_monoclonal <- runif(1) < 0.8
-      alleles <- paste0("a", 1:nallele)
-      if (is_monoclonal) {
-        sample_list <- c(sample_list, rep(sample, 1))
-        site_lst <- c(site_lst, rep(site, 1))
-        allele <- sample(alleles, size = 1)
-        allele_lst <- c(allele_lst, allele)
-        count_lst <- c(count_lst, depth)
-
-      } else {
-        counts <- as.integer(depth * freqs)
-        sample_list <- c(sample_list, rep(sample, nallele))
-        site_lst <- c(site_lst, rep(site, nallele))
-        allele_lst <- c(allele_lst, alleles)
-        count_lst <- c(count_lst, counts)
-      }
+#' Obtain the value of a required argument from the object returned by
+#' the optparse parse_args function
+#'
+#' @param arg A list object returned from the optparse parse_args function
+#' @param opt The name of the argument
+#' @param choices An optional array of possible values.
+#' If opt is not in choices, it will stop running. If choices are empty,
+#' this check will not be performed.
+#' @return The value of the required argument. The function will stop
+#' if the argument is missing.
+get_value_of_required_argument <- function(arg, opt, choices = c()) {
+  if (!(opt %in% names(arg))) {
+    stop(paste0("--", opt, " must be set"))
+  } else {
+    if ((length(choices) > 0) && !(arg[[opt]] %in% choices)) {
+      stop(paste0("--", opt, " must be one of ", paste(choices, "|")))
     }
   }
-
-  return(data.frame(specimen_id = sample_list,
-    target_id = site_lst, seq = allele_lst,
-    read_count = count_lst))
+  return(arg[[opt]])
 }
 
-df_sim <- simulate_test_data()
+#' Obtain the value of an optional argument from the object returned by
+#' the optparse parse_args function
+#'
+#' @param arg A list object returned from the optparse parse_args function
+#' @param opt The name of the argument
+#' @param default_val The default value for this argument
+#' @param choices An optional array of possible values. If opt is not
+#' in choices, it will stop running. If choices are empty, this check
+#' will not be performed.
+#' @return The value of the optional argument.
+get_value_of_optional_argument <- function(
+    arg, opt, default_val, choices = c()) {
+  if (!(opt %in% names(arg))) {
+    return(default_val)
+  } else {
+    if ((length(choices) > 0) && !(arg[[opt]] %in% choices)) {
+      stop(paste0("--", opt, " must be one of ", paste(choices, "|")))
+    }
+    return(arg[[opt]])
+  }
+}
+
+#' Parse arguments
+#'
+#' @return A list of arguments parsed from the command line.
+get_optparse_args <- function() {
+  opts <- list(
+    make_option(
+      "--snp_calls_input",
+      type = "character",
+      help = str_c(
+        "TSV containing snp calls, with at least the following columns: ",
+        "specimen_id, target_id, snp_name, pos, seq_base, read_counts, he. ",
+        "Required"
+      )
+    ),
+    make_option("--model",
+      type = "character",
+      default = "categorical",
+      help = str_c(
+        "categorial or proprotional. ",
+        "The categorical one [C] models heterozygous/homozygous calls; ",
+        "the proportional one [P] models frequency data",
+        "Default: %default"
+      )
+    ),
+    make_option(
+      "--maxCOI",
+      type = "integer",
+      default = "25",
+      help = str_c("[C/P] Default: %default")
+    ),
+    make_option(
+      "--threshold_ind",
+      type = "integer",
+      default = "20",
+      help = str_c("[C] Default: %default")
+    ),
+    make_option(
+      "--threshold_site",
+      type = "integer",
+      default = "20",
+      help = str_c("[C] Default: %default")
+    ),
+    make_option("--totalrun",
+      type = "integer",
+      default = "10000",
+      help = str_c("[C/P] Default: %default")
+    ),
+    make_option(
+      "--burnin",
+      type = "integer",
+      default = "1000",
+      help = str_c("[C/P] Default: %default")
+    ),
+    make_option(
+      "--M0",
+      type = "integer",
+      default = "15",
+      help = str_c("[C/P] Default: %default")
+    ),
+    make_option("--e1",
+      type = "double",
+      default = "0.05",
+      help = str_c("[C] Default: %default")
+    ),
+    make_option(
+      "--e2",
+      type = "double",
+      default = "0.05",
+      help = str_c("[C] Default: %default")
+    ),
+    make_option(
+      "--epsilon",
+      type = "double",
+      default = "0.02",
+      help = str_c("[P] Default: %default")
+    ),
+    make_option(
+      "--err_method",
+      type = "integer",
+      default = "1",
+      help = str_c("[C/P] Default: %default")
+    ),
+    make_option(
+      "--slaf_output",
+      type = "character",
+      help = str_c(
+        "Output TSV containing single locus allele frequencies, with the ",
+        "columns: variant, freq. ",
+        "Required"
+      )
+    ),
+    make_option(
+      "--coi_output",
+      type = "character",
+      help = str_c(
+        "Output TSV containing single locus allele frequencies, with the ",
+        "columns: variant, freq. ",
+        "Required"
+      )
+    )
+  )
+  args <- parse_args(OptionParser(option_list = opts))
+  return(args)
+}
+
+# ===================== prepare input =========================
+
+read_and_preprocess_snp_call <- function(snp_calls_input) {
+  # read indepdent snp call table
+  # df_snp_call <- read_tsv("./test_data/independent_collapsed_snp_calls.tsv")
+  df_snp_call <- read_tsv(snp_calls_input)
+
+  # find snp site that show exactly two variants
+  biallelic_snps <- df_snp_call %>%
+    distinct(snp_name, pos, seq_base) %>%
+    group_by(snp_name, pos) %>%
+    count() %>%
+    rename(nalleles = n) %>%
+    filter(nalleles == 2)
+
+  # filter out non-biallelic snps
+  df <- df_snp_call %>% left_join(biallelic_snps, by = c("snp_name", "pos")) %>%
+    filter(nalleles == 2)
+
+  # for each target find snp with largest he
+  snp_with_max_he_per_target <- df %>%
+    select(target_id, pos, he) %>%
+    distinct() %>%
+    group_by(target_id) %>%
+    slice_max(order_by = he, n = 1, with_ties = FALSE) %>%
+    select(target_id, pos) %>%
+    mutate(selected = TRUE)
+
+  # filter rows that contains the snps with largest he per target
+  df <- df %>% left_join(snp_with_max_he_per_target, by = c("target_id", "pos")) %>%
+    filter(selected = TRUE) %>%
+    select(specimen_id, snp_name, seq_base, read_count)
+
+  return(df)
+}
+
 
 
 prep_input_categorical <- function(df) {
-  biallelic_sites <- df %>%
-    distinct(target_id, seq) %>%
-    group_by(target_id) %>%
-    count() %>%
-    filter(n == 2) %>%
-    pull(target_id)
-
-
-  df <- df %>% filter(target_id %in% biallelic_sites)
 
   # get site major allele
   major_allele <- df %>%
-    group_by(target_id, seq) %>%
-    summarize(total = sum(read_count)) %>%
-    group_by(target_id) %>%
+    group_by(snp_name, seq_base) %>%
+    summarize(total = sum(read_count), .groups = "keep") %>%
+    group_by(snp_name) %>%
     slice_max(total, n = 1, with_ties = FALSE) %>%
-    select(target_id, seq) %>%
-    rename(major_allele = seq)
+    select(snp_name, seq_base) %>%
+    rename(major_allele = seq_base)
 
   df_recode <- df %>%
-    left_join(major_allele) %>%
-    mutate(allele_idx = if_else(seq == major_allele, 1, 0)) %>%
-    select(specimen_id, target_id, "allele_idx") %>%
-    group_by(specimen_id, target_id) %>%
+    left_join(major_allele, by = "snp_name") %>%
+    mutate(allele_idx = if_else(seq_base == major_allele, 1, 0)) %>%
+    select(specimen_id, snp_name, "allele_idx") %>%
+    group_by(specimen_id, snp_name) %>%
     summarise(
       count = n(),
       score = case_when(
@@ -2132,41 +2290,31 @@ prep_input_categorical <- function(df) {
       .groups = "drop"
     )
 
-  # df_recode %>% distinct(score)
 
   df_wide <- df_recode %>%
     select(-count) %>%
-    pivot_wider(names_from = target_id, values_from = score, )
+    pivot_wider(names_from = snp_name, values_from = score, )
 
   df_mat <- data.frame(df_wide[, -1])
-  dim(df_mat)
-  dim(df_wide)
   rownames(df_mat) <- pull(df_wide, specimen_id)
   return(df_mat)
 }
 
+
 prep_input_prop <- function(df) {
-  # filter rows so that only data for biallelic sites are kept
-  biallelic_sites <- df %>%
-    distinct(target_id, seq) %>%
-    group_by(target_id) %>%
-    count() %>%
-    filter(n == 2) %>%
-    pull(target_id)
-  df <- df %>% filter(target_id %in% biallelic_sites)
 
   # assign two allele at each loci to index 1 or 2
   allele_map <- df %>%
-    arrange(target_id, seq) %>%
-    distinct(target_id, seq) %>%
+    arrange(snp_name, seq_base) %>%
+    distinct(snp_name, seq_base) %>%
     mutate(allele_idx = rep_len(c(1, 2), length.out = n()))
-  df_with_allele_idx <- df %>% left_join(allele_map)
+  df_with_allele_idx <- df %>% left_join(allele_map, by = c("snp_name", "seq_base"))
 
   # get signal matrix for alleles with index 1
   df_allele1 <- df_with_allele_idx %>%
     filter(allele_idx == 1) %>%
-    select(specimen_id, target_id, read_count) %>%
-    pivot_wider(values_from = read_count, names_from = target_id, ) %>%
+    select(specimen_id, snp_name, read_count) %>%
+    pivot_wider(values_from = read_count, names_from = snp_name, ) %>%
     mutate(across(everything(), ~ replace_na(., 0))) %>%
     data.frame()
 
@@ -2177,8 +2325,8 @@ prep_input_prop <- function(df) {
   # get signal matrix for alleles with index 2
   df_allele2 <- df_with_allele_idx %>%
     filter(allele_idx == 2) %>%
-    select(specimen_id, target_id, read_count) %>%
-    pivot_wider(values_from = read_count, names_from = target_id, ) %>%
+    select(specimen_id, snp_name, read_count) %>%
+    pivot_wider(values_from = read_count, names_from = snp_name, ) %>%
     mutate(across(everything(), ~ replace_na(., 0))) %>%
     data.frame()
 
@@ -2196,49 +2344,91 @@ prep_input_prop <- function(df) {
 
 # ============== CALL mccoil =================
 
-if (use_categorial) {
-
-  df_input <- prep_input_categorical(df_sim)
-  McCOIL_categorical(
-    df_input, maxCOI = 25, threshold_ind = 20, threshold_site = 20,
-    totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
-    err_method = 3, path = getwd(), output = "McCOIL_out.txt")
-
-} else {
-  df_input <- prep_input_prop(df_sim)
-  McCOIL_proportional(df_input$a1, df_input$a2, maxCOI = 25,
-    totalrun = 5000, burnin = 100, M0 = 15, epsilon = 0.02, err_method = 3,
-    path = getwd(), output = "McCOIL_out.txt")
-
+call_mccoil <- function(df, args) {
+  model <- get_value_of_optional_argument(
+    args, "model", "proportional",
+    choices = c("categorical", "proportional")
+  )
+  if (model == "categorical") {
+    compile_mccoil_cat_c_code()
+    mccoil_cat_input <- prep_input_categorical(df)
+    # McCOIL_categorical(
+    #   mccoil_cat_input,
+    #   maxCOI = 25, threshold_ind = 20, threshold_site = 20,
+    #   totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
+    #   err_method = 3, path = getwd(), output = "McCOIL_out.txt"
+    # )
+    McCOIL_categorical(
+      mccoil_cat_input,
+      maxCOI = args$maxCOI, threshold_ind = args$threshold_ind,
+      threshold_site = args$threshold_site,
+      totalrun = args$totalrun, burnin = args$burnin,
+      M0 = args$M0, e1 = args$e1, e2 = args$e2,
+      err_method = args$err_method,
+      path = getwd(), output = "McCOIL_out.txt"
+    )
+  } else {
+    compile_mccoil_prop_c_code()
+    write_mccoil_fitted_data()
+    mccoil_prop_input <- prep_input_prop(df)
+    McCOIL_proportional(mccoil_prop_input$a1, mccoil_prop_input$a2,
+      maxCOI = args$maxCOI,
+      totalrun = args$totalrun, burnin = args$burnin,
+      M0 = args$M0, epsilon = args$epsilon,
+      err_method = args$err_method,
+      path = getwd(), output = "McCOIL_out.txt"
+    )
+  }
 }
 
 # ============== format output ================
 
 format_output <- function() {
-  df_mccoil <- read.table("./McCOIL_out.txt_summary.txt", sep = '\t', header = TRUE)
+  df_mccoil <- read.table("./McCOIL_out.txt_summary.txt", sep = "\t", header = TRUE)
 
-  df_slaf <- df_mccoil %>% filter(CorP == "P") %>%
+  df_slaf <- df_mccoil %>%
+    filter(CorP == "P") %>%
     select(name, median) %>%
     rename(variant = name, freq = median)
 
-  df_coi <- df_mccoil %>% filter(CorP == "C") %>%
+  df_coi <- df_mccoil %>%
+    filter(CorP == "C") %>%
     select(name, median) %>%
     rename(specimen_id = name, coi = median)
 
   return(list(slaf = df_slaf, coi = df_coi))
 }
 
-df_formated <- format_output()
 
-write_output <- function(df_formated) {
-  df_formated$slaf %>% write_tsv("output_slaf.tsv")
-  df_formated$coi %>% write_tsv("output_coi.tsv")
+write_output <- function(df_formated, slaf_path, coi_path) {
+  df_formated$slaf %>% write_tsv(slaf_path)
+  df_formated$coi %>% write_tsv(coi_path)
 }
 
-write_output(df_formated)
 
 # ============== clean up intemediate files =================
-file.remove(
-  c(list.files(patter = "^McCOIL"),
-    "fitted_beta_grid_25.txt")
-)
+clean_up <- function() {
+  invisible(file.remove(list.files(patter = "^McCOIL")))
+  fitted_data_file <- "fitted_beta_grid_25.txt"
+  if (file.exists(fitted_data_file)) {
+    invisible(file.remove(fitted_data_file))
+  }
+}
+
+# ================ MAIN LOGIC ===============================
+
+main <- function() {
+  args <- get_optparse_args()
+  input_path <- get_value_of_required_argument(args, "snp_calls_input")
+  slaf_path <- get_value_of_required_argument(args, "slaf_output")
+  coi_path <- get_value_of_required_argument(args, "coi_output")
+
+  df <- read_and_preprocess_snp_call(input_path)
+  call_mccoil(df, args)
+  df_formated <- format_output()
+  write_output(df_formated, slaf_path, coi_path)
+  clean_up()
+}
+
+# ========= RUN ===========
+main()
