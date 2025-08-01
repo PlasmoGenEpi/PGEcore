@@ -50,10 +50,10 @@ arg <- parse_args(OptionParser(option_list = opts))
 
 
 if(interactive()){
-  arg$groups <- "example_loci_groups.tsv"
+  arg$groups <- "loci_groups.tsv"
   arg$coi <- "example_coi_table.tsv"
   arg$seed <-  "1"
-  arg$aa_calls <- "example_amino_acid_calls.tsv"
+  arg$aa_calls <- "amino_acid_calls_biallelic.tsv"
   arg$mlaf_output <- "output/FEM_output.tsv"
 }
 
@@ -131,12 +131,18 @@ check_biallelic <- function(input_data){
   if(nrow(bad_targets)>0){
     warning("Not biallelic, dropped", bad_targets)
   }
-  only_biallelic <- input_data %>% filter(!(unique_targets %in% bad_targets))
+  monoallelic <<- input_data %>% filter(!(unique_targets %in% mutants$unique_targets)) %>% 
+    distinct(gene_id, aa_position, aa, unique_targets)
+  
+  only_biallelic <- input_data %>% filter(!(unique_targets %in% bad_targets) & 
+                                            !(unique_targets %in% monoallelic$unique_targets))
+  
   alt_calls <- only_biallelic %>% 
     filter(ref_aa != aa) #dataframe containing alt + ref calls for biallelic SNPs
   return(list(
     only_biallelic,
-    alt_calls))
+    alt_calls, 
+    monoallelic))
 }
 
 #' Reformat amino acid calls into the form required by FEM
@@ -198,6 +204,7 @@ create_FEM_input <- function(input_path, groups, group_id) {
   data_list <- check_biallelic(input_data)
   input_data <- data_list[[1]]
   alt_alleles <- data_list[[2]]
+  monos <- data_list[[3]]
 
   unique_targets <- unique(input_data$unique_targets)
   unique_sample_ids <- unique(input_data$specimen_id)
@@ -237,7 +244,8 @@ create_FEM_input <- function(input_path, groups, group_id) {
   return(list(
     sample_matrix,
     alt_alleles,
-    num_group))
+    num_group,
+    monos))
 }
  
 #' Run FEM
@@ -260,6 +268,7 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
     num_group <- sample_matrix_list[[3]]
+    monos <- sample_matrix_list[[4]]
     data_summary <- list()
     #data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
     #data_summary$Data <- as.matrix(data_summary$Data)
@@ -369,7 +378,8 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
             runtime = runtime,
             names = processed_data_list[["markerID"]],
             alt_allele = alt_alleles,
-            num_group = num_group
+            num_group = num_group,
+            monos = monos
         )
     )
 }
@@ -383,7 +393,7 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
 #' @param alt_alleles also an output from run_FEM containing ref + alt allele identities
 #' 
 #' @return string of the STAVE format for a given string
-bin2STAVE <- function(chars, names, alt_alleles){
+bin2STAVE <- function(chars, names, alt_alleles, monos){
   char_ix <- 1
   chars_split <- strsplit(chars, "")[[1]]
   gene_list <- c()
@@ -416,6 +426,14 @@ bin2STAVE <- function(chars, names, alt_alleles){
               aa = alt_current,
               read_count = NA,)
   }
+  mono_df <<- monos %>% dplyr::rename(gene = gene_id,
+                                     pos = aa_position) %>%
+    mutate(n_aa = NA,
+           het = FALSE,
+           phased = TRUE,
+           read_count = NA) %>% dplyr::select(-c(unique_targets))
+  
+  long_form <- rbind(long_form, mono_df)
   #single_locus_STAVE, into multi-locus stave
   #adding if calls are het or not in the given locus
   long_form <- long_form %>% 
@@ -440,9 +458,10 @@ format_single_group_output <- function(pop_freq_list){
   names <- pop_freq_list[[3]]
   alt_alleles <- pop_freq_list[[4]]
   num_group <- pop_freq_list[[5]]
+  monos <- pop_freq_list[[6]]
   
   input_list <- input_list %>% 
-    mutate(variant=map_chr(sequence, bin2STAVE, names, alt_alleles),
+    mutate(variant=map_chr(sequence, bin2STAVE, names, alt_alleles, monos),
                         sample_total=num_group) %>% 
     as_tibble()
   return(input_list)
