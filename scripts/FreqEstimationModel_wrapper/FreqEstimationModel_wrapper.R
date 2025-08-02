@@ -131,8 +131,8 @@ check_biallelic <- function(input_data){
   if(nrow(bad_targets)>0){
     warning("Not biallelic, dropped", bad_targets)
   }
-  monoallelic <<- input_data %>% filter(!(unique_targets %in% mutants$unique_targets)) %>% 
-    distinct(gene_id, aa_position, aa, unique_targets)
+  monoallelic <- input_data %>% group_by(unique_targets) %>% filter(n_distinct(aa)==1) %>%
+    distinct(gene_id, aa_position, aa, unique_targets) %>% ungroup()
   
   only_biallelic <- input_data %>% filter(!(unique_targets %in% bad_targets) & 
                                             !(unique_targets %in% monoallelic$unique_targets))
@@ -426,13 +426,13 @@ bin2STAVE <- function(chars, names, alt_alleles, monos){
               aa = alt_current,
               read_count = NA,)
   }
-  mono_df <<- monos %>% dplyr::rename(gene = gene_id,
-                                     pos = aa_position) %>%
+  mono_df <- monos %>% 
+    dplyr::rename(gene = gene_id,
+                  pos = aa_position) %>%
     mutate(n_aa = NA,
            het = FALSE,
            phased = TRUE,
            read_count = NA) %>% dplyr::select(-c(unique_targets))
-  
   long_form <- rbind(long_form, mono_df)
   #single_locus_STAVE, into multi-locus stave
   #adding if calls are het or not in the given locus
