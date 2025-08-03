@@ -37,6 +37,12 @@ opts <- list(
       group_id, gene_id, aa_position. Required."
     )
   ),
+  make_option(
+    "--threads", 
+    type = "integer", 
+    help = "Number of threads to use. Optional.", 
+    default = 1
+  ), 
   make_option("--seed", type = "integer", help = "Random number seed. Optional.", default=1), 
   make_option(
     "--mlaf_output", 
@@ -260,10 +266,16 @@ create_FEM_input <- function(input_path, groups, group_id) {
 #' @param groups output of read_groups
 #' @param coi output of calculate_avg_COI
 #' @param group single group being analyzed
+#' @param threads Number of threads to use
 #' 
 #' @return list of 4 elements: plsf_table, runtime information, target_mapping, and
 #' alternative alleles
-run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
+run_FreqEstimationModel <- function(
+                                    input_data_path, 
+                                    groups, 
+                                    COI, 
+                                    group, 
+                                    threads) {
     sample_matrix_list <- create_FEM_input(input_data_path, groups, group)
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
@@ -334,7 +346,7 @@ run_FreqEstimationModel <- function(input_data_path, groups, COI, group) {
             moi_list,
             frequency_list,
             mcmc_variable_list,
-            cores_max = 3
+            cores_max = threads
         )
 
         # Generate numerical approximations of posteriors by removing burnin
@@ -475,7 +487,13 @@ overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
 #run FEM separately for each group
 for(group in unique(groups$group_id)){
   #will be one output file
-  fem_results <- run_FreqEstimationModel(arg$aa_calls, groups, COI, group)
+  fem_results <- run_FreqEstimationModel(
+    arg$aa_calls, 
+    groups, 
+    COI, 
+    group, 
+    arg$threads
+  )
   fem_plsf <- format_single_group_output(fem_results)
   fem_plsf$group_id <- group
   overall_output <- rbind(overall_output, fem_plsf)
