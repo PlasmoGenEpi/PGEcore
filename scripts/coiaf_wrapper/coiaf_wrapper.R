@@ -24,12 +24,12 @@
 # Input file formats:
 #   SNP data (required): TSV file with columns:
 #     - specimen_id: The specimen ID
-#     - target_id: The target ID  
+#     - snp_name: The SNP name  
 #     - read_count: The read count
 #     - seq_base: The sequence base (A, C, G, T)
 #
 #   PLMAF data (optional): TSV file with columns:
-#     - target_id: The target ID
+#     - snp_name: The SNP name
 #     - seq_base: The base (A, C, G, T)
 #     - plmaf: The population allele frequency
 #
@@ -58,11 +58,11 @@ suppressPackageStartupMessages({
 #' 
 #' @param snp_data A data frame with the following columns:
 #' - specimen_id: The specimen ID
-#' - target_id: The target ID
+#' - snp_name: The SNP name
 #' - read_count: The read count
 #' - seq_base: the sequence base (A, C, G, T)
 #' @param plmaf An optional data frame with the following columns:
-#' - target_id: The target ID
+#' - snp_name: The SNP name
 #' - seq_base: the base (A, C, G, T)
 #' - plmaf: the population allele frequency
 #' If not provided, the function will calculate the plmaf using the snp_data
@@ -74,30 +74,30 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
   
   # Process SNP data to calculate within-sample minor allele frequencies
   processed <- snp_data |>
-    dplyr::group_by(specimen_id, target_id) |>
+    dplyr::group_by(specimen_id, snp_name) |>
     dplyr::mutate(coverage = sum(read_count)) |>
     dplyr::ungroup() |>
     dplyr::mutate(wsmaf = read_count / coverage) |>
-    dplyr::select(specimen_id, target_id, seq_base, wsmaf, read_count)
+    dplyr::select(specimen_id, snp_name, seq_base, wsmaf, read_count)
 
   # Calculate population-level minor allele frequencies if not provided
   if (is.null(plmaf)) {
     cat("Calculating population-level minor allele frequencies...\n")
     plmaf <- snp_data |>
-      dplyr::group_by(target_id, seq_base) |>
+      dplyr::group_by(snp_name, seq_base) |>
       dplyr::summarize(read_count = sum(read_count), .groups = "drop") |>
-      dplyr::group_by(target_id) |>
+      dplyr::group_by(snp_name) |>
       dplyr::mutate(plmaf = read_count / sum(read_count)) |>
       dplyr::arrange(plmaf, .by_group = TRUE) |>
       dplyr::slice(1) |>
       dplyr::ungroup() |>
-      dplyr::select(target_id, seq_base, plmaf) |>
+      dplyr::select(snp_name, seq_base, plmaf) |>
       dplyr::filter(plmaf < 1)
   }
 
   # Filter processed data to only include targets with PLMAF data
   filtered_processed <- processed |>
-    dplyr::right_join(plmaf, by = c("target_id", "seq_base"))
+    dplyr::right_join(plmaf, by = c("snp_name", "seq_base"))
 
   cat("Estimating COI for", length(unique(filtered_processed$specimen_id)), "specimens...\n")
   
@@ -224,14 +224,14 @@ main <- function() {
     # Read SNP data
     cat("Reading SNP data...\n")
     snp_data <- readr::read_tsv(opt$snp_data, show_col_types = FALSE)
-    validate_data(snp_data, c("specimen_id", "target_id", "read_count", "seq_base"), "SNP data")
+    validate_data(snp_data, c("specimen_id", "snp_name", "read_count", "seq_base"), "SNP data")
     
     # Read PLMAF data if provided
     plmaf_data <- NULL
     if (!is.null(opt$plmaf)) {
       cat("Reading PLMAF data...\n")
       plmaf_data <- readr::read_tsv(opt$plmaf, show_col_types = FALSE)
-      validate_data(plmaf_data, c("target_id", "seq_base", "plmaf"), "PLMAF data")
+      validate_data(plmaf_data, c("snp_name", "seq_base", "plmaf"), "PLMAF data")
     }
     
     # Run COIAF analysis
