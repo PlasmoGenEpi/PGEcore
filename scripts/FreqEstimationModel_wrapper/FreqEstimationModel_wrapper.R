@@ -11,6 +11,7 @@ library(magrittr)
 library(stringr)
 library(optparse)
 library(readr)
+library(tidyr)
 library(purrr)
 library(variantstring)
 
@@ -56,11 +57,11 @@ arg <- parse_args(OptionParser(option_list = opts))
 
 
 if(interactive()){
-  arg$groups <- "loci_groups.tsv"
-  arg$coi <- "example_coi_table.tsv"
+  arg$groups <- "~/Downloads/loci_groups_aa_level.tsv"
+  arg$coi <- 1
   arg$seed <-  "1"
-  arg$aa_calls <- "amino_acid_calls_biallelic.tsv"
-  arg$mlaf_output <- "output/FEM_output.tsv"
+  arg$aa_calls <- "~/Downloads/amino_acid_calls_biallelic.tsv.gz"
+  arg$mlaf_output <- "testing.tsv"
 }
 
 #' Returns average COI from COI tsv file path
@@ -151,20 +152,18 @@ check_biallelic <- function(input_data){
     monoallelic))
 }
 
-#' Reformat amino acid calls into the form required by FEM
+#' Read the amino acid calls into a tibble
 #'
-#' Takes the path of TSV file of amino acid calls, reads it into a 
-#' tibble, and reformats that tibble into the form needed by FEM.
+#' Takes the path of a TSV file of amino acid calls and reads it into a 
+#' tibble.
 #'
-#' @param input_path Path of TSV file with amino acid calls. It should 
+#' @param input_path TSV containing amino acid calls. It should 
 #'   have character columns for specimen_id, target_id, gene_id, 
 #'   ref_codon, ref_aa, codon, and aa. It should have an integer 
 #'   aa_position column. There should be no explicit missing data.
-#' @param groups output of read_groups
-#' @param group_id the string of the current group being analyzed
-#' 
-#' @return Matrix of frequencies for each multi-locus genotype.
-create_FEM_input <- function(input_path, groups, group_id) {
+#'
+#' @return Tibble containing the amino acid calls
+read_aa_calls <- function(input_path) {
   input_data <- read_tsv(input_path, col_types=list("specimen_id"=col_character(),
                                                     "aa_position" = col_integer(),
                                                     "target_id"=col_character(),
@@ -202,6 +201,26 @@ create_FEM_input <- function(input_path, groups, group_id) {
       call. = FALSE
     )
   }
+
+  return(input_data)
+}
+
+#' Reformat amino acid calls into the form required by FEM
+#'
+#' Takes a tibble of amino acid calls and reformats that tibble into 
+#' the form needed by FEM.
+#'
+#' @param input_data Tibble containing amino acid calls. It should 
+#'   have character columns for specimen_id, target_id, gene_id, 
+#'   ref_codon, ref_aa, codon, and aa. It should have an integer 
+#'   aa_position column. There should be no explicit missing data.
+#' @param groups output of read_groups
+#' @param group_id the string of the current group being analyzed
+#' 
+#' @return List of necessary inputs for FEM, containing a binary matrix 
+#'   of genotypes, a tibble of alternate alleles, the number of samples 
+#'   in this group, and a tibble of monoallelic loci.
+create_FEM_input <- function(input_data, groups, group_id) {
   input_data$unique_targets <- paste(input_data$gene_id, input_data$aa_position, sep=":")
   groups <- groups[groups$group_id == group_id,]
   group_targets <- paste(groups$gene_id, groups$aa_position, sep=":")
@@ -256,34 +275,27 @@ create_FEM_input <- function(input_path, groups, group_id) {
  
 #' Run FEM
 #'
-#' Given the input_data path, groups file, group_id, and average COI, runs
-#' FreqEstimationModel
+#' This function runs FreqEstimationModel on the genotypes contained 
+#' in `sample_matrix_list`.
 #' 
-#' @param input_data_path Path of TSV file with amino acid calls. It should 
-#'   have character columns for specimen_id, target_id, gene_id, 
-#'   ref_codon, ref_aa, codon, and aa. It should have an integer 
-#'   aa_position column. There should be no explicit missing data.
-#' @param groups output of read_groups
+#' @param sample_matrix_list List of necessary inputs for FEM, 
+#'   containing a binary matrix of genotypes, a tibble of alternate 
+#'   alleles, the number of samples in this group, and a tibble of 
+#'   monoallelic loci.
 #' @param coi output of calculate_avg_COI
-#' @param group single group being analyzed
 #' @param threads Number of threads to use
 #' 
 #' @return list of 4 elements: plsf_table, runtime information, target_mapping, and
 #' alternative alleles
 run_FreqEstimationModel <- function(
-                                    input_data_path, 
-                                    groups, 
+                                    sample_matrix_list, 
                                     COI, 
-                                    group, 
                                     threads) {
-    sample_matrix_list <- create_FEM_input(input_data_path, groups, group)
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
     num_group <- sample_matrix_list[[3]]
     monos <- sample_matrix_list[[4]]
     data_summary <- list()
-    #data_summary$Data <- read.delim(tmp_file_path, row.names = 1) # Specify row.names = 1 to use the first column as row names
-    #data_summary$Data <- as.matrix(data_summary$Data)
     data_summary$Data <- sample_matrix
     runtime <- system.time({
         thinning_interval <- 1 # Number of iterations per chain that are not saved
@@ -479,7 +491,75 @@ format_single_group_output <- function(pop_freq_list){
   return(input_list)
 }
 
+#' Format output for an invariant group
+#'
+#' This function takes the amino acid call information for a group with 
+#' all invariant loci and formats a tibble to bind to the table of FEM 
+#' results.
+#'
+#' @param aa_calls Tibble containing all amino acid calls
+#' @param groups Tibble containing loci group definitions
+#' @param group Character vector specifying the group of interest
+#'
+#' @return A tibble with columns matching the format of 
+#'   `format_single_group_output()`. It will have one variant, with all 
+#'   frequencies set to one.
+format_invariant_group_output <- function(aa_calls, groups, group) {
+  # Identify loci belonging to this group
+  group_loci <- groups %>%
+    filter(group_id == group) %>%
+    unite(loci_name, gene_id, aa_position, sep = ":") %$%
+    loci_name
+  # Filter to calls at these loci
+  group_calls <- aa_calls %>%
+    distinct(specimen_id, gene_id, aa_position, aa) %>%
+    unite(loci_name, gene_id, aa_position, sep = ":", remove = FALSE) %>%
+    filter(loci_name %in% group_loci)
+  num_group <- n_distinct(group_calls$specimen_id)
+  # Make sure all of these loci ARE invariant
+  n_alleles_per_locus <- group_calls %>%
+    group_by(gene_id, aa_position) %>%
+    mutate(n_allele = n_distinct(aa)) %>%
+    ungroup()
+  if (any(n_alleles_per_locus$n_allele > 1)) {
+    stop(
+      "Group ", 
+      group, 
+      " is presumed invariant but some loci have multiple alleles. FEM ", 
+      "inputs are empty for some other reason.", 
+      call. = FALSE
+    )
+  }
+  # Format the multi-locus call as a STAVE string
+  variant_stave <- group_calls %>%
+    distinct(gene_id, aa_position, aa) %>%
+    rename(gene = gene_id, pos = aa_position) %>%
+    group_by(gene, pos) %>%
+    mutate(n_aa = n()) %>%
+    ungroup() %>%
+    mutate(
+      het = FALSE, 
+      phased = TRUE, 
+      read_count = NA
+    ) %>%
+    relocate(aa, .before = read_count) %>%
+    list(.) %>%
+    variantstring::long_to_variant()
+  # Compose the output tibble
+  tibble(
+    sequence = NA, 
+    freq = 1, 
+    median_freq = 1, 
+    CI_2.5 = 1, 
+    CI_97.5 = 1, 
+    prev = 1, 
+    variant = variant_stave, 
+    sample_total = num_group
+  )
+}
 
+
+aa_calls <- read_aa_calls(arg$aa_calls)
 groups <- read_groups(arg$groups)
 COI <- calculate_avg_COI(arg$coi)
 overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
@@ -487,14 +567,20 @@ overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
 #run FEM separately for each group
 for(group in unique(groups$group_id)){
   #will be one output file
-  fem_results <- run_FreqEstimationModel(
-    arg$aa_calls, 
-    groups, 
-    COI, 
-    group, 
-    arg$threads
-  )
-  fem_plsf <- format_single_group_output(fem_results)
+  fem_input <- create_FEM_input(aa_calls, groups, group)
+  # The FEM input matrix will be empty if all loci in this group are 
+  # invariant. In this case, all frequencies are set to zero and 
+  # estimation is skipped.
+  if (sum(dim(fem_input[[1]])) == 0) {
+    fem_plsf <- format_invariant_group_output(aa_calls, groups, group)
+  } else {
+    fem_results <- run_FreqEstimationModel(
+      fem_input, 
+      COI, 
+      arg$threads
+    )
+    fem_plsf <- format_single_group_output(fem_results)
+  }
   fem_plsf$group_id <- group
   overall_output <- rbind(overall_output, fem_plsf)
 }
