@@ -32,21 +32,21 @@ For alternative wrapper tools, see [McCOILR](https://github.com/OJWatson/McCOILR
 1. Run the categorical model
 
 ```sh
-Rscript ./THEREALMcCOIL_wrapper.R \
+Rscript scripts/THEREALMcCOIL_wrapper/THEREALMcCOIL_wrapper.R \
     --model categorical \
-    --snp_calls_input test_data/independent_collapsed_snp_calls.tsv \
-    --slaf_output test_data_output.slaf \
-    --coi_output test_data_output.coi
+    --snp_calls_input data/example_snp_calls.tsv \
+    --slaf_output test_data_output_slaf.tsv \
+    --coi_output test_data_output_coi.tsv
 ```
 
 2. Run the proportional model
 
 ```sh
-Rscript ./THEREALMcCOIL_wrapper.R \
+Rscript scripts/THEREALMcCOIL_wrapper/THEREALMcCOIL_wrapper.R \
     --model proportional \
-    --snp_calls_input test_data/independent_collapsed_snp_calls.tsv \
-    --slaf_output test_data_output.slaf \
-    --coi_output test_data_output.coi
+    --snp_calls_input data/example_snp_calls.tsv \
+    --slaf_output test_data_output_slaf.tsv \
+    --coi_output test_data_output_coi.tsv
 ```
 
 3. Print help message.
