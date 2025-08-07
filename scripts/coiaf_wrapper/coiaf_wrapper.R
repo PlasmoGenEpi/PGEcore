@@ -72,22 +72,40 @@ suppressPackageStartupMessages({
 run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
   cat("Processing SNP data...\n")
 
+  complete_snp_data <- snp_data |>
+    tidyr::complete(
+      specimen_id, tidyr::nesting(snp_name, seq_base),
+      fill = list(read_count = 0)
+    ) |>
+    dplyr::select(specimen_id, snp_name, seq_base, read_count) |>
+    dplyr::group_by(specimen_id, snp_name) |>
+    dplyr::mutate(n_snps = dplyr::n())
+
+  if (any(complete_snp_data$n_snps > 2)) {
+    warning("Some targets have more than 2 SNPs. These will be excluded from the analysis.")
+  }
+
+  if (any(complete_snp_data$n_snps < 2)) {
+    warning("Some targets have fewer than 2 SNPs. These will be excluded from the analysis.")
+  }
+
+  complete_snp_data <- complete_snp_data |>
+    dplyr::filter(n_snps == 2) |>
+    dplyr::select(-n_snps)
+
   # Process SNP data to calculate within-sample minor allele frequencies
-  processed <- snp_data |>
+  processed <- complete_snp_data |>
     dplyr::group_by(specimen_id, snp_name) |>
     dplyr::mutate(coverage = sum(read_count)) |>
     dplyr::ungroup() |>
     dplyr::mutate(wsmaf = read_count / coverage) |>
-    dplyr::select(specimen_id, snp_name, seq_base, wsmaf, read_count) |>
-    tidyr::complete(
-      specimen_id, tidyr::nesting(snp_name, seq_base),
-      fill = list(wsmaf = 0, read_count = 0)
-    )
+    dplyr::select(specimen_id, snp_name, seq_base, wsmaf, read_count)
+    
 
   # Calculate population-level minor allele frequencies if not provided
   if (is.null(plmaf)) {
     cat("Calculating population-level minor allele frequencies...\n")
-    plmaf <- snp_data |>
+    plmaf <- complete_snp_data |>
       dplyr::group_by(snp_name, seq_base) |>
       dplyr::summarize(read_count = sum(read_count), .groups = "drop") |>
       dplyr::group_by(snp_name) |>
@@ -95,13 +113,24 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
       dplyr::arrange(plmaf, .by_group = TRUE) |>
       dplyr::slice(1) |>
       dplyr::ungroup() |>
-      dplyr::select(snp_name, seq_base, plmaf) |>
-      dplyr::filter(plmaf < 1)
+      dplyr::select(snp_name, seq_base, plmaf)
+  }
+
+  plmaf_snp_names <- plmaf$snp_name |> unique()
+  processed_snp_names <- processed$snp_name |> unique()
+
+  if (!all(processed_snp_names %in% plmaf_snp_names)) {
+    warning(paste("Some SNPs in the observed data are not present in the PLMAF data, these will be excluded from the analysis:", paste(setdiff(processed_snp_names, plmaf_snp_names), collapse = ", ")))
+  }
+
+  if (!all(plmaf_snp_names %in% processed_snp_names)) {
+    warning(paste("Some SNPs in the PLMAF data are not present in the observed data, these will be excluded from the analysis:", paste(setdiff(plmaf_snp_names, processed_snp_names), collapse = ", ")))
   }
 
   # Filter processed data to only include targets with PLMAF data
   filtered_processed <- processed |>
-    dplyr::right_join(plmaf, by = c("snp_name", "seq_base"))
+    dplyr::left_join(plmaf, by = c("snp_name", "seq_base")) |>
+    dplyr::filter(!is.na(plmaf))
 
   cat("Estimating COI for", length(unique(filtered_processed$specimen_id)), "specimens...\n")
   
