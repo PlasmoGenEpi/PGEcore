@@ -29,7 +29,7 @@ The COIAF (Complexity of Infection Analysis Framework) wrapper script allows use
 install.packages(c("dplyr", "tibble", "readr", "optparse"))
 
 # Install COIAF (if not already installed)
-# Follow instructions at: https://github.com/bailey-lab/coiaf
+install.packages('coiaf', repos = c('https://plasmogenepi.r-universe.dev', 'https://cloud.r-project.org'))
 ```
 
 ## Usage
