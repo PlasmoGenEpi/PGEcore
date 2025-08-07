@@ -286,7 +286,8 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
   # compile the C code
   cmd_out <- system2("R",
     args = c("CMD", "SHLIB", mccoil_categorical_c_file),
-    stdout = TRUE, stderr = TRUE)
+    stdout = TRUE, stderr = TRUE
+  )
   status <- attr(cmd_out, "status")
   if (!is.null(status) && status != 0) {
     cat("Build failed:\n")
@@ -639,7 +640,8 @@ void McCOIL_prop(int *max, int *iterations, int *n0, int *k0, double *A1,
   # compile the C code
   cmd_out <- system2("R",
     args = c("CMD", "SHLIB", mccoil_prop_c_file),
-    stdout = TRUE, stderr = TRUE)
+    stdout = TRUE, stderr = TRUE
+  )
   status <- attr(cmd_out, "status") # NULL means success
   if (!is.null(status) && status != 0) {
     cat("Build failed:\n")
@@ -2111,8 +2113,7 @@ get_value_of_required_argument <- function(arg, opt, choices = c()) {
     if ((length(choices) > 0) && !(arg[[opt]] %in% choices)) {
       stop(paste0(
         "--", opt, " must be one of ",
-        paste(choices, collapse = "|"
-        )
+        paste(choices, collapse = "|")
       ))
     }
   }
@@ -2137,7 +2138,8 @@ get_value_of_optional_argument <- function(
     if ((length(choices) > 0) && !(arg[[opt]] %in% choices)) {
       stop(paste0(
         "--", opt, " must be one of ",
-        paste(choices, collapse = "|")))
+        paste(choices, collapse = "|")
+      ))
     }
     return(arg[[opt]])
   }
@@ -2174,7 +2176,8 @@ get_optparse_args <- function() {
       help = str_c(
         "Upper bound for COI. ",
         "Can be used in both models. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option(
       "--threshold_ind",
@@ -2193,7 +2196,8 @@ get_optparse_args <- function() {
       help = str_c(
         "The minimum number of samples for a locus to be considered. ",
         "Used only in the categorical model. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option("--totalrun",
       type = "integer",
@@ -2201,7 +2205,8 @@ get_optparse_args <- function() {
       help = str_c(
         "The total number of MCMC iterations. ",
         "Can be used in both models. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option(
       "--burnin",
@@ -2210,7 +2215,8 @@ get_optparse_args <- function() {
       help = str_c(
         "The total number of burnin iterations",
         "Can be used in both models. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option(
       "--M0",
@@ -2219,7 +2225,8 @@ get_optparse_args <- function() {
       help = str_c(
         "Initial COI",
         "Can be used in both models. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option("--e1",
       type = "double",
@@ -2227,7 +2234,8 @@ get_optparse_args <- function() {
       help = str_c(
         "The probability of calling homozygous loci heterozygous. ",
         "Used only in the categorical model. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option(
       "--e2",
@@ -2236,7 +2244,8 @@ get_optparse_args <- function() {
       help = str_c(
         "The probability of calling heterozygous loci homozygous",
         "Used only in the categorical model. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option(
       "--epsilon",
@@ -2252,7 +2261,8 @@ get_optparse_args <- function() {
         "1: use pre-specified e1 and e2 and treat them as constants; ",
         "3: e1 and e2 are estimated with COI and allele frequencies",
         "Can be used in both models. ",
-        "Default: %default")
+        "Default: %default"
+      )
     ),
     make_option(
       "--slaf_output",
@@ -2277,6 +2287,25 @@ get_optparse_args <- function() {
   return(args)
 }
 
+#' Validate input data format
+#'
+#' @param data Data frame to validate
+#' @param required_cols Vector of required column names
+#' @param data_name Name of the data for error messages
+#' @return TRUE if valid, stops execution if invalid
+validate_data <- function(data, required_cols, data_name) {
+  missing_cols <- setdiff(required_cols, colnames(data))
+  if (length(missing_cols) > 0) {
+    stop(paste("Missing required columns in", data_name, ":", paste(missing_cols, collapse = ", ")))
+  }
+
+  if (nrow(data) == 0) {
+    stop(paste(data_name, "is empty"))
+  }
+
+  return(TRUE)
+}
+
 #' Read SNP call data and wrangling the data into a dataframe
 #' to facilitate data formatting for THEREALMcCOIL inferences
 #'
@@ -2285,36 +2314,12 @@ get_optparse_args <- function() {
 #' specimen_id, snp_name, seq_base, read_count
 read_and_preprocess_snp_call <- function(snp_calls_input) {
   # read indepdent snp call table
-  # df_snp_call <- read_tsv("./test_data/independent_collapsed_snp_calls.tsv")
+  required_cols <- c("specimen_id", "snp_name", "read_count", "seq_base")
   df_snp_call <- read_tsv(snp_calls_input)
-
-  # find snp site that show exactly two variants
-  biallelic_snps <- df_snp_call %>%
-    distinct(snp_name, pos, seq_base) %>%
-    group_by(snp_name, pos) %>%
-    count() %>%
-    rename(nalleles = n) %>%
-    filter(nalleles == 2)
-
-  # filter out non-biallelic snps
-  df <- df_snp_call %>% left_join(biallelic_snps, by = c("snp_name", "pos")) %>%
-    filter(nalleles == 2)
-
-  # for each target find snp with largest he
-  snp_with_max_he_per_target <- df %>%
-    select(target_id, pos, he) %>%
-    distinct() %>%
-    group_by(target_id) %>%
-    slice_max(order_by = he, n = 1, with_ties = FALSE) %>%
-    select(target_id, pos) %>%
-    mutate(selected = TRUE)
-
-  # filter rows that contains the snps with largest he per target
-  df <- df %>% left_join(snp_with_max_he_per_target, by = c("target_id", "pos")) %>%
-    filter(selected = TRUE) %>%
-    select(specimen_id, snp_name, seq_base, read_count)
-
-  return(df)
+  validate_data(df_snp_call, required_cols, "SNP data")
+  df_snp_call <- df_snp_call |>
+    dplyr::select(all_of(required_cols))
+  return(df_snp_call)
 }
 
 
@@ -2327,7 +2332,6 @@ read_and_preprocess_snp_call <- function(snp_calls_input) {
 #'
 #' @return A formatted dataframe suitable for use as input to the `McCOIL_categorical` function.
 prep_input_categorical <- function(df) {
-
   # get site major allele
   major_allele <- df %>%
     group_by(snp_name, seq_base) %>%
@@ -2358,6 +2362,8 @@ prep_input_categorical <- function(df) {
     select(-count) %>%
     pivot_wider(names_from = snp_name, values_from = score, )
 
+  df_wide[is.na(df_wide)] <- -1
+
   df_mat <- data.frame(df_wide[, -1])
   rownames(df_mat) <- pull(df_wide, specimen_id)
   return(df_mat)
@@ -2373,7 +2379,6 @@ prep_input_categorical <- function(df) {
 #' @param df A dataframe output from `read_and_preprocess_snp_call`, containing SNP call data.
 #' @return A formatted dataframe suitable for use as input to the `McCOIL_proportional` function.
 prep_input_prop <- function(df) {
-
   # assign two allele at each loci to index 1 or 2
   allele_map <- df %>%
     arrange(snp_name, seq_base) %>%
@@ -2426,14 +2431,10 @@ call_mccoil <- function(df, args) {
   if (model == "categorical") {
     compile_mccoil_cat_c_code()
     mccoil_cat_input <- prep_input_categorical(df)
-    # McCOIL_categorical(
-    #   mccoil_cat_input,
-    #   maxCOI = 25, threshold_ind = 20, threshold_site = 20,
-    #   totalrun = 1000, burnin = 100, M0 = 15, e1 = 0.05, e2 = 0.05,
-    #   err_method = 3, path = getwd(), output = "McCOIL_out.txt"
-    # )
+
     err_method <- get_value_of_optional_argument(
-      args, "err_method", 1, c(1, 3))
+      args, "err_method", 1, c(1, 3)
+    )
     McCOIL_categorical(
       mccoil_cat_input,
       maxCOI = args$maxCOI, threshold_ind = args$threshold_ind,
@@ -2448,7 +2449,8 @@ call_mccoil <- function(df, args) {
     write_mccoil_fitted_data()
     mccoil_prop_input <- prep_input_prop(df)
     err_method <- get_value_of_optional_argument(
-      args, "err_method", 1, c(1, 3))
+      args, "err_method", 1, c(1, 3)
+    )
     McCOIL_proportional(mccoil_prop_input$a1, mccoil_prop_input$a2,
       maxCOI = args$maxCOI,
       totalrun = args$totalrun, burnin = args$burnin,
@@ -2503,8 +2505,8 @@ format_output <- function() {
 #'
 #' @return NULL.
 write_output <- function(df_formated, slaf_path, coi_path) {
-  df_formated$slaf %>% write_tsv(slaf_path)
-  df_formated$coi %>% write_tsv(coi_path)
+  readr::write_tsv(df_formated$slaf, slaf_path)
+  readr::write_tsv(df_formated$coi, coi_path)
 }
 
 
