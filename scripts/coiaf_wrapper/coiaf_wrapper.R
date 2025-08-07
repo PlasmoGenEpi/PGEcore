@@ -24,7 +24,7 @@
 # Input file formats:
 #   SNP data (required): TSV file with columns:
 #     - specimen_id: The specimen ID
-#     - snp_name: The SNP name  
+#     - snp_name: The SNP name
 #     - read_count: The read count
 #     - seq_base: The sequence base (A, C, G, T)
 #
@@ -55,7 +55,7 @@ suppressPackageStartupMessages({
 })
 
 #' Estimate Complexity of Infection (COI) using COIAF
-#' 
+#'
 #' @param snp_data A data frame with the following columns:
 #' - specimen_id: The specimen ID
 #' - snp_name: The SNP name
@@ -71,14 +71,18 @@ suppressPackageStartupMessages({
 #' @return A data frame with COI estimates for each specimen
 run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
   cat("Processing SNP data...\n")
-  
+
   # Process SNP data to calculate within-sample minor allele frequencies
   processed <- snp_data |>
     dplyr::group_by(specimen_id, snp_name) |>
     dplyr::mutate(coverage = sum(read_count)) |>
     dplyr::ungroup() |>
     dplyr::mutate(wsmaf = read_count / coverage) |>
-    dplyr::select(specimen_id, snp_name, seq_base, wsmaf, read_count)
+    dplyr::select(specimen_id, snp_name, seq_base, wsmaf, read_count) |>
+    tidyr::complete(
+      specimen_id, tidyr::nesting(snp_name, seq_base),
+      fill = list(wsmaf = 0, read_count = 0)
+    )
 
   # Calculate population-level minor allele frequencies if not provided
   if (is.null(plmaf)) {

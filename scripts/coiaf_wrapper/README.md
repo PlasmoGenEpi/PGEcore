@@ -57,15 +57,15 @@ Rscript coiaf_wrapper.R --snp_data <path> --output <path> [options]
 #### Basic analysis with auto-calculated PLMAF:
 ```bash
 Rscript coiaf_wrapper.R \
-  --snp_data data/snps.tsv \
+  --snp_data data/example_collapsed_snp_calls.tsv \
   --output results/coi_estimates.tsv
 ```
 
 #### Analysis with custom PLMAF and parameters:
 ```bash
 Rscript coiaf_wrapper.R \
-  --snp_data data/snps.tsv \
-  --plmaf data/plmaf.tsv \
+  --snp_data data/example_collapsed_snp_calls.tsv \
+  --plmaf data/example_coiaf_plmaf.tsv \
   --output results/coi_estimates.tsv \
   --seq_error 0.005 \
   --max_coi 30
@@ -85,13 +85,13 @@ A tab-separated values (TSV) file with the following columns:
 | Column | Type | Description |
 |--------|------|-------------|
 | `specimen_id` | String | Unique identifier for each specimen |
-| `target_id` | String | Unique identifier for each genomic target/locus |
+| `snp_name` | String | Unique identifier for each genomic target/locus |
 | `read_count` | Integer | Number of reads supporting this allele |
 | `seq_base` | String | Nucleotide base (A, C, G, T) |
 
 **Example SNP data:**
 ```tsv
-specimen_id	target_id	read_count	seq_base
+specimen_id	snp_name	read_count	seq_base
 sample_001	locus_001	150	A
 sample_001	locus_001	50	T
 sample_001	locus_002	200	C
@@ -105,13 +105,13 @@ A tab-separated values (TSV) file with the following columns:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `target_id` | String | Unique identifier for each genomic target/locus |
+| `snp_name` | String | Unique identifier for each genomic target/locus |
 | `seq_base` | String | Nucleotide base (A, C, G, T) |
 | `plmaf` | Numeric | Population-level minor allele frequency (0-1) |
 
 **Example PLMAF data:**
 ```tsv
-target_id	seq_base	plmaf
+snp_name	seq_base	plmaf
 locus_001	T	0.25
 locus_002	G	0.15
 locus_003	A	0.30
