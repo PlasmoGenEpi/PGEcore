@@ -2357,15 +2357,20 @@ prep_input_categorical <- function(df) {
       .groups = "drop"
     )
 
-
   df_wide <- df_recode %>%
     select(-count) %>%
-    pivot_wider(names_from = snp_name, values_from = score, )
+    pivot_wider(names_from = snp_name, values_from = score)
 
   df_wide[is.na(df_wide)] <- -1
 
   df_mat <- data.frame(df_wide[, -1])
+
+  # NOTE: data.frame changes column names with '-' replaced by '.'
+  # change it back
+  colnames(df_mat) <- colnames(df_wide)[-1]
+
   rownames(df_mat) <- pull(df_wide, specimen_id)
+
   return(df_mat)
 }
 
@@ -2391,8 +2396,12 @@ prep_input_prop <- function(df) {
     filter(allele_idx == 1) %>%
     select(specimen_id, snp_name, read_count) %>%
     pivot_wider(values_from = read_count, names_from = snp_name, ) %>%
-    mutate(across(everything(), ~ replace_na(., 0))) %>%
-    data.frame()
+    mutate(across(everything(), ~ replace_na(., 0)))
+
+  # NOTE: data.frame changes column names. The following code changes them back
+  column_names <- colnames(df_allele1)
+  df_allele1 <- data.frame(df_allele1)
+  colnames(df_allele1) <- column_names
 
   # set specimen_id as row name of the signal matrix
   row.names(df_allele1) <- df_allele1$specimen_id
@@ -2403,8 +2412,12 @@ prep_input_prop <- function(df) {
     filter(allele_idx == 2) %>%
     select(specimen_id, snp_name, read_count) %>%
     pivot_wider(values_from = read_count, names_from = snp_name, ) %>%
-    mutate(across(everything(), ~ replace_na(., 0))) %>%
-    data.frame()
+    mutate(across(everything(), ~ replace_na(., 0)))
+
+  # NOTE: data.frame changes column names. The following code changes them back
+  column_names <- colnames(df_allele2)
+  df_allele2 <- data.frame(df_allele2)
+  colnames(df_allele2) <- column_names
 
   # set specimen_id as row name of the signal matrix
   row.names(df_allele2) <- df_allele2$specimen_id
@@ -2435,6 +2448,7 @@ call_mccoil <- function(df, args) {
     err_method <- get_value_of_optional_argument(
       args, "err_method", 1, c(1, 3)
     )
+
     McCOIL_categorical(
       mccoil_cat_input,
       maxCOI = args$maxCOI, threshold_ind = args$threshold_ind,
