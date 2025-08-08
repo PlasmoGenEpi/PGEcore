@@ -1,0 +1,6 @@
+*.o
+*.dll
+*.so
+output*.tsv
+output*.txt
+McCOIL_categorical_code.*
