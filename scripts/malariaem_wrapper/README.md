@@ -21,22 +21,28 @@ This tool performs multi-locus haplotype frequency estimation and phasing using 
 
 
 ## Script Usage 
-To run:
+To run on all targets (write files to current working directory):
 ```
 Rscript scripts/malariaem_wrapper/malariaem_wrapper.R --allele_table \
     data/example2_allele_table.tsv \
-    --subset_alleles FALSE \
-    --allele_names NULL \
-    --coi "1, 2, 3, 4" \
-    --write_results TRUE
+    --subset_targets FALSE \
+    --coi_range "1, 2, 3, 4" \
 ```
 
-To run with subsetting by specific alleles (recommended if COI and number of alleles is large since `malaria.em` is slow):
+To run on all targets (write files to specific directory, *note: this must be created beforehand if it doesn't exist already*):
+```
+Rscript scripts/malariaem_wrapper/malariaem_wrapper.R --allele_table \
+    data/example2_allele_table.tsv \
+    --subset_targets FALSE \
+    --coi_range "1, 2, 3, 4" \
+    --output_directory results_malariaem/
+```
+
+To run with subsetting by specific groups (recommended if COI and number of targets is large since `malaria.em` is slow):
 ```
 Rscript scripts/malariaem_wrapper/malariaem_wrapper.R \
   --allele_table data/example2_allele_table.tsv \
-  --subset_alleles TRUE \
-  --allele_names "Pf3D7_12_v3-0659902-0660096, Pf3D7_13_v3-1419395-1419601" \
-  --coi "1, 2, 3, 4" \
-  --write_results TRUE
+  --subset_targets TRUE \
+  --target_groups data/example_target_groups.tsv \
+  --coi_range "1, 2, 3, 4" \
 ```
