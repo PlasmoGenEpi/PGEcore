@@ -26,7 +26,7 @@ To run on all targets (write files to current working directory):
 Rscript scripts/malariaem_wrapper/malariaem_wrapper.R --allele_table \
     data/example2_allele_table.tsv \
     --subset_targets FALSE  \
-    --coi_range "1, 2, 3, 4" \
+    --coi_range "1, 2, 3, 4"
 ```
 
 To run on all targets and write files to specific path:
@@ -45,5 +45,5 @@ Rscript scripts/malariaem_wrapper/malariaem_wrapper.R \
   --allele_table data/example2_allele_table.tsv \
   --subset_targets TRUE \
   --target_groups data/example_target_groups.tsv \
-  --coi_range "1, 2, 3, 4" \
+  --coi_range "1, 2, 3, 4"
 ```
