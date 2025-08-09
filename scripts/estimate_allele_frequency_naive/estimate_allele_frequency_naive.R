@@ -13,7 +13,7 @@ opts <- list(
     c("-i", "--aa_calls"),
     help = stringr::str_c(
       "TSV containing amino acid calls, with the columns: specimen_id, ",
-      "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa"
+      "target_id, gene_id, aa_position,, ref_aa, aa"
     ),
     type = "character",
     default = NULL,
@@ -60,8 +60,7 @@ if (length(missing_args) > 0) {
 calculate_af_read_count_prop <- function(aa_calls) {
   af <- aa_calls |>
     dplyr::group_by(
-      .data$specimen_id, .data$gene_id, .data$aa_position, .data$ref_codon,
-      .data$ref_aa
+      .data$specimen_id, .data$gene_id, .data$aa_position, .data$ref_aa
     ) |>
     # calculate the within-sample allele frequency for each position
     dplyr::mutate(wsaf = .data$read_count / sum(.data$read_count)) |>
@@ -107,14 +106,12 @@ parse_aa_calls <- function(path) {
       gene_id = readr::col_character(),
       read_count = readr::col_integer(),
       aa_position = readr::col_integer(),
-      ref_codon = readr::col_character(),
       ref_aa = readr::col_character(),
-      codon = readr::col_character(),
       aa = readr::col_character()
     ),
     col_select = c(
       "specimen_id", "gene_id", "read_count",
-      "aa_position", "ref_codon", "ref_aa", "codon", "aa"
+      "aa_position", "ref_aa", "aa"
     )
   )
   return(aa_dat)

@@ -733,8 +733,7 @@ get_optparse_args <- function() {
       type = "character",
       help = str_c(
         "TSV containing amino acid calls, with the columns: specimen_id, ",
-        "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa. ",
-        "Required"
+        "target_id, gene_id, aa_position, ref_aa, aa. Required"
       )
     ),
     make_option("--model",
@@ -801,17 +800,13 @@ prepare_input <- function(aa_calls_input) {
     is.character(target_id), 
     is.character(gene_id), 
     is.integer(aa_position), 
-    is.character(ref_codon), 
     is.character(ref_aa), 
-    is.character(codon), 
     is.character(aa), 
     ! is.na(specimen_id), 
     ! is.na(target_id), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
-    ! is.na(ref_codon), 
     ! is.na(ref_aa), 
-    ! is.na(codon), 
     ! is.na(aa)
   )
   fails <- validate::confront(df, rules, raise = "all") %>%

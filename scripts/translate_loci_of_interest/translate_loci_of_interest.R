@@ -370,12 +370,12 @@ collapse_allele_table <- function(allele_table_to_filter, collapse_calls_by_summ
   # collapse amino acid calls 
   if(collapse_calls_by_summing){
     allele_table_out_collapsed = allele_table_to_filter |> 
-      group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa) |> 
+      group_by(specimen_id, gene, gene_id, aa_position, ref_aa, aa) |> 
       summarise(read_count = sum(read_count), 
                 target_id = paste0(sort(target_id), collapse = ","))
   } else { 
     allele_table_out_winnerTarget = allele_table_to_filter |> 
-      group_by(specimen_id, gene, gene_id, aa_position, ref_codon, ref_aa, target_id) |> 
+      group_by(specimen_id, gene, gene_id, aa_position, ref_aa, target_id) |> 
       summarise(read_count = sum(read_count)) |> 
       arrange(desc(read_count)) |> 
       mutate(read_count_rank = row_number(), 
@@ -389,12 +389,12 @@ collapse_allele_table <- function(allele_table_to_filter, collapse_calls_by_summ
       left_join(allele_table_out_winnerTarget |> 
                   ungroup() |> 
                   select(-read_count), 
-                by = c("specimen_id", "gene", "gene_id", "aa_position", "ref_codon", "ref_aa")) |> 
+                by = c("specimen_id", "gene", "gene_id", "aa_position", "ref_aa")) |> 
       filter(target_id == best_target_id) |> 
       select(-seq)
     
     allele_table_out_collapsed = allele_table_out_collapsed |> 
-      group_by(specimen_id, target_id, gene, gene_id, aa_position, ref_codon, ref_aa, codon, aa, best_target_id, covered_by_target_ids) |> 
+      group_by(specimen_id, target_id, gene, gene_id, aa_position, ref_aa, aa, best_target_id, covered_by_target_ids) |> 
       summarise(read_count = sum(read_count))
   }
   return (allele_table_out_collapsed)

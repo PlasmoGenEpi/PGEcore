@@ -21,7 +21,7 @@ opts <- list(
     "--aa_calls", 
     help = str_c(
       "TSV containing amino acid calls, with the columns: specimen_id, ", 
-      "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa. Required."
+      "target_id, gene_id, aa_position, ref_aa, aa. Required."
     )
   ), 
   make_option(
@@ -128,7 +128,7 @@ read_groups <- function(groups_path){
 #' are biallelic in the population
 #'
 #' @param input_data dataframe object containing the columns specimen_id, target_id,
-#' read_count, gene_id, aa_position, ref_codon, ref_aa, codon, aa
+#' read_count, gene_id, aa_position, ref_aa, aa
 #' 
 #' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){
@@ -159,8 +159,8 @@ check_biallelic <- function(input_data){
 #'
 #' @param input_path TSV containing amino acid calls. It should 
 #'   have character columns for specimen_id, target_id, gene_id, 
-#'   ref_codon, ref_aa, codon, and aa. It should have an integer 
-#'   aa_position column. There should be no explicit missing data.
+#'   ref_aa, and aa. It should have an integer aa_position column. 
+#'   There should be no explicit missing data.
 #'
 #' @return Tibble containing the amino acid calls
 read_aa_calls <- function(input_path) {
@@ -168,9 +168,7 @@ read_aa_calls <- function(input_path) {
                                                     "aa_position" = col_integer(),
                                                     "target_id"=col_character(),
                                                     "gene_id"=col_character(),
-                                                    "ref_codon"=col_character(),
                                                     "ref_aa"=col_character(),
-                                                    "codon"=col_character(),
                                                     "aa"=col_character()))
   # Validate input format
   rules <- validate::validator(
@@ -178,17 +176,13 @@ read_aa_calls <- function(input_path) {
     is.character(target_id), 
     is.character(gene_id), 
     is.integer(aa_position), 
-    is.character(ref_codon), 
     is.character(ref_aa), 
-    is.character(codon), 
     is.character(aa), 
     ! is.na(specimen_id), 
     ! is.na(target_id), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
-    ! is.na(ref_codon), 
     ! is.na(ref_aa), 
-    ! is.na(codon), 
     ! is.na(aa)
   )
   fails <- validate::confront(input_data, rules, raise = "all") %>%
@@ -212,8 +206,8 @@ read_aa_calls <- function(input_path) {
 #'
 #' @param input_data Tibble containing amino acid calls. It should 
 #'   have character columns for specimen_id, target_id, gene_id, 
-#'   ref_codon, ref_aa, codon, and aa. It should have an integer 
-#'   aa_position column. There should be no explicit missing data.
+#'   ref_aa, and aa. It should have an integer aa_position column. 
+#'   There should be no explicit missing data.
 #' @param groups output of read_groups
 #' @param group_id the string of the current group being analyzed
 #' 
