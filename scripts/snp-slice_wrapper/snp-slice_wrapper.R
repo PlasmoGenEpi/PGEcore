@@ -184,21 +184,22 @@ create_ref_alt <-function(input_path, amino_acids) {
 #' }
 #'
 #' @export
-run_SNPslice <- function(gap, script_path, model = 3, nmcmc = 10000, alpha = 2, rep = 1) {
+run_SNPslice <- function(gap, script_path, ref, alt, snp_slice_dir, model = 3, nmcmc = 10000, alpha = 2, rep = 1) {
     #setwd('/home/alfred/github_pipelines/snp-slice')
     output_dir='output' #this output folder is hardcoded in snpslicemain.R so needs to be hardcoded as the same value here
     dir.create(file.path(output_dir), showWarnings = FALSE)
     command <- paste(
         "Rscript ", script_path,
         " model=", model, " nmcmc=", nmcmc, " alpha=", alpha, " gap=", gap,
+        " input=", ref, " input2=", alt, " output_dir=", output_dir, " snp_slice_code=", snp_slice_dir,
         sep = ""
     )
     print(command)
     runtime <- system.time({
         system(command)
     })
-    D_filename <- paste(output_dir, "/example_neg_D_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
-    A_filename <- paste(output_dir, "/example_neg_A_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
+    D_filename <- paste(output_dir, "/neg_D_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
+    A_filename <- paste(output_dir, "/neg_A_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
     haplotype_dict_path <- D_filename
     host_strain_association <- A_filename
     plsf_table <- infer_SNPslice_freqs(haplotype_dict_path, host_strain_association)
@@ -479,10 +480,11 @@ opts <- list(
 )
 
 working_directory <- getwd()
+print(working_directory)
 arg <- parse_args(OptionParser(option_list = opts))
 assignments <- 'alt_alleles.tsv'
-output_ref <- 'inputdata/example_read0.txt'
-output_alt <- 'inputdata/example_read1.txt'
+output_ref <- paste(working_directory,'/inputdata/example_read0.txt', sep="")
+output_alt <- paste(working_directory,'/inputdata/example_read1.txt', sep="")
 freq_estimates <- 'snp-slice_freqs.tsv'
 
 #this block is only used for testing purposes (arguments not from command line)
@@ -499,16 +501,16 @@ freq_estimates <- 'snp-slice_freqs.tsv'
 output_file <- arg$output
 #reformats standardized input data to SNP-Slice format
 
-setwd(arg$snp_slice_dir)
+# setwd(arg$snp_slice_dir)
 
 #creates a simplified table of the reference and alternative alleles associated
 #with each gene position
 create_ref_alt(arg$aa_calls, assignments)
 create_SNP_slice_input(arg$aa_calls, output_ref, output_alt)
 #runs SNP-Slice
-output_list=run_SNPslice(gap=arg$gap, 
-  script_path=paste(arg$snp_slice_dir, "/snpslicemain.R", sep=""),
-  model=arg$model)
+output_list=run_SNPslice(gap=arg$gap, output_ref, output_alt,
+  script_path='scripts/snp-slice_wrapper/adapted_snpslicemain.R',
+  model=arg$model, snp_slice_dir=arg$snp_slice_dir)
 
 #these blocks use inputs from the steps above and don't depend directly on any
 #command line arguments.
@@ -524,3 +526,6 @@ genotypes_from_freqs(freq_estimates, output_file, genotype_mappings)
 #roxygen2::roxygenise() # this command fails - I think likely because roxygen
 #expects this script to already be packaged up as an R package. I'm leaving this
 #commented out since I'm unsure of the final desired R packaging structure.
+
+# TODO: Store my snp slice in this directory.
+# TODO: edit my snp slice to take a snp slice dir and source scripts from there 
