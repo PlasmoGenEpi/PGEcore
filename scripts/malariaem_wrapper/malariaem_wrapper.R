@@ -54,22 +54,16 @@ opts <- list(
     default = "1, 2, 3"
   ),
   make_option(
-    "--output_directory",
-    help = str_c("The output directory where the malaria.em results should be written to file .tsv (default: current working directory, the output_directory supplied must already exist). The following files will be created:",
-                 # Population-level multilocus genotype frequency estimate + standard error 
-                 "- 'gt_freq_summary.tsv', with columns: ",
-                 "gt_id, target_id, seq, freq, freq_se",
-                 # Sample-level phased genotypes + posterior probability
-                 "- 'gt_phase_summary.tsv', with columns: ",
-                 "specimen_id, target_id, seq, gt_id, posterior_est, phase_id"),
+    "--freq_output",
+    help = "Path to frequency output file",
     type = "character",
-    default = NULL,
-    callback = function(opt, flag_string, value, parser, ...){
-      if (!file.exists(value)) {
-        stop(stringr::str_c(value, " does not exist"))
-      }
-      value
-    }
+    default = "gt_freq_summary_all.tsv",
+  ),
+  make_option(
+    "--phase_output",
+    help = "Path to phasing output file",
+    type = "character",
+    default = "gt_phase_summary_all.tsv",
   )
 )
 
@@ -325,7 +319,7 @@ load_target_groups <- function(file_path) {
 #' }
 #' 
 
-run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_groups = NULL, output_dir = NULL){
+run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_groups = NULL, freq_output = NULL, phase_output = NULL){
   
   # Checks inputs
   checkmate::assert_matrix(matrix)
@@ -337,11 +331,17 @@ run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_grou
   }
   
   # Set output directory for writing results
-  outdir <- if(is.null(output_dir)) getwd() else output_dir
-  if(!dir.exists(outdir)) dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
-  checkmate::assert_directory_exists(outdir, access = "w")
+  freq_outdir <- if(is.null(freq_output)) getwd() else dirname(freq_output)
+  phase_outdir <- if(is.null(phase_output)) getwd() else dirname(phase_output)
+
+  # Create output dirs if they don't exist
+  if(!dir.exists(freq_outdir)) dir.create(freq_outdir, recursive = TRUE, showWarnings = FALSE)
+  if(!dir.exists(phase_outdir)) dir.create(phase_outdir, recursive = TRUE, showWarnings = FALSE)
+
+  checkmate::assert_directory_exists(freq_outdir, access = "w")
+  checkmate::assert_directory_exists(phase_outdir, access = "w")
   
-  run_malariaem_helper <- function(matrix, coi_range, output_dir, label = NULL){
+  run_malariaem_helper <- function(matrix, coi_range, label = NULL){
     
     # get sample names
     sample_name <- matrix |> 
@@ -370,6 +370,10 @@ run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_grou
              freq = hap.prob, 
              freq_se = hap.prob.std)
     
+    if (!is.null(label)) {
+      gt_freq_summary <- gt_freq_summary |> mutate(group_id = label)
+    }
+    
     print("Summarizing sample-level phased multi-locus genotypes + posterior probability estimates...")
     # Phased genotypes per sample + posterior probability
     haplo_pred <- as.data.frame(output$pred.haplo.set) |> rename(haplo.set = `output$pred.haplo.set`) |> rowid_to_column("ids")
@@ -390,11 +394,10 @@ run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_grou
       select(specimen_id, target_id, seq, gt_id, posterior_est) |> 
       mutate(phase_id = dense_rank(gt_id), .by = specimen_id)
     
-    # Write outputs
-    suffix <- if (is.null(label)) "" else paste0("_", gsub("[^A-Za-z0-9_-]", "_", label))
-    readr::write_tsv(gt_freq_summary, file.path(outdir, paste0("gt_freq_summary", suffix, ".tsv")))
-    readr::write_tsv(gt_phase_summary, file.path(outdir, paste0("gt_phase_summary", suffix, ".tsv")))
-    
+    if (!is.null(label)) {
+      gt_phase_summary <- gt_phase_summary |> mutate(group_id = label)
+    }
+
     list(
       output = output,
       gt_freq_summary = gt_freq_summary,
@@ -405,7 +408,10 @@ run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_grou
   
   # Run all with no subsetting
   if(!subset_targets){
-    return(run_malariaem_helper(matrix, coi_range, output_dir, label = NULL))
+    res <- run_malariaem_helper(matrix, coi_range, label = NULL)
+    readr::write_tsv(res$gt_freq_summary, freq_output)
+    readr::write_tsv(res$gt_phase_summary, phase_output)
+    return(res)
   }
   
   # Run with subsetting by group id
@@ -435,8 +441,15 @@ run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_grou
       next
     }
     
-    results_list[[gid]] <- run_malariaem_helper(matrix_subset, coi_range, output_dir, label = gid)
+    results_list[[gid]] <- run_malariaem_helper(matrix_subset, coi_range, label = gid)
   }
+  # Combine results from all runs
+  all_gt_freq_summary <- bind_rows(lapply(results_list, `[[`, "gt_freq_summary"))
+  all_gt_phase_summary <- bind_rows(lapply(results_list, `[[`, "gt_phase_summary"))
+  
+  # Write single combined files
+  readr::write_tsv(all_gt_freq_summary, freq_output)
+  readr::write_tsv(all_gt_phase_summary, phase_output)
   
   return(results_list)
   
@@ -445,15 +458,22 @@ run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_grou
 # MAIN --------------------------------------------------------------------
 
 matrix <- load_allele_table(file_path = arg$allele_table)
+if (arg$subset_targets){
+  target_groups <- load_target_groups(file_path = arg$target_groups)
 
-target_groups <- load_target_groups(file_path = arg$target_groups)
-
-results <- run_malariaem(matrix = matrix,
-                         coi_range = coi_range,
-                         subset_targets = arg$subset_targets, 
-                         target_groups,
-                         output_dir = arg$output_directory)
-
+  results <- run_malariaem(matrix = matrix,
+                          coi_range = coi_range,
+                          subset_targets = arg$subset_targets,
+                          target_groups,
+                          freq_output=arg$freq_output,
+                          phase_output=arg$phase_output)
+} else {
+  results <- run_malariaem(matrix = matrix,
+                          coi_range = coi_range,
+                          subset_targets = arg$subset_targets,
+                          freq_output=arg$freq_output,
+                          phase_output=arg$phase_output)
+}
 
 # TEST --------------------------------------------------------------------
 if(interactive()){

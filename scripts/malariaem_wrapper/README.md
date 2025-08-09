@@ -25,17 +25,18 @@ To run on all targets (write files to current working directory):
 ```
 Rscript scripts/malariaem_wrapper/malariaem_wrapper.R --allele_table \
     data/example2_allele_table.tsv \
-    --subset_targets FALSE \
+    --subset_targets FALSE  \
     --coi_range "1, 2, 3, 4" \
 ```
 
-To run on all targets (write files to specific directory, *note: this must be created beforehand if it doesn't exist already*):
+To run on all targets and write files to specific path:
 ```
 Rscript scripts/malariaem_wrapper/malariaem_wrapper.R --allele_table \
     data/example2_allele_table.tsv \
     --subset_targets FALSE \
     --coi_range "1, 2, 3, 4" \
-    --output_directory results_malariaem/
+    --freq_output path/to/gt_freq_summary_all.tsv\
+    --phase_output path/to/gt_phase_summary_all.tsv
 ```
 
 To run with subsetting by specific groups (recommended if COI and number of targets is large since `malaria.em` is slow):
