@@ -32,13 +32,18 @@ git clone https://github.com/nianqiaoju/snp-slice.git
 ### Usage 
 Basic usage 
 ```
-Rscript scripts/snp-slice_wrapper/snp-slice_wrapper.R --aa_calls data/example_amino_acid_calls.tsv --snp_slice_dir path/to/snp-slice/  --loci_group_table data/example_loci_groups.tsv  --model 3 --gap 50 --output output.tsv 
+Rscript scripts/snp-slice_wrapper/snp-slice_wrapper.R --aa_calls \
+    data/example_amino_acid_calls.tsv --snp_slice_dir path/to/snp-slice/ \
+    --snpslicemain_path scripts/snp-slice_wrapper/adapted_snpslicemain.R \
+    --loci_group_table data/example_loci_groups.tsv  --model 3 --gap 50 \ 
+    --output output.tsv
 ```
 
 #### Required Arguments
 
 - `--aa_calls`: Path to amino acid calls (TSV format)
 - `--snp_slice_dir`: Path to local copy of SNP-slice GitHub repository 
+- `--snpslicemain_path`: Path to modified version of `snpslicemain.R`
 - `--loci_group_table`: Path to locus groups file (TSV format)
 - `--model`: Model to be used with SNP-slice. See SNP-slice documentation (int)
 - `--gap`: How many iterations of no improvement before stopping

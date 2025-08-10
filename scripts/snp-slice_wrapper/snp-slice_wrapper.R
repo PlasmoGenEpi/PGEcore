@@ -4,7 +4,6 @@ library(readr)
 library(optparse)
 library(stringr)
 library(tibble)
-library(here)
 library(variantstring)
 
 #' Create SNP-Slice Input Data Frames
@@ -254,7 +253,7 @@ subset_groups <- function(aa_calls_path, loci_group_table_path) {
     # Run SNP-Slice
     output_list <- run_SNPslice(
       gap = arg$gap,
-      script_path = here("scripts", "snp-slice_wrapper", "adapted_snpslicemain.R"),
+      script_path = arg$snpslicemain_path, 
       ref = ref_path,
       alt = alt_path,
       snp_slice_dir = arg$snp_slice_dir,
@@ -299,6 +298,10 @@ opts <- list(
     "--snp_slice_dir",
     help = "path to cloned snp-slice github repo"
   ),
+  make_option(
+    "--snpslicemain_path", 
+    help = "Path to modified snpslicemain.R file"
+  ), 
   make_option(
     "--output",
     help = "final stave output path"
