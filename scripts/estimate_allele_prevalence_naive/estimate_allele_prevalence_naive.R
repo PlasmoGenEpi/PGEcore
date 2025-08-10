@@ -13,7 +13,7 @@ opts <- list(
     c("-i", "--aa_calls"),
     help = stringr::str_c(
       "TSV containing amino acid calls, with the columns: specimen_id, ",
-      "target_id, gene_id, aa_position, ref_codon, ref_aa, codon, aa"
+      "target_id, gene_id, aa_position, ref_aa, aa"
     ),
     type = "character",
     default = NULL,
@@ -66,14 +66,12 @@ parse_aa_calls <- function(path) {
       gene_id = readr::col_character(),
       read_count = readr::col_integer(),
       aa_position = readr::col_integer(),
-      ref_codon = readr::col_character(),
       ref_aa = readr::col_character(),
-      codon = readr::col_character(),
       aa = readr::col_character()
     ),
     col_select = c(
       "specimen_id", "gene_id", "read_count",
-      "aa_position", "ref_codon", "ref_aa", "codon", "aa"
+      "aa_position", "ref_aa", "aa"
     )
   )
   return(aa_dat)
