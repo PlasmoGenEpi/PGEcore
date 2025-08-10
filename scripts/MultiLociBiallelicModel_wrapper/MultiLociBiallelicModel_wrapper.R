@@ -886,6 +886,15 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     # Remove any sample with missing data
     # TODO: Give the option to impute missing data, instead
     filter(! if_any(everything(), is.na))
+
+  # Make sure everything was not removed above
+  if (nrow(MLBM_data) == 0) {
+    stop(
+      "All samples have at least one missing genotype. Frequency estimation ", 
+      "is impossible.", 
+      call. = FALSE
+    )
+  }
   
   # Generate validation rules to check if all columns (except `specimen_id`) are numeric
   # Validate package couldn't handle a tibble with variable number of columns.
