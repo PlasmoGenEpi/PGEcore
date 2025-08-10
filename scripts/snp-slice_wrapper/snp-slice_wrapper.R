@@ -157,34 +157,6 @@ get_alternates_df <- function(assignments_df, alt_counts_df) {
     left_join(assignments_df, by = c("locus" = "gene_pos"))
 }
 
-
-#' Convert Genotype to Stave String
-#'
-#' Orders genotype loci and produces a concise stave-format string.
-#'
-#' @param found_genotype Data frame with columns \code{locus} and \code{alt}.
-#'
-#' @return A character string encoding the genotype in stave format.
-#' @export
-genotype_to_stave <- function(found_genotype) {
-  found_genotype %>%
-    mutate(
-      gene = str_extract(locus, "^.*(?=_[0-9]+$)"),
-      pos = as.integer(str_extract(locus, "[0-9]+$"))
-    ) %>%
-    arrange(gene, pos) %>%
-    group_by(gene) %>%
-    summarize(
-      stave_string = paste(
-        str_c(pos, collapse = "_"),
-        str_c(alt, collapse = ""),
-        sep = ":"
-      )
-    ) %>%
-    summarize(stave_string = str_c(stave_string, collapse = ";")) %>%
-    pull(stave_string)
-}
-
 #' Lookup Genotype Alleles
 #'
 #' Translates a binary genotype string (0 = reference, 1 = alternate)
@@ -206,7 +178,6 @@ lookup_genotype <- function(genotype, genotype_mappings) {
     dplyr::select(locus, alt)
 }
 
-
 #' Generate Stave Genotypes from SNP-Slice Frequencies
 #'
 #' Maps SNP-Slice output sequences to their corresponding stave string format.
@@ -214,23 +185,9 @@ lookup_genotype <- function(genotype, genotype_mappings) {
 #' @param freq_table Data frame from \code{infer_SNPslice_freqs()}.
 #' @param genotype_mappings Data frame from \code{get_alternates_df()}.
 #'
-#' @return A data frame with columns \code{stave_string}, \code{frequency},
+#' @return A data frame with columns \code{variant}, \code{frequency},
 #'   and \code{total_genotype_count}.
 #' @export
-# genotypes_from_freqs_df <- function(freq_table, genotype_mappings) {
-#   freq_table %>%
-#     rowwise() %>%
-#     mutate(
-#       found_genotype = list(lookup_genotype(sequence, genotype_mappings)),
-#       stave_string = genotype_to_stave(found_genotype)
-#     ) %>%
-#     ungroup() %>%
-#     select(stave_string, SNPslice_frequency, sum_column) %>%
-#     rename(
-#       frequency = SNPslice_frequency,
-#       total_genotype_count = sum_column
-#     )
-# }
 genotypes_from_freqs_df <- function(freq_table, genotype_mappings) {
   freq_table %>%
     rowwise() %>%
@@ -249,10 +206,10 @@ genotypes_from_freqs_df <- function(freq_table, genotype_mappings) {
           select(gene, pos, n_aa, het, phased, aa, read_count) # << exact order
         df
       }),
-      stave_string = long_to_variant(list(long_form))
+      variant = long_to_variant(list(long_form))
     ) %>%
     ungroup() %>%
-    select(stave_string, frequency = SNPslice_frequency, total_genotype_count = sum_column)
+    select(variant, frequency = SNPslice_frequency, total_genotype_count = sum_column)
 }
 
 
@@ -309,8 +266,6 @@ subset_groups <- function(aa_calls_path, loci_group_table_path) {
     genotype_mappings <- get_alternates_df(assignments_df, snp_input$alt_counts)
 
     # Convert to stave
-    print(output_list$plsf_table)
-    print(genotype_mappings)
     group_results <- genotypes_from_freqs_df(output_list$plsf_table, genotype_mappings) %>%
       mutate(group_id = group)
 
