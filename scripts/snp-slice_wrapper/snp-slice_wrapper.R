@@ -433,25 +433,90 @@ lookup_genotype <- function(genotype, genotype_mappings) {
 #' @export
 genotypes_from_freqs <- function(freq_estimates, output_file, genotype_mappings) {
   freqs <- readr::read_tsv(freq_estimates, show_col_types = FALSE)
-
   header_dict <- names(freqs)
 
 
   output <- freqs %>%
     dplyr::rowwise() %>%
     dplyr::mutate(
-      found_genotype = list(lookup_genotype(plsf_table.sequence, genotype_mappings)),
+      found_genotype = list(lookup_genotype(sequence, genotype_mappings)),
       stave_string = genotype_to_stave(found_genotype)
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::select(stave_string, plsf_table.SNPslice_frequency, plsf_table.sum_column) %>%
+    dplyr::select(stave_string, SNPslice_frequency, sum_column) %>%
     dplyr::rename(
-      frequency = plsf_table.SNPslice_frequency,
-      total_genotype_count = plsf_table.sum_column
+      frequency = SNPslice_frequency,
+      total_genotype_count = sum_column
     )
 
   readr::write_tsv(output, output_file)
 }
+
+subset_groups <- function(aa_calls_path, loci_group_table_path) {
+  dir.create(file.path('inputdata'), showWarnings = FALSE)
+  aa_calls <- read_tsv(aa_calls_path, show_col_types = FALSE)
+  loci_groups <- read_tsv(loci_group_table_path, show_col_types = FALSE)
+  
+  results_list <- list()
+  
+  # For each group, filter aa_calls and run pipeline steps
+  for(group in unique(loci_groups$group_id)) {
+    message("Processing group: ", group)
+    
+    # Get loci for this group
+    loci_sub <- loci_groups %>% filter(group_id == group)
+    
+    # Filter aa_calls for matching gene_id and aa_position in this group
+    filtered_aa_calls <- aa_calls %>%
+      semi_join(loci_sub, by = c("gene_id", "aa_position"))
+    
+    # Temporary file paths per group
+    filtered_calls_path <- paste0("inputdata/", group, "_filtered_aa_calls.tsv")
+    ref_path <- paste0("inputdata/", group, "_ref.txt")
+    alt_path <- paste0("inputdata/", group, "_alt.txt")
+    freq_path <- paste0(group, "_snp_slice_freqs.tsv")
+    
+    write_tsv(filtered_aa_calls, filtered_calls_path)
+    
+    # Run the pipeline for this group
+    create_ref_alt(filtered_calls_path, assignments)
+    create_SNP_slice_input(filtered_calls_path, ref_path, alt_path)
+    
+    output_list <- run_SNPslice(
+      gap = arg$gap,
+      script_path = "scripts/snp-slice_wrapper/adapted_snpslicemain.R",
+      ref = ref_path,
+      alt = alt_path,
+      snp_slice_dir = arg$snp_slice_dir,
+      model = arg$model,
+      rep = 1
+    )
+    
+    write.table(output_list$plsf_table, freq_path, sep = "\t", row.names = FALSE, quote = FALSE)
+    
+    genotype_mappings <- get_alternates(assignments, alt_path)
+    
+    # Output file per group
+    group_output_file <- paste0(group, "_final_stave.tsv")
+    
+    genotypes_from_freqs(freq_path, group_output_file, genotype_mappings)
+    
+    # Read output and add group_id
+    group_results <- read_tsv(group_output_file, show_col_types = FALSE) %>%
+      mutate(group_id = group)
+
+    results_list[[group]] <- group_results
+
+    # results_list[[group]] <- read_tsv(group_output_file, show_col_types = FALSE)
+  }
+  
+  # Merge all group outputs into one
+  combined <- bind_rows(results_list)
+  write_tsv(combined, arg$output)
+  
+  message("All groups processed and combined output saved to ", arg$output)
+}
+
 
 opts <- list(
   make_option(
@@ -476,6 +541,14 @@ opts <- list(
   make_option(
     "--model", 
     help = "which model number to use, see snp-slice github for documentation"
+  ),
+  make_option(
+    "--loci_group_table",
+    type = "character", 
+    help = str_c(
+      "TSV containing loci groups, with the columns: group_id, gene_id, 
+      aa_position."
+    )
   )
 )
 
@@ -504,28 +577,37 @@ output_file <- arg$output
 # setwd(arg$snp_slice_dir)
 
 #creates a simplified table of the reference and alternative alleles associated
-#with each gene position
-create_ref_alt(arg$aa_calls, assignments)
-create_SNP_slice_input(arg$aa_calls, output_ref, output_alt)
-#runs SNP-Slice
-output_list=run_SNPslice(gap=arg$gap, output_ref, output_alt,
-  script_path='scripts/snp-slice_wrapper/adapted_snpslicemain.R',
-  model=arg$model, snp_slice_dir=arg$snp_slice_dir)
+subset_groups(arg$aa_calls, arg$loci_group_table)
 
-#these blocks use inputs from the steps above and don't depend directly on any
-#command line arguments.
-freq=output_list[1]
-#loads ref_alt mappings into a dataframe
-genotype_mappings <- get_alternates(assignments, output_alt)
+# #with each gene position
+# create_ref_alt(arg$aa_calls, assignments)
+# create_SNP_slice_input(arg$aa_calls, output_ref, output_alt)
+# #runs SNP-Slice
+# output_list=run_SNPslice(gap=arg$gap, output_ref, output_alt,
+#   script_path='scripts/snp-slice_wrapper/adapted_snpslicemain.R',
+#   model=arg$model, snp_slice_dir=arg$snp_slice_dir)
 
-setwd(working_directory)
-write.table(freq, freq_estimates, sep = "\t", row.names = FALSE, quote = FALSE)
+# #these blocks use inputs from the steps above and don't depend directly on any
+# #command line arguments.
+# freq=output_list[1]
+# #loads ref_alt mappings into a dataframe
+# genotype_mappings <- get_alternates(assignments, output_alt)
 
-# Execute the function
-genotypes_from_freqs(freq_estimates, output_file, genotype_mappings)
+# setwd(working_directory)
+# write.table(freq, freq_estimates, sep = "\t", row.names = FALSE, quote = FALSE)
+
+# # Execute the function
+# genotypes_from_freqs(freq_estimates, output_file, genotype_mappings)
 #roxygen2::roxygenise() # this command fails - I think likely because roxygen
 #expects this script to already be packaged up as an R package. I'm leaving this
 #commented out since I'm unsure of the final desired R packaging structure.
 
-# TODO: Store my snp slice in this directory.
-# TODO: edit my snp slice to take a snp slice dir and source scripts from there 
+
+# This takes the amino acids. Finds ref and alt for each gene id, amino acid
+# Uses this file to generate ref alt input files and puts them in the input directory 
+# puts that through  snp sclice which generates outputs
+# Calculates frequencies and puts them into snp-slice_freqs
+# reads that file and turns it into stave output 
+
+# TODO: remove intermediate files 
+# TODO: Write sometheing to take group file, subset and run in a loop and put all the freqs in one file
