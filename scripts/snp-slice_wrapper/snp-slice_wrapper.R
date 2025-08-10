@@ -4,6 +4,7 @@ library(readr)
 library(optparse)
 library(stringr)
 library(tibble)
+library(here)
 
 #' Create SNP-Slice Input Data Frames
 #'
@@ -273,13 +274,16 @@ subset_groups <- function(aa_calls_path, loci_group_table_path) {
     # Run SNP-Slice
     output_list <- run_SNPslice(
       gap = arg$gap,
-      script_path = "scripts/snp-slice_wrapper/adapted_snpslicemain.R",
+      script_path = here("scripts", "snp-slice_wrapper", "adapted_snpslicemain.R"),
       ref = ref_path,
       alt = alt_path,
       snp_slice_dir = arg$snp_slice_dir,
       model = arg$model,
       rep = 1
     )
+    # library(here)
+    # script_path <- here("scripts", "snp-slice_wrapper", "adapted_snpslicemain.R")
+
 
     # Map alternates (in memory)
     genotype_mappings <- get_alternates_df(assignments_df, snp_input$alt_counts)
