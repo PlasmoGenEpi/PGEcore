@@ -4,7 +4,6 @@ library(readr)
 library(optparse)
 library(stringr)
 library(tibble)
-library(roxygen2)
 
 #' Create SNP-Slice Input Data Frames
 #'
@@ -269,9 +268,8 @@ subset_groups <- function(aa_calls_path, loci_group_table_path) {
     # Write only what SNP-Slice needs
     ref_path <- file.path("inputdata", paste0(group, "_ref.txt"))
     alt_path <- file.path("inputdata", paste0(group, "_alt.txt"))
-    write.table(snp_input$ref_counts, ref_path, sep = "\t", row.names = FALSE, quote = FALSE)
-    write.table(snp_input$alt_counts, alt_path, sep = "\t", row.names = FALSE, quote = FALSE)
-
+    readr::write_tsv(snp_input$ref_counts, ref_path)
+    readr::write_tsv(snp_input$alt_counts, alt_path)
     # Run SNP-Slice
     output_list <- run_SNPslice(
       gap = arg$gap,
@@ -295,7 +293,7 @@ subset_groups <- function(aa_calls_path, loci_group_table_path) {
 
   # Combine & write once at the end
   combined <- bind_rows(results_list)
-  write_tsv(combined, arg$output)
+  readr::write_tsv(combined, arg$output)
   message("All groups processed and combined output saved to ", arg$output)
 }
 
