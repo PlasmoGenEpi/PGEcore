@@ -816,6 +816,13 @@ opts = list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
+# Arguments used for development
+if (interactive()) {
+  options(error = traceback)
+  arg$aa_calls <- "~/Downloads/amino_acid_calls_biallelic.tsv.gz"
+  arg$loci_group_table <- "~/Downloads/loci_groups_aa_level.tsv"
+  arg$mlaf_output <- "../../mlaf_test.tsv"
+}
 
 # MultiLociBiallelicModel_wrapper functions ----------------------------
 
@@ -875,7 +882,10 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     ungroup() %>%
     select(specimen_id, identifier, value) %>%
     distinct() %>%
-    tidyr::pivot_wider(names_from = identifier, values_from = value, values_fill = NA)
+    tidyr::pivot_wider(names_from = identifier, values_from = value, values_fill = NA) %>%
+    # Remove any sample with missing data
+    # TODO: Give the option to impute missing data, instead
+    filter(! if_any(everything(), is.na))
   
   # Generate validation rules to check if all columns (except `specimen_id`) are numeric
   # Validate package couldn't handle a tibble with variable number of columns.
@@ -1139,6 +1149,7 @@ summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
 # Main -----------------------------------------------------------------
 
 # Read the aminoacid calls
+
 
 MLBM_object <- create_MultiLociBiallelicModel_input(arg$aa_calls, arg$loci_group)
 
