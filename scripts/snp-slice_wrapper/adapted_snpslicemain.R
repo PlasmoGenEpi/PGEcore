@@ -61,8 +61,6 @@ threshold <- 0.001
 ## parameters for the observation model
 e1 <- 0.05
 e2 <- 0.05
-print(input)
-print(input2)
 set.seed(rep)
 ## data processing-----
 model <- c("cat", "pois", "bin", "neg", "jpois")[model + 1]
@@ -84,8 +82,6 @@ if (model == "cat") {
   rho <- sum(y, na.rm = T) / sum(r, na.rm = T)
 }
 # load helper functions for slice sampler-----
-# source("/Users/kmurie/Documents/benchmarking/tools/new_snp_slice/snp-slice/source/snpslicebin.R")
-print(snp_slice_code)
 source(file.path(snp_slice_code, paste("source/snpslice", model, ".R", sep = "")))
 source(file.path(snp_slice_code, "source/snpslicecommon.R"))
 
