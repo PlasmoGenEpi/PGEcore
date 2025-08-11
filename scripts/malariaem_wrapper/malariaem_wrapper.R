@@ -71,12 +71,19 @@ opts <- list(
     help = "Path to phasing output file",
     type = "character",
     default = "gt_phase_summary_all.tsv",
+  ),
+  make_option(
+    "--seed",
+    help = "seed",
+    type = "character",
+    default = "1",
   )
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
+set.seed(as.numeric(arg$seed))
 
-required_args <- c("allele_table", "coi_range")
+required_args <- c("allele_table")
 missing_args <- setdiff(required_args, names(arg))
 if (length(missing_args) > 0) {
   stop(stringr::str_c("Missing required arguments: ", paste(missing_args, collapse = ", ")))
