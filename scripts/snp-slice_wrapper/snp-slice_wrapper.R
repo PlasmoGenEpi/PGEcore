@@ -95,8 +95,9 @@ run_SNPslice <- function(gap, script_path, ref, alt, snp_slice_dir, model = 3, n
   runtime <- system.time({
     system(command)
   })
-  D_filename <- paste(output_dir, "/neg_D_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
-  A_filename <- paste(output_dir, "/neg_A_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
+  model_str <- c("cat", "pois", "bin", "neg", "jpois")[as.integer(model) + 1]
+  D_filename <- paste(output_dir, "/", model_str, "_D_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
+  A_filename <- paste(output_dir, "/", model_str, "_A_nmcmc", nmcmc, "_gap", gap, "_rep", rep, ".txt", sep = "")
   haplotype_dict_path <- D_filename
   host_strain_association <- A_filename
   plsf_table <- infer_SNPslice_freqs(haplotype_dict_path, host_strain_association)
@@ -318,6 +319,17 @@ opts <- list(
 
 working_directory <- getwd()
 arg <- parse_args(OptionParser(option_list = opts))
+# Arguments used for development
+if (interactive()) {
+  options(error = traceback)
+  arg$aa_calls <- "../../data/example2_amino_acid_calls.tsv"
+  arg$loci_group_table <- "../../data/example_loci_groups.tsv"
+  arg$snp_slice_dir <- "~/bin/snp-slice"
+  arg$snpslicemain_path <- "./adapted_snpslicemain.R"
+  arg$output <- "../../test_mlaf.tsv"
+  arg$model <- "3"
+  arg$gap <- "100"
+}
 
 # Run snp-slice per group
 subset_groups(arg$aa_calls, arg$loci_group_table)
