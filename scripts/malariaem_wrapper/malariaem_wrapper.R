@@ -334,7 +334,6 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
   
   # Checks inputs
   checkmate::assert_matrix(matrix)
-  #checkmate::assert_numeric(coi_range, any.missing = FALSE, min.len = 1)
   checkmate::assert_flag(subset_targets)
   if (subset_targets) {
     checkmate::assert_data_frame(target_groups, min.rows = 1, min.cols = 2)
