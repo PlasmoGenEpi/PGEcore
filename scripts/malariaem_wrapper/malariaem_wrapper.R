@@ -342,6 +342,8 @@ run_malariaem <- function(matrix, coi_range, subset_targets = FALSE, target_grou
   checkmate::assert_directory_exists(phase_outdir, access = "w")
   
   run_malariaem_helper <- function(matrix, coi_range, label = NULL){
+    #removes samples that are not filled enough
+    matrix <- matrix[rowSums(!is.na(matrix)) > 1,]
     
     # get sample names
     sample_name <- matrix |> 
