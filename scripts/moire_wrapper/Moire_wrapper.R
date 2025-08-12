@@ -8,7 +8,7 @@ library(validate)
 library(checkmate)
 
 # Parse arguments ------------------------------------------------------
-opts = list(
+opts <- list(
   make_option(
     "--allele_table",
     help = str_c(
@@ -111,7 +111,7 @@ opts = list(
     type = "double",
     default = 0.1,
     help = str_c(
-      "Shape parameter for the mean coefficient of inbreeding prior.",
+      "Shape parameter for the mean complexity of infection prior.",
       "Default set to 0.1."
     )
   ),
@@ -120,7 +120,7 @@ opts = list(
     type = "integer",
     default = 10,
     help = str_c(
-      "Scale parameter for the mean coefficient of inbreeding prior.",
+      "Scale parameter for the mean complexity of infection prior.",
       "Default set to 10"
     )
   ),
@@ -152,24 +152,6 @@ opts = list(
     )
   ),
   make_option(
-    "--num_chains",
-    type = "integer",
-    default = 1,
-    help = str_c(
-      "Number of chains to run in the MCMC process.",
-      "Default set to 1."
-    )
-  ),
-  make_option(
-    "--num_cores",
-    type = "integer",
-    default = 1,
-    help = str_c(
-      "Number of cores to use for parallel processing.",
-      "Default set to 1."
-    )
-  ),
-  make_option(
     "--pt_chains",
     type = "integer",
     default = 1,
@@ -179,12 +161,12 @@ opts = list(
     )
   ),
   make_option(
-    "--pt_grad",
-    type = "integer",
-    default = 1,
+    "--pt_grad_lower",
+    type = "double",
+    default = 0,
     help = str_c(
-      "Number of gradient evaluations to use in the parallel tempering process.",
-      "Default set to 1."
+      "Lower bound for the gradient step size in the parallel tempering process.",
+      "Default set to 0."
     )
   ),
   make_option(
@@ -199,10 +181,10 @@ opts = list(
   make_option(
     "--adapt_temp",
     type = "logical",
-    default = FALSE,
+    default = TRUE,
     help = str_c(
       "Logical flag to enable adaptive temperature in the MCMC process.",
-      "Default set to FALSE."
+      "Default set to TRUE."
     )
   ),
   make_option(
@@ -290,10 +272,8 @@ if (interactive()) {
 #' @param max_eps_pos Numeric. Maximum allowable positive error rate.
 #' @param max_eps_neg Numeric. Maximum allowable negative error rate.
 #' @param record_latent_genotypes Logical. Whether to record latent genotypes during the analysis.
-#' @param num_chains Numeric. Number of MCMC chains.
-#' @param num_cores Numeric. Number of CPU cores to use for parallel processing.
 #' @param pt_chains Numeric. Number of chains for parallel tempering.
-#' @param pt_grad Numeric. Gradient step size for parallel tempering.
+#' @param pt_grad_lower Numeric. Lower bound for the gradient step size in the parallel tempering process.
 #' @param pt_num_threads Numeric. Number of threads for parallel tempering computations.
 #' @param adapt_temp Logical. Whether to adapt the temperature during parallel tempering.
 #' @param max_runtime Numeric. Maximum runtime allowed for the MCMC algorithm (in seconds).
@@ -301,24 +281,24 @@ if (interactive()) {
 #' @return A list containing the Moire data and parameters, ready for downstream analysis.
 #' @examples
 #' \dontrun{
-#' moire_input <- create_Moire_input(
+#' moire_input <- create_moire_input(
 #'   input_path = "data.csv", allow_relatedness = TRUE, burnin = 1000,
 #'   samples_per_chain = 5000, verbose = TRUE, eps_pos_alpha = 2,
 #'   eps_pos_beta = 5, eps_neg_alpha = 2, eps_neg_beta = 5, r_alpha = 1,
 #'   r_beta = 1, mean_coi_shape = 2, mean_coi_scale = 0.5, max_eps_pos = 0.1,
-#'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, num_chains = 4,
-#'   num_cores = 2, pt_chains = 2, pt_grad = 0.01, pt_num_threads = 2,
+#'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, pt_chains = 40,
+#'   pt_grad_lower = 0.5, pt_num_threads = 20,
 #'   adapt_temp = TRUE, max_runtime = 3600
 #' )
 #' }
 #' @export
 
-create_Moire_input <- function(input_path, allow_relatedness, burnin,
+create_moire_input <- function(input_path, allow_relatedness, burnin,
                                samples_per_chain, verbose, eps_pos_alpha,
                                eps_pos_beta, eps_neg_alpha, eps_neg_beta,
                                r_alpha, r_beta, mean_coi_shape, mean_coi_scale,
                                max_eps_pos, max_eps_neg, record_latent_genotypes,
-                               num_chains, num_cores, pt_chains, pt_grad,
+                               pt_chains, pt_grad_lower,
                                pt_num_threads, adapt_temp, max_runtime) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
@@ -346,10 +326,9 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
       max_eps_pos = max_eps_pos,
       max_eps_neg = max_eps_neg,
       record_latent_genotypes = record_latent_genotypes,
-      num_chains = num_chains,
-      num_cores = num_cores,
-      pt_chains = pt_chains,
-      pt_grad = pt_grad,
+      pt_chains = seq(
+        from = pt_grad_lower, to = 1, length.out = pt_chains
+      ),
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
       max_runtime = max_runtime
@@ -386,10 +365,6 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
   assert_numeric(moire_object$moire_parameters$max_eps_pos, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_eps_neg, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$record_latent_genotypes, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$num_chains, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$num_cores, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$pt_chains, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$pt_grad, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
@@ -426,12 +401,12 @@ create_Moire_input <- function(input_path, allow_relatedness, burnin,
 #' }
 #' @export
 
-run_Moire <- function(moire_object) {
+run_moire <- function(moire_object) {
 
-  moire_data = moire_object$moire_data |>
+  moire_data <- moire_object$moire_data |>
     moire::load_long_form_data()
 
-  moire_parameters = moire_object$moire_parameters
+  moire_parameters <- moire_object$moire_parameters
 
   runtime <- system.time({
     # Run the MCMC function
@@ -452,10 +427,7 @@ run_Moire <- function(moire_object) {
       max_eps_pos = moire_parameters$max_eps_pos,
       max_eps_neg = moire_parameters$max_eps_neg,
       record_latent_genotypes = moire_parameters$record_latent_genotypes,
-      num_chains = moire_parameters$num_chains,
-      num_cores = moire_parameters$num_cores,
       pt_chains = moire_parameters$pt_chains,
-      pt_grad = moire_parameters$pt_grad,
       pt_num_threads = moire_parameters$pt_num_threads,
       adapt_temp = moire_parameters$adapt_temp,
       max_runtime = moire_parameters$max_runtime
@@ -529,9 +501,9 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
 
   # Moire removes loci with only 1 allele.
   # Add removed loci to allele_freq_summary. Add freq 1 by default.
-  missing_target_ids = unique(moire_object$moire_data$locus[
+  missing_target_ids <- unique(moire_object$moire_data$locus[
     !moire_object$moire_data$locus %in% allele_freq_summary$target_id])
-  present_target_ids = unique(moire_object$moire_data$locus[
+  present_target_ids <- unique(moire_object$moire_data$locus[
     moire_object$moire_data$locus %in% allele_freq_summary$target_id])
 
   assert(length(unique(moire_object$moire_data$locus)) ==
@@ -558,8 +530,7 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
       everything()
     )
 
-  allele_freq_summary = rbind(allele_freq_summary,
-        one_allele_loci)
+  allele_freq_summary <- rbind(allele_freq_summary, one_allele_loci)
 
   # Add removed loci to he_summary
   target_id_count <- moire_object$moire_data %>%
@@ -582,7 +553,7 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
 # Main-----------------------------------------------------------------
 
 # Create Moire object -------------------------------------------------
-moire_object <- create_Moire_input(arg$allele_table,
+moire_object <- create_moire_input(arg$allele_table,
   arg$allow_relatedness,
   arg$burnin,
   arg$samples_per_chain,
@@ -598,10 +569,8 @@ moire_object <- create_Moire_input(arg$allele_table,
   arg$max_eps_pos,
   arg$max_eps_neg,
   arg$record_latent_genotypes,
-  arg$num_chains,
-  arg$num_cores,
   arg$pt_chains,
-  arg$pt_grad,
+  arg$pt_grad_lower,
   arg$pt_num_threads,
   arg$adapt_temp,
   arg$max_runtime
@@ -609,7 +578,7 @@ moire_object <- create_Moire_input(arg$allele_table,
 
 # Run Moire -------------------------------------------------------------------
 
-moire_results <- run_Moire(moire_object)
+moire_results <- run_moire(moire_object)
 
 # Generate summaries
 summarize_and_write_results(moire_object, moire_results, arg$coi_summary, arg$he_summary, arg$allele_freq_summary, arg$relatedness_summary, arg$effective_coi_summary)
