@@ -369,8 +369,8 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
         call. = FALSE
       )
     }
-    #removes samples that are not filled enough
-    matrix <- matrix[rowSums(!is.na(matrix)) > 1,]
+    #removes samples that are missing at any loci
+    matrix <- matrix[rowSums(is.na(matrix)) == 0,]
     
     # get sample names
     sample_name <- matrix |> 
