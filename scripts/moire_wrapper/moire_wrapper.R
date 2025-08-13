@@ -308,6 +308,15 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
 
   print("Creating Moire object")
   # Create a list containing selected data and parameters
+
+  if (pt_chains > 1) {
+    pt_chains <- seq(
+      from = pt_grad_lower, to = 1, length.out = pt_chains
+    )
+  } else {
+    pt_chains <- 1
+  }
+
   moire_object <- list(
     moire_data = moire_data,
     moire_parameters = list(
@@ -326,9 +335,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
       max_eps_pos = max_eps_pos,
       max_eps_neg = max_eps_neg,
       record_latent_genotypes = record_latent_genotypes,
-      pt_chains = seq(
-        from = pt_grad_lower, to = 1, length.out = pt_chains
-      ),
+      pt_chains = pt_chains,
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
       max_runtime = max_runtime
