@@ -1108,15 +1108,19 @@ make_stave <- function(variant) {
 #' It modifies the sequence representation in `MLBM_res` based on `MLBM_object` and the provided `group_name`,
 #' updating the `plsf_table` with new sequence variants and frequencies.
 #'
-#' @param MLBM_res A list containing the results of the MLBM analysis, including the `plsf_table`.
+#' @param MLBM_res A list containing the results of the MLBM analysis, including the `plsf_table` with columns: 
+#'  \itemize{
+#'    \item `sequence` - character string of locus states 0/1
+#'    \item `MLBM_frequency` - numeric
+#'  }
 #' @param MLBM_object A list containing the input data and metadata used in the MLBM analysis, including `by_group_table` and `staves_data`.
 #' @param group_name A string specifying the name of the group to process, corresponding to a key in `MLBM_object$by_group_table`.
 #'
 #' @return The modified `MLBM_res` object with an updated `plsf_table` that includes:
 #' \describe{
 #'   \item{`group_id`}{A column indicating the group name.}
-#'   \item{`variant`}{A column representing the reconstructed sequence variants.}
-#'   \item{`freq`}{A column indicating the frequency of each variant.}
+#'   \item{`variant`}{A column representing the variant string}
+#'   \item{`freq`}{A column indicating the frequency of each variant calculated by MLBM.}
 #' }
 #'
 #' @details
@@ -1124,7 +1128,7 @@ make_stave <- function(variant) {
 #' \enumerate{
 #'   \item Splits sequences in `MLBM_res$plsf_table` into individual characters and converts them to a wide format.
 #'   \item Matches and replaces sequence states using `staves_data` in `MLBM_object`.
-#'   \item Reconstructs updated sequences by combining individual character columns into a single string.
+#'   \item Converts sequences to variantstring format using the `{variantstring}` package.
 #'   \item Updates the `plsf_table` with new `group_id`, `variant`, and `freq` columns.
 #' }
 #'
@@ -1134,7 +1138,10 @@ make_stave <- function(variant) {
 #'
 #' @import dplyr
 #' @import tidyr
-#' @import stringr
+#' @import purrr 
+#' @importFrom variantstring long_to_variant
+#' @importFrom stats setNames
+#' 
 #' @export
 summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
   sequence_df <- MLBM_res$plsf_table %>% 
