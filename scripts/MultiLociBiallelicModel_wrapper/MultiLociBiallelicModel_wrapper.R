@@ -7,8 +7,22 @@
 library(dplyr)
 library(optparse)
 library(purrr)
+library(tidyr)
 library(stringr)
 
+# install a specific version of variantstring package (this is in development so
+# may not always be backwards-compatible)
+variantstring_version <- "1.8.0"
+if (!requireNamespace("variantstring", quietly = TRUE) ||
+    packageVersion("variantstring") != variantstring_version) {
+  stop(
+    "This script requires variantstring version ",  
+    variantstring_version, 
+    " and it is not installed", 
+    call. = FALSE
+  )
+}
+library(variantstring) 
 
 ########################################################################
 # Beginning of code copied from SNPModel.R
@@ -886,7 +900,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     # Remove any sample with missing data
     # TODO: Give the option to impute missing data, instead
     filter(! if_any(everything(), is.na))
-
+    
   # Make sure everything was not removed above
   if (nrow(MLBM_data) == 0) {
     stop(
@@ -921,7 +935,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     distinct(staves, .keep_all = TRUE) %>%
     select(staves, state) %>%
     mutate(prestave = sub(":([^:]+)$", "", staves))
-
+    
   MLBM_object = list(MLBM_data = MLBM_data, 
                      staves_data = staves_data)
   
@@ -955,7 +969,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
   }
   
   #Matching groups to create lists of loci
-  match_group = input_data %>% 
+  match_group = input_data %>%
     select(gene_id, aa_position) %>%
     mutate(identifier = paste(gene_id, aa_position, sep = ":")) 
   
@@ -1094,15 +1108,19 @@ make_stave <- function(variant) {
 #' It modifies the sequence representation in `MLBM_res` based on `MLBM_object` and the provided `group_name`,
 #' updating the `plsf_table` with new sequence variants and frequencies.
 #'
-#' @param MLBM_res A list containing the results of the MLBM analysis, including the `plsf_table`.
+#' @param MLBM_res A list containing the results of the MLBM analysis, including the `plsf_table` with columns: 
+#'  \itemize{
+#'    \item `sequence` - character string of locus states 0/1
+#'    \item `MLBM_frequency` - numeric
+#'  }
 #' @param MLBM_object A list containing the input data and metadata used in the MLBM analysis, including `by_group_table` and `staves_data`.
 #' @param group_name A string specifying the name of the group to process, corresponding to a key in `MLBM_object$by_group_table`.
 #'
 #' @return The modified `MLBM_res` object with an updated `plsf_table` that includes:
 #' \describe{
 #'   \item{`group_id`}{A column indicating the group name.}
-#'   \item{`variant`}{A column representing the reconstructed sequence variants.}
-#'   \item{`freq`}{A column indicating the frequency of each variant.}
+#'   \item{`variant`}{A column representing the variant string}
+#'   \item{`freq`}{A column indicating the frequency of each variant calculated by MLBM.}
 #' }
 #'
 #' @details
@@ -1110,7 +1128,7 @@ make_stave <- function(variant) {
 #' \enumerate{
 #'   \item Splits sequences in `MLBM_res$plsf_table` into individual characters and converts them to a wide format.
 #'   \item Matches and replaces sequence states using `staves_data` in `MLBM_object`.
-#'   \item Reconstructs updated sequences by combining individual character columns into a single string.
+#'   \item Converts sequences to variantstring format using the `{variantstring}` package.
 #'   \item Updates the `plsf_table` with new `group_id`, `variant`, and `freq` columns.
 #' }
 #'
@@ -1120,40 +1138,61 @@ make_stave <- function(variant) {
 #'
 #' @import dplyr
 #' @import tidyr
-#' @import stringr
+#' @import purrr 
+#' @importFrom variantstring long_to_variant
+#' @importFrom stats setNames
+#' 
 #' @export
 summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
-  sequence_matrix <- MLBM_res$plsf_table %>%
+  sequence_df <- MLBM_res$plsf_table %>% 
     mutate(sequence_split = strsplit(sequence, "")) %>%  # Split each sequence into characters
     tidyr::unnest_wider(sequence_split, names_sep = "_") %>%   # Convert the list of characters to columns
     select(-MLBM_frequency) %>%                         # Remove the frequency column
-    rename_with(~ colnames(MLBM_object$by_group_table[[group_name]])[-1], starts_with("sequence_split")) %>% # Rename columns
-    as.matrix() 
+    rename_with(~ colnames(MLBM_object$by_group_table[[group_name]])[-1], 
+                starts_with("sequence_split"))  # Rename columns
   
-  # Convert sequence_matrix to a data frame for easier manipulation
-  sequence_df <- as.data.frame(sequence_matrix, stringsAsFactors = FALSE)
   columns_to_replace <- colnames(sequence_df)[-1]  # Exclude the "sequence" column
   
-  # Replace 0s and 1s in sequence_matrix[,-1] based on staves_data
-  for (col in columns_to_replace) {
-    matching_rows <- MLBM_object$staves_data %>%
-      filter(prestave == col)  # Match column name with prestave
-    for(i in 1:length(sequence_df[[col]])) {
-      sequence_df[[col]][i] = matching_rows$staves[matching_rows$state == sequence_df[[col]][i]]
-    }
-  }
-
-  # Convert the modified data frame back to a matrix if needed
-  sequence_matrix_updated <- as.matrix(sequence_df)
+  sequence_long <- sequence_df |> 
+    mutate(row_id = row_number()) |> 
+    pivot_longer(cols = all_of(columns_to_replace),
+                 names_to = "prestave",
+                 values_to = "state") |> 
+    mutate(state = as.integer(state)) |> 
+    left_join(MLBM_object$staves_data, by = c("prestave", "state"), relationship = "many-to-many") |> 
+    separate(staves, into = c("gene", "pos", "aa"), sep = ":", convert = TRUE) |> 
+    mutate(
+      n_aa = 1,
+      het = (n_aa>1),
+      phased = FALSE,
+      read_count = NA
+    ) |> 
+    arrange(row_id, 
+            gene, pos)
   
-  MLBM_res$plsf_table$sequence <- apply(sequence_df[-1], 1, paste, collapse = ";")
+  # Get variantstrings
+  vs <- sequence_long |> 
+    group_by(row_id) |> 
+    nest() |> 
+    mutate(variant = map_chr(
+      data, 
+      ~ variantstring::long_to_variant(list(.x |> 
+                                              select(gene, pos, n_aa, het, phased, aa, read_count) |> 
+                                              as.data.frame()))
+    )) |> 
+    select(row_id, variant)
   
   # Add group_id column and rename columns
   MLBM_res$plsf_table <- MLBM_res$plsf_table %>%
-    mutate(group_id = group_name, .before = 1) %>% # Add group_id at the beginning
-    rename(variant = sequence, freq = MLBM_frequency)  %>%
-    mutate(variant = map_chr(variant, make_stave)) 
+    mutate(row_id = row_number()) |> 
+    left_join(vs, by = "row_id") |> 
+    mutate(group_id = group_name,
+           freq = MLBM_frequency) |> 
+    select(group_id, variant, freq)
+  
+  MLBM_res$plsf_table
 }
+
 
 # Main -----------------------------------------------------------------
 
