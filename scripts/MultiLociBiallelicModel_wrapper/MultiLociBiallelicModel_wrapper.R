@@ -1159,7 +1159,7 @@ summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
                  names_to = "prestave",
                  values_to = "state") |> 
     mutate(state = as.integer(state)) |> 
-    left_join(staves_data, by = c("prestave", "state"), relationship = "many-to-many") |> 
+    left_join(MLBM_object$staves_data, by = c("prestave", "state"), relationship = "many-to-many") |> 
     separate(staves, into = c("gene", "pos", "aa"), sep = ":", convert = TRUE) |> 
     mutate(
       n_aa = 1,
