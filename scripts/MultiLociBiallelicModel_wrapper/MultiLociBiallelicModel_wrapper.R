@@ -880,7 +880,6 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
   # Read the allele table
   print("Reading input data")
   input_data <- read_tsv(input_path)
-  print("failed?")
   MLBM_data <- input_data %>%
     mutate(identifier = paste(gene_id, aa_position, sep = ":")) %>%
     group_by(specimen_id, identifier) %>%
