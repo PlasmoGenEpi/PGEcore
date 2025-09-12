@@ -673,7 +673,7 @@ run_translate_loci_of_interest <-function(){
     filter(aa != "X")
   
   # collapse amino acid calls 
-  allele_table_out_collapsed = collapse_allele_table(allele_table_out_filt)
+  allele_table_out_collapsed = collapse_allele_table(allele_table_out_filt, arg$collapse_calls_by_summing)
   
   
   # writing output results 
