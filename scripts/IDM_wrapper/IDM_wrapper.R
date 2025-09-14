@@ -784,38 +784,37 @@ get_optparse_args <- function() {
 #'    table.
 #' @return A data table ready for running the IDM model.
 prepare_input <- function(aa_calls_input) {
-
   # Read input
   df <- read_tsv(
-    aa_calls_input, 
+    aa_calls_input,
     col_types = cols(
-      .default = col_character(), 
+      .default = col_character(),
       aa_position = col_integer()
     )
   )
 
   # Validate fields
   rules <- validate::validator(
-    is.character(specimen_id), 
-    is.character(target_id), 
-    is.character(gene_id), 
-    is.integer(aa_position), 
-    is.character(ref_aa), 
-    is.character(aa), 
-    ! is.na(specimen_id), 
-    ! is.na(target_id), 
-    ! is.na(gene_id), 
-    ! is.na(aa_position), 
-    ! is.na(ref_aa), 
-    ! is.na(aa)
+    is.character(specimen_id),
+    is.character(target_id),
+    is.character(gene_id),
+    is.integer(aa_position),
+    is.character(ref_aa),
+    is.character(aa),
+    !is.na(specimen_id),
+    !is.na(target_id),
+    !is.na(gene_id),
+    !is.na(aa_position),
+    !is.na(ref_aa),
+    !is.na(aa)
   )
   fails <- validate::confront(df, rules, raise = "all") %>%
     validate::summary() %>%
     dplyr::filter(fails > 0)
   if (nrow(fails) > 0) {
     stop(
-      "Input input_data failed one or more validation checks: ", 
-      str_c(fails$expression, collapse = "\n"), 
+      "Input input_data failed one or more validation checks: ",
+      str_c(fails$expression, collapse = "\n"),
       call. = FALSE
     )
   }
@@ -890,7 +889,6 @@ run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
 #' @param slaf_output Output file path where the result table will be saved.
 write_output <- function(res, slaf_output) {
   write_tsv(res, slaf_output)
-
 }
 
 # prepare arguments
@@ -905,8 +903,10 @@ arg_slaf_output <- get_value_of_required_argument(arg, "slaf_output")
 df <- prepare_input(arg_aa_calls_input)
 
 # run the model
-res <- run_idm_mle_across_loci(df, arg_model, arg_lambda_initial,
-  arg_eps_initial)
+res <- run_idm_mle_across_loci(
+  df, arg_model, arg_lambda_initial,
+  arg_eps_initial
+)
 
 # write the result to a file
 write_output(res, arg_slaf_output)
