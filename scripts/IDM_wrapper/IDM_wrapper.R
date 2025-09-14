@@ -28,10 +28,10 @@ suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(readr))
 suppressPackageStartupMessages(library(stringr))
 library(optparse)
-library(validate)
+suppressPackageStartupMessages(library(validate))
 # The moi_mle_idm.R script requires the openxlsx and Rmpfr packages
-library(openxlsx)
-library(Rmpfr)
+suppressPackageStartupMessages(library(openxlsx))
+suppressPackageStartupMessages(library(Rmpfr))
 
 #############################################################
 ##################### BEGIN : moi_mle_idm.R #################
@@ -729,7 +729,7 @@ get_value_of_optional_argument <- function(
 get_optparse_args <- function() {
   opts <- list(
     make_option(
-      "--aa_calls_input",
+      "--allele_table_input",
       type = "character",
       help = str_c(
         "TSV containing amino acid calls, with the columns: specimen_id, ",
@@ -780,16 +780,16 @@ get_optparse_args <- function() {
 
 #' Prepare input data
 #'
-#' @param aa_calls_input Character; file path to the input amino acid call
+#' @param allele_table_input Character; file path to the input amino acid call
 #'    table.
 #' @return A data table ready for running the IDM model.
-prepare_input <- function(aa_calls_input) {
+prepare_input <- function(allele_table_input) {
   # Read input
   df <- read_tsv(
-    aa_calls_input,
+    allele_table_input,
     col_types = cols(
       .default = col_character(),
-      aa_position = col_integer()
+      read_count = col_integer()
     )
   )
 
@@ -797,16 +797,12 @@ prepare_input <- function(aa_calls_input) {
   rules <- validate::validator(
     is.character(specimen_id),
     is.character(target_id),
-    is.character(gene_id),
-    is.integer(aa_position),
-    is.character(ref_aa),
-    is.character(aa),
+    is.character(seq),
+    is.integer(read_count),
     !is.na(specimen_id),
     !is.na(target_id),
-    !is.na(gene_id),
-    !is.na(aa_position),
-    !is.na(ref_aa),
-    !is.na(aa)
+    !is.na(seq),
+    !is.na(read_count)
   )
   fails <- validate::confront(df, rules, raise = "all") %>%
     validate::summary() %>%
@@ -822,10 +818,11 @@ prepare_input <- function(aa_calls_input) {
   # Reformat and return
   df <- df %>%
     mutate(
-      locus = str_c(gene_id, aa_position, sep = ":"),
-      variants = str_c(gene_id, aa_position, aa, sep = ":")
+      locus = target_id,
+      variants = str_c(target_id, seq, sep = ":")
     ) %>%
-    select(specimen_id, locus, variants)
+    select(specimen_id, locus, variants) %>%
+    distinct(specimen_id, locus, variants)
   return(df)
 }
 
@@ -896,11 +893,11 @@ arg <- get_optparse_args()
 arg_model <- get_value_of_optional_argument(arg, "model", "IDM", c("IDM", "OM"))
 arg_lambda_initial <- get_value_of_optional_argument(arg, "lambda_initial", 1.0)
 arg_eps_initial <- get_value_of_optional_argument(arg, "eps_initial", 0.1)
-arg_aa_calls_input <- get_value_of_required_argument(arg, "aa_calls_input")
+arg_allele_table_input <- get_value_of_required_argument(arg, "allele_table_input")
 arg_slaf_output <- get_value_of_required_argument(arg, "slaf_output")
 
 # prepare input
-df <- prepare_input(arg_aa_calls_input)
+df <- prepare_input(arg_allele_table_input)
 
 # run the model
 res <- run_idm_mle_across_loci(
@@ -912,7 +909,7 @@ res <- run_idm_mle_across_loci(
 write_output(res, arg_slaf_output)
 
 cat("Done\n")
-cat("INPUT:\t", arg_aa_calls_input, "\n")
+cat("INPUT:\t", arg_allele_table_input, "\n")
 cat("OUTPUT:\t", arg_slaf_output, "\n")
 #############################################################
 ##################### END  : WRAPPER_CODE #################
