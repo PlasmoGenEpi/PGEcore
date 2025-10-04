@@ -49,8 +49,16 @@ Assuming you are in the directory containing the wrapper script
 (`IDM_wrapper.R`), you can run the script as follows.
 
 ```sh
+# use allele table as input
  Rscript ./IDM_wrapper.R \
   --allele_table_input ../../data/example_allele_table.tsv \
+  --model IDM \
+  --slaf_output out_slaf.tsv \
+  --eps_initial 0.1 \
+  --lambda_initial 0.1
+# use amino acide calls as input
+ Rscript ./IDM_wrapper.R \
+  --aa_calls_input ../../data/example_amino_acid_calls.tsv \
   --model IDM \
   --slaf_output out_slaf.tsv \
   --eps_initial 0.1 \
@@ -59,8 +67,10 @@ Assuming you are in the directory containing the wrapper script
 
 Note that in this wrapper code,
 
-- Input data is an allele table. See
-  `../../data/example_allele_table.tsv` for example.
+- Input data is an allele table (`--allele_table_input`, see
+  `../../data/example_allele_table.tsv` for example), or
+   a table of amino acid calls. See 
+  `../../data/example_amino_acid_calls.tsv` for example.
 - Output data are presented in a table of allele frequencies. Only lineage (allele) frequencies are reported, while other
   estimates like MOI and prevalence counts are not included. Command line options
   are available to adjust parameters for the maximum-likelihood estimator from the
