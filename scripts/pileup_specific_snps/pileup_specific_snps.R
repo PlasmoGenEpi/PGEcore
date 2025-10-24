@@ -292,30 +292,45 @@ extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_inte
   
   all_snps_of_interest_for_target_for_microhap = tibble()
   
+  # reverse complement the reference sequences if on the reverse strand so the relative position look up will be correct 
+  # creating a copy in case the function gets called multiple times otherwise will keep reverse complementing the reference  
+  ref_bed_by_loci_lookup_copy = ref_bed_by_loci_lookup
+  for(target_name in names(ref_bed_by_loci_lookup_copy)){
+    if('-' == ref_bed_by_loci_lookup_copy[[target_name]]$strand[1]){
+      ref_bed_by_loci_lookup_copy[[target_name]]$ref_seq[1] = as.character(Biostrings::reverseComplement(Biostrings::DNAString(ref_bed_by_loci_lookup_copy[[target_name]]$ref_seq[1])))
+    }
+  }
+  
   # iterate over unique sequences to translate
   for(row in 1:nrow(allele_table_unique_haps_tab)){
     # if the target is in the snps of interest table then determine the calls per sequence 
     if(allele_table_unique_haps_tab$target_id[row] %in% microhaps_intersected_with_snps_of_interest){
+      # reverse complement seq if target is on the reverse strand so the position look up works
+      allele_seq = Biostrings::DNAString(allele_table_unique_haps_tab$seq[row])
+      if('-' == ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$strand ){
+        allele_seq = Biostrings::reverseComplement(allele_seq)
+      }
+      
       # end-to-end align sequences 
-      overlapAlign <- pwalign::pairwiseAlignment(Biostrings::DNAString(allele_table_unique_haps_tab$seq[row]), 
-                                                 Biostrings::DNAString(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1]),
+      overlapAlign <- pwalign::pairwiseAlignment(allele_seq, 
+                                                 Biostrings::DNAString(ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1]),
                                                  substitutionMatrix = mat, gapOpening = 5, gapExtension = 1, 
                                                  type="overlap") 
       # get the snps for this target 
-      snps_of_interest_for_target = snps_of_interest_tab[as.numeric(unlist(strsplit(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$intersected_snps_of_interest, ","))),] |> 
-        mutate(rel_start = start - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1], 
-               rel_end = end - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1])
+      snps_of_interest_for_target = snps_of_interest_tab[as.numeric(unlist(strsplit(ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$intersected_snps_of_interest, ","))),] |> 
+        mutate(rel_start = start - ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$start[1], 
+               rel_end = end - ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$start[1])
       
       snps_of_interest_for_target_for_microhap = tibble()
       # get the relative position of the snp within the aligned sequence and translate 
       for(snps_of_interest_for_target_row in 1:nrow(snps_of_interest_for_target)){
         aln_pos = getAlnPosPerRealPos(getAlignedSubjectFromOverlapAlign(overlapAlign), snps_of_interest_for_target$rel_start[snps_of_interest_for_target_row] + 1)
         seq_base = Biostrings::DNAString(substr(getAlignedPatternFromOverlapAlign(overlapAlign), aln_pos, aln_pos + snps_of_interest_for_target$length[snps_of_interest_for_target_row] -1))
-        ref_base = Biostrings::DNAString(substr(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1], 
+        ref_base = Biostrings::DNAString(substr(ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1], 
                                                 snps_of_interest_for_target$rel_start[snps_of_interest_for_target_row] + 1, 
                                                 snps_of_interest_for_target$rel_start[snps_of_interest_for_target_row] + 1 + snps_of_interest_for_target$length[snps_of_interest_for_target_row] - 1))
-        # if the sequences are in the opposite direction from the SNP then reverse complement to get the correct translation 
-        if(snps_of_interest_for_target$strand[snps_of_interest_for_target_row] != ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$strand){
+        # sequences are re-oriented always to the positive strand above, if the request SNP of interest wants the reverse complement of that base, rev comp it 
+        if('-' == snps_of_interest_for_target$strand[snps_of_interest_for_target_row]){
           seq_base = Biostrings::reverseComplement(seq_base)
           ref_base = Biostrings::reverseComplement(ref_base)
         }

@@ -295,30 +295,45 @@ translate_microhap_seqs <-function(allele_table_unique_haps_tab, microhaps_inter
   # create substitution matrix 
   mat <- pwalign::nucleotideSubstitutionMatrix(match = 2, mismatch = -2, baseOnly = TRUE)
   
+  # reverse complement the reference sequences if on the reverse strand so the relative position look up will be correct 
+  # creating a copy in case the function gets called multiple times otherwise will keep reverse complementing the reference  
+  ref_bed_by_loci_lookup_copy = ref_bed_by_loci_lookup
+  for(target_name in names(ref_bed_by_loci_lookup_copy)){
+    if('-' == ref_bed_by_loci_lookup_copy[[target_name]]$strand[1]){
+      ref_bed_by_loci_lookup_copy[[target_name]]$ref_seq[1] = as.character(Biostrings::reverseComplement(Biostrings::DNAString(ref_bed_by_loci_lookup_copy[[target_name]]$ref_seq[1])))
+    }
+  }
+  
   # iterate over unique sequences to translate
   for(row in 1:nrow(allele_table_unique_haps_tab)){
     # if the target is in the loci of interest table then determine the calls per sequence 
     if(allele_table_unique_haps_tab$target_id[row] %in% microhaps_intersected_with_loci_of_interest){
+      # reverse complement seq if target is on the reverse strand so the position look up works
+      allele_seq = Biostrings::DNAString(allele_table_unique_haps_tab$seq[row])
+      if('-' == ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$strand ){
+        allele_seq = Biostrings::reverseComplement(allele_seq)
+      }
+      
       # end-to-end align sequences 
-      overlapAlign <- pwalign::pairwiseAlignment(Biostrings::DNAString(allele_table_unique_haps_tab$seq[row]), 
-                                                 Biostrings::DNAString(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1]),
+      overlapAlign <- pwalign::pairwiseAlignment(allele_seq, 
+                                                 Biostrings::DNAString(ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1]),
                                                  substitutionMatrix = mat, gapOpening = 5, gapExtension = 1, 
                                                  type="overlap") 
       # get the loci for this target 
-      loci_of_interest_for_target = loci_of_interest_tab[as.numeric(unlist(strsplit(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$intersected_loci_of_interest, ","))),] |> 
-        mutate(rel_start = start - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1], 
-               rel_end = end - ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$start[1])
+      loci_of_interest_for_target = loci_of_interest_tab[as.numeric(unlist(strsplit(ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$intersected_loci_of_interest, ","))),] |> 
+        mutate(rel_start = start - ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$start[1], 
+               rel_end = end - ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$start[1])
       
       loci_of_interest_for_target_for_microhap = tibble()
       # get the relative position of the codon within the aligned sequence and translate 
       for(loci_of_interest_for_target_row in 1:nrow(loci_of_interest_for_target)){
         aln_pos = getAlnPosPerRealPos(getAlignedSubjectFromOverlapAlign(overlapAlign), loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 1)
         seq_codon = Biostrings::DNAString(substr(getAlignedPatternFromOverlapAlign(overlapAlign), aln_pos, aln_pos + 2))
-        ref_codon = Biostrings::DNAString(substr(ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1], 
+        ref_codon = Biostrings::DNAString(substr(ref_bed_by_loci_lookup_copy[[allele_table_unique_haps_tab$target_id[row]]]$ref_seq[1], 
                                                  loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 1, 
                                                  loci_of_interest_for_target$rel_start[loci_of_interest_for_target_row] + 2 + 1))
-        # if the sequences are in the opposite direction from the amino acid call then reverse complement to get the correct translation 
-        if(loci_of_interest_for_target$strand[loci_of_interest_for_target_row] != ref_bed_by_loci_lookup[[allele_table_unique_haps_tab$target_id[row]]]$strand){
+        # if loci of interest is on the reverse complement, then rev comp the codons prior to translation as the steps above will put the seqs into the + strand always 
+        if('-' == loci_of_interest_for_target$strand[loci_of_interest_for_target_row]){
           seq_codon = Biostrings::reverseComplement(seq_codon)
           ref_codon = Biostrings::reverseComplement(ref_codon)
         }
@@ -539,6 +554,15 @@ opts <- list(
     type = "logical"
   ), 
   make_option(
+    "--output_stop_codons", 
+    help = str_c(
+      "If FALSE, calls containing * will be treated as untranslatable. These calls can appear in MIP data."
+    ), 
+    action="store_true", 
+    default=FALSE,
+    type = "logical"
+  ), 
+  make_option(
     "--collapse_calls_by_summing", 
     help = str_c(
       "collapse amino acid calls by summing across targets, by default the target with the highest read count will be used as the final call"
@@ -667,10 +691,14 @@ run_translate_loci_of_interest <-function(){
   
   
   # filter the uncallable sites
+  untranslateable_calls = c("X")
+  if(!arg$output_stop_codons){
+    untranslateable_calls = c(untranslateable_calls, "*")
+  }
   allele_table_out_untranslatable = allele_table_out |> 
-    filter(aa == "X")
+    filter(aa %in% untranslateable_calls)
   allele_table_out_filt = allele_table_out |> 
-    filter(aa != "X")
+    filter(!(aa %in% untranslateable_calls))
   
   # collapse amino acid calls 
   allele_table_out_collapsed = collapse_allele_table(allele_table_out_filt, arg$collapse_calls_by_summing)
