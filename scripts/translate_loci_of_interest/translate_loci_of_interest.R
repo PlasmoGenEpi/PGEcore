@@ -556,7 +556,7 @@ opts <- list(
   make_option(
     "--output_stop_codons", 
     help = str_c(
-      "output stop codons counts, the default is to consider any calls with * as untranslatable"
+      "If FALSE, calls containing * will be treated as untranslatable. These calls can appear in MIP data."
     ), 
     action="store_true", 
     default=FALSE,
