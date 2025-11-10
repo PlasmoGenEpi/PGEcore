@@ -28,10 +28,10 @@ suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(readr))
 suppressPackageStartupMessages(library(stringr))
 library(optparse)
-library(validate)
+suppressPackageStartupMessages(library(validate))
 # The moi_mle_idm.R script requires the openxlsx and Rmpfr packages
-library(openxlsx)
-library(Rmpfr)
+suppressPackageStartupMessages(library(openxlsx))
+suppressPackageStartupMessages(library(Rmpfr))
 
 #############################################################
 ##################### BEGIN : moi_mle_idm.R #################
@@ -729,11 +729,23 @@ get_value_of_optional_argument <- function(
 get_optparse_args <- function() {
   opts <- list(
     make_option(
+      "--allele_table_input",
+      type = "character",
+      default = "",
+      help = str_c(
+        "TSV containing allele calls, with the columns: specimen_id, ",
+        "target_id, seq, read_count. ",
+        "Default: %default"
+      )
+    ),
+    make_option(
       "--aa_calls_input",
       type = "character",
+      default = "",
       help = str_c(
         "TSV containing amino acid calls, with the columns: specimen_id, ",
-        "target_id, gene_id, aa_position, ref_aa, aa. Required"
+        "target_id, gene_id, aa_position, ref_aa, aa. Optional",
+        "Default: %default"
       )
     ),
     make_option("--model",
@@ -780,42 +792,89 @@ get_optparse_args <- function() {
 
 #' Prepare input data
 #'
-#' @param aa_calls_input Character; file path to the input amino acid call
+#' @param allele_table_input Character; file path to the input allele
 #'    table.
 #' @return A data table ready for running the IDM model.
-prepare_input <- function(aa_calls_input) {
-
+prepare_input_4_allele_table <- function(allele_table_input) {
   # Read input
   df <- read_tsv(
-    aa_calls_input, 
+    allele_table_input,
     col_types = cols(
-      .default = col_character(), 
-      aa_position = col_integer()
+      .default = col_character(),
+      read_count = col_integer()
     )
   )
 
   # Validate fields
   rules <- validate::validator(
-    is.character(specimen_id), 
-    is.character(target_id), 
-    is.character(gene_id), 
-    is.integer(aa_position), 
-    is.character(ref_aa), 
-    is.character(aa), 
-    ! is.na(specimen_id), 
-    ! is.na(target_id), 
-    ! is.na(gene_id), 
-    ! is.na(aa_position), 
-    ! is.na(ref_aa), 
-    ! is.na(aa)
+    is.character(specimen_id),
+    is.character(target_id),
+    is.character(seq),
+    is.integer(read_count),
+    !is.na(specimen_id),
+    !is.na(target_id),
+    !is.na(seq),
+    !is.na(read_count)
   )
   fails <- validate::confront(df, rules, raise = "all") %>%
     validate::summary() %>%
     dplyr::filter(fails > 0)
   if (nrow(fails) > 0) {
     stop(
-      "Input input_data failed one or more validation checks: ", 
-      str_c(fails$expression, collapse = "\n"), 
+      "Input input_data failed one or more validation checks: ",
+      str_c(fails$expression, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+
+  # Reformat and return
+  df <- df %>%
+    mutate(
+      locus = target_id,
+      variants = str_c(target_id, seq, sep = ":")
+    ) %>%
+    select(specimen_id, locus, variants) %>%
+    distinct(specimen_id, locus, variants)
+  return(df)
+}
+
+#' Prepare input data
+#'
+#' @param aa_calls_input Character; file path to the input amino acid call
+#'    table.
+#' @return A data table ready for running the IDM model.
+prepare_input_4_aa_calls <- function(aa_calls_input) {
+  # Read input
+  df <- read_tsv(
+    aa_calls_input,
+    col_types = cols(
+      .default = col_character(),
+      aa_position = col_integer()
+    )
+  )
+
+  # Validate fields
+  rules <- validate::validator(
+    is.character(specimen_id),
+    is.character(target_id),
+    is.character(gene_id),
+    is.integer(aa_position),
+    is.character(ref_aa),
+    is.character(aa),
+    !is.na(specimen_id),
+    !is.na(target_id),
+    !is.na(gene_id),
+    !is.na(aa_position),
+    !is.na(ref_aa),
+    !is.na(aa)
+  )
+  fails <- validate::confront(df, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input input_data failed one or more validation checks: ",
+      str_c(fails$expression, collapse = "\n"),
       call. = FALSE
     )
   }
@@ -829,6 +888,7 @@ prepare_input <- function(aa_calls_input) {
     select(specimen_id, locus, variants)
   return(df)
 }
+
 
 #' Run IDM model to infer allele frequency
 #'
@@ -890,7 +950,6 @@ run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
 #' @param slaf_output Output file path where the result table will be saved.
 write_output <- function(res, slaf_output) {
   write_tsv(res, slaf_output)
-
 }
 
 # prepare arguments
@@ -898,21 +957,41 @@ arg <- get_optparse_args()
 arg_model <- get_value_of_optional_argument(arg, "model", "IDM", c("IDM", "OM"))
 arg_lambda_initial <- get_value_of_optional_argument(arg, "lambda_initial", 1.0)
 arg_eps_initial <- get_value_of_optional_argument(arg, "eps_initial", 0.1)
-arg_aa_calls_input <- get_value_of_required_argument(arg, "aa_calls_input")
+arg_allele_table_input <- get_value_of_optional_argument(
+  arg, "allele_table_input", ""
+)
+arg_aa_calls_input <- get_value_of_optional_argument(
+  arg, "aa_calls_input", ""
+)
 arg_slaf_output <- get_value_of_required_argument(arg, "slaf_output")
 
 # prepare input
-df <- prepare_input(arg_aa_calls_input)
+input_args_usage <- (arg_allele_table_input == "") + (arg_aa_calls_input == "")
+if (input_args_usage != 1) {
+  stop(str_c(
+    "Error: One and only one of the args --allele_table_input and",
+    "--aa_calls_input must be provided."
+  ))
+}
+if (arg_aa_calls_input != "") {
+  df <- prepare_input_4_aa_calls(arg_aa_calls_input)
+} else {
+  df <- prepare_input_4_allele_table(arg_allele_table_input)
+}
+
+
 
 # run the model
-res <- run_idm_mle_across_loci(df, arg_model, arg_lambda_initial,
-  arg_eps_initial)
+res <- run_idm_mle_across_loci(
+  df, arg_model, arg_lambda_initial,
+  arg_eps_initial
+)
 
 # write the result to a file
 write_output(res, arg_slaf_output)
 
 cat("Done\n")
-cat("INPUT:\t", arg_aa_calls_input, "\n")
+cat("INPUT:\t", arg_allele_table_input, "\n")
 cat("OUTPUT:\t", arg_slaf_output, "\n")
 #############################################################
 ##################### END  : WRAPPER_CODE #################
