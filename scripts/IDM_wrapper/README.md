@@ -50,14 +50,14 @@ Assuming you are in the directory containing the wrapper script
 
 ```sh
 # use allele table as input
- Rscript ./IDM_wrapper.R \
+Rscript ./IDM_wrapper.R \
   --allele_table_input ../../data/example_allele_table.tsv \
   --model IDM \
   --slaf_output out_slaf.tsv \
   --eps_initial 0.1 \
   --lambda_initial 0.1
 # use amino acide calls as input
- Rscript ./IDM_wrapper.R \
+Rscript ./IDM_wrapper.R \
   --aa_calls_input ../../data/example_amino_acid_calls.tsv \
   --model IDM \
   --slaf_output out_slaf.tsv \

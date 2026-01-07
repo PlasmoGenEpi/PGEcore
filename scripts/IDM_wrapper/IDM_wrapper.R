@@ -27,6 +27,7 @@
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(readr))
 suppressPackageStartupMessages(library(stringr))
+suppressPackageStartupMessages(library(tidyr))
 library(optparse)
 suppressPackageStartupMessages(library(validate))
 # The moi_mle_idm.R script requires the openxlsx and Rmpfr packages
@@ -948,8 +949,17 @@ run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
 #'
 #' @param res Result table to be written to file.
 #' @param slaf_output Output file path where the result table will be saved.
-write_output <- function(res, slaf_output) {
-  write_tsv(res, slaf_output)
+#' @param allele_table Boolean indicating whether the data is 
+#'   microhaplotype sequences (i.e., "allele table" input). If so, the 
+#'   variant column will be split into target_id and seq columns.
+write_output <- function(res, slaf_output, allele_table = FALSE) {
+  if (allele_table) {
+    res %>%
+      separate_wider_delim(variant, ":", names = c("target_id", "seq")) %>%
+      write_tsv(slaf_output)
+  } else {
+    write_tsv(res, slaf_output)
+  }
 }
 
 # prepare arguments
@@ -988,7 +998,11 @@ res <- run_idm_mle_across_loci(
 )
 
 # write the result to a file
-write_output(res, arg_slaf_output)
+if (arg_aa_calls_input != "") {
+  write_output(res, arg_slaf_output)
+} else {
+  write_output(res, arg_slaf_output, allele_table = TRUE)
+}
 
 cat("Done\n")
 cat("INPUT:\t", arg_allele_table_input, "\n")
