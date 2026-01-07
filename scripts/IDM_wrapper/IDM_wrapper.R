@@ -788,6 +788,11 @@ get_optparse_args <- function() {
     )
   )
   arg <- parse_args(OptionParser(option_list = opts))
+  # Arguments used for development
+  if (interactive()) {
+    arg$allele_table_input <- "../../data/example_allele_table.tsv"
+    arg$slaf_output <- "../../test_slaf.tsv"
+  }
   return(arg)
 }
 
