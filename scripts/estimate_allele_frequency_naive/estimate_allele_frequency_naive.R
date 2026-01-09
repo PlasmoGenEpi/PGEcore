@@ -91,10 +91,25 @@ parse_aa_calls <- function(path) {
         "specimen_id", "gene_id", "read_count",
         "aa_position", "aa"
       )
-    ) %>%
-    unite(target_id, gene_id, aa_position, sep = ":") %>%
+    ) |>
+    unite(target_id, gene_id, aa_position, sep = ":") |>
     rename(variant = aa)
   return(aa_dat)
+}
+
+#' Load microhaplotype calls
+parse_mh_calls <- function(path) {
+  mh_dat <- readr::read_tsv(
+      path,
+      col_types = readr::cols(
+        specimen_id = readr::col_character(),
+        target_id = readr::col_character(),
+        seq = readr::col_character(),
+        read_count = readr::col_integer()
+      )
+    ) |>
+    dplyr::rename(variant = seq)
+  return(mh_dat)
 }
 
 #' Calculate allele frequency by within-sample allele frequency
@@ -114,7 +129,7 @@ calculate_af_read_count_prop <- function(allele_table) {
     dplyr::group_by(.data$target_id) |>
     # normalize by the total number of samples with data at each position
     dplyr::mutate(total = sum(.data$freq), freq = .data$freq / .data$total) |>
-    dplyr::relocate("freq", .after = "total") |>
+    dplyr::select(-total) |>
     dplyr::ungroup()
   return(af)
 }
@@ -140,6 +155,8 @@ calculate_af_presence_absence <- function(allele_table) {
 # Read input
 if (! is.null(args$aa_calls)) {
   allele_table <- parse_aa_calls(args$aa_calls)
+} else {
+  allele_table <- parse_mh_calls(args$mh_calls)
 }
 
 # Estimate allele frequency
@@ -151,9 +168,16 @@ out <- switch(
 
 # Format and write output
 if (! is.null(args$aa_calls)) {
-  freq_output <- out %>%
-    separate_wider_delim(target_id, ":", names = c("gene_id", "aa_position")) %>%
-    rename(aa = variant) %>%
+  freq_output <- out |>
+    tidyr::separate_wider_delim(
+      target_id, 
+      ":", 
+      names = c("gene_id", "aa_position")
+    ) |>
+    dplyr::rename(aa = variant) |>
     convert_single_locus_table_to_stave("freq")
+} else {
+  freq_output <- out |>
+    dplyr::rename(seq = variant)
 }
 readr::write_tsv(freq_output, args$output)
