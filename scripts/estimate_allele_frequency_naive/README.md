@@ -30,14 +30,14 @@ provided, it will have columns for target_id, seq, and freq.
 ## Example Usage 
 
 ```
-# Example with amino acid calls and read count proportion method
+# Example with amino acid calls and the read count proportion method
 scripts/estimate_allele_frequency_naive/estimate_allele_frequency_naive.R \
   --aa_calls data/example_amino_acid_calls.tsv \
   --method read_count_prop \
   --output allele_freqs.tsv
 # Example with microhaplotypes and the presence/absence method
 scripts/estimate_allele_frequency_naive/estimate_allele_frequency_naive.R \
-  --aa_calls data/example_allele_table.tsv \
+  --mh_calls data/example_allele_table.tsv \
   --method presence_absence \
   --output allele_freqs.tsv
 ```
