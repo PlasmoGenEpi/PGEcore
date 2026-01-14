@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # Get the script dir and make path to utils.R
 script_dir <- dirname(normalizePath(sub("--file=", "", commandArgs(trailingOnly = FALSE)[grep("--file=", commandArgs(trailingOnly = FALSE))])))
 utils_path <- file.path(script_dir, "..", "utils", "utils.R")
