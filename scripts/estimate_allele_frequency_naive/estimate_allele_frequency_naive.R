@@ -49,7 +49,7 @@ opts <- list(
       "read_count_prop, presence_absence. Default: %default"
     ),
     type = "character",
-    default = "read_count_prop",
+    default = "presence_absence",
     callback = function(opt, flag_string, value, parser, ...) {
       if (!value %in% c("read_count_prop", "presence_absence")) {
         stop(stringr::str_c(value, " is not a valid method"))
