@@ -106,10 +106,9 @@ calculate_prevalence <- function(allele_table) {
     dplyr::mutate(sample_total = dplyr::n_distinct(.data$specimen_id)) |>
     dplyr::group_by(.data$target_id, .data$variant, .data$sample_total) |>
     dplyr::summarise(
-      count = dplyr::n()
+      sample_count = dplyr::n_distinct(.data$specimen_id)
     ) |>
-    dplyr::mutate(prev = .data$count / .data$sample_total) |>
-    dplyr::select(-"count") |>
+    dplyr::mutate(prev = .data$sample_count / .data$sample_total) |>
     dplyr::relocate(prev, .before = sample_total)
   return(prev)
 }
@@ -133,7 +132,7 @@ if (! is.null(args$aa_calls)) {
     ) |>
     dplyr::rename(aa = variant) |>
     convert_single_locus_table_to_stave(
-      additional_columns = c("prev", "sample_total")
+      additional_columns = c("prev", "sample_count", "sample_total")
     )
 } else {
   prev_output <- prevalence |>

@@ -140,17 +140,15 @@ calculate_af_read_count_prop <- function(allele_table) {
 calculate_af_presence_absence <- function(allele_table) {
   af <- allele_table |>
     dplyr::group_by(.data$target_id) |>
-    dplyr::mutate(total = dplyr::n()) |>
+    dplyr::mutate(allele_total = dplyr::n()) |>
     dplyr::ungroup() |>
     dplyr::group_by(
-      .data$target_id, .data$variant, .data$total
+      .data$target_id, .data$variant, .data$allele_total
     ) |>
     dplyr::summarise(
-      observed_alleles = dplyr::n(),
+      allele_count = dplyr::n(),
     ) |>
-    dplyr::mutate(freq = .data$observed_alleles / .data$total) |>
-    dplyr::select(-"observed_alleles")
-
+    dplyr::mutate(freq = .data$allele_count / .data$allele_total) 
   return(af)
 }
 
@@ -177,7 +175,7 @@ if (! is.null(args$aa_calls)) {
       names = c("gene_id", "aa_position")
     ) |>
     dplyr::rename(aa = variant) |>
-    convert_single_locus_table_to_stave("freq")
+    unite(variant, gene_id, aa_position, aa, sep = ":")
 } else {
   freq_output <- out |>
     dplyr::rename(seq = variant)
