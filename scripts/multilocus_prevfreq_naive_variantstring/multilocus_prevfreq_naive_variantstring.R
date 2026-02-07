@@ -325,13 +325,11 @@ write_prev <- function(df_prev,
 args <- parse_args(OptionParser(option_list = opts))
 # Arguments used for development
 if (interactive()) {
+  args = list()
   args$aa_table <- "../../data/example_amino_acid_calls.tsv"
   args$loci_groups_input <- "../../data/example_loci_groups.tsv"
-  args$output_path <- "../../mlafp.tsv"
+  args$output_path <- "mlafp.tsv"
 }
-args = list()
-args$aa_table <- "/Users/nicholashathaway/Dropbox (Personal)/ownCloud/documents/plasmodium/falciparum/ucsf/uganda_jessica/IMMERSE_Post_Analysis/R1_R2_R3_R4_ASV_data_thomas_subsetted_filtered_for_analysis_1B_2_only_2025_09_26_unfiltered/work/76/5d57f28ee07437e6b2c3538df8a9c8/Patongo-2024.collapsed_amino_acid_calls.tsv.gz"
-args$loci_groups_input <- "~/Documents/sourceCodes/plasmodiumdrugres/bin/PGEcore/scripts/multilocus_prevfreq_naive/../../data/example_loci_groups.tsv"
 
 
 # Read in data
