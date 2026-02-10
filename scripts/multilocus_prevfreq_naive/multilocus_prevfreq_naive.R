@@ -182,7 +182,7 @@ create_loci_group_input <- function(loci_groups_path) {
 #' @export
 #'
 #' @examples
-generate_sinlge_locus_prev_freq_from_multilocus_groups <-function(multilocus_calls){
+generate_single_locus_prev_freq_from_multilocus_groups <-function(multilocus_calls){
   # validate input
   # group_id, specimen_id, variant 
   rules <- validate::validator(
@@ -198,7 +198,7 @@ generate_sinlge_locus_prev_freq_from_multilocus_groups <-function(multilocus_cal
     dplyr::filter(fails > 0)
   if (nrow(fails) > 0) {
     stop(
-      "Input multilocus_calls for function generate_sinlge_locus_prev_freq_from_multilocus_groups failed one or more validation checks: ", 
+      "Input multilocus_calls for function generate_single_locus_prev_freq_from_multilocus_groups failed one or more validation checks: ", 
       str_c(fails$expression, collapse = "\n"), 
       call. = FALSE
     )
@@ -405,6 +405,6 @@ if(!is.null(args$recalc_single_locus_output_path)){
   # these re-calculated frequencies can serve as a sanity check against the single locus freqs/prevs calculated directly
   # from the data, for example if some allele frequencies aren't present in the re-calcuated calls but are in the direct calculations 
   # then the multi-locus processing failed to capture any multi-locus haplotypes with that allele and is not capture the full data 
-  slaf_from_ml = generate_sinlge_locus_prev_freq_from_multilocus_groups(all_aa_table_group_filt_final)
+  slaf_from_ml = generate_single_locus_prev_freq_from_multilocus_groups(all_aa_table_group_filt_final)
   write_tsv(slaf_from_ml, args$recalc_single_locus_output_path)
 }
