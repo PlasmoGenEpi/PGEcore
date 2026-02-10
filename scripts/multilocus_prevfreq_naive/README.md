@@ -46,14 +46,14 @@ read in the data, calculate prevalence and frequency, and write results to file.
 An example of usage, executed from the root of this repo, would be:
 
 ```
-Rscript ${projectDir}/bin/PGEcore/scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
+Rscript scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
         --aa_table data/example_amino_acid_calls.tsv \
         --loci_groups_input data/example_loci_groups.tsv\
         --output_path mlafp.tsv 
 
 # You can also export single locus allele frequency and prevalences re-calculated from the multilocus calls, this can be useful for comparing to these measures calculated directly off the data for a sanity check of the multilocus calls e.g. if they are extremely different than the calculations made directly from the data than the multilocus calls may be missing important haplotypes 
 
-Rscript ${projectDir}/bin/PGEcore/scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
+Rscript scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
         --aa_table data/example_amino_acid_calls.tsv \
         --loci_groups_input data/example_loci_groups.tsv\
         --output_path mlafp.tsv \
