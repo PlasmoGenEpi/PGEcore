@@ -1,4 +1,4 @@
-# Dcifer
+# Dcifer IBD Wrapper
 
 Contents: 
 * [Tool Information](#tool-information)
