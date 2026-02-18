@@ -1,24 +1,15 @@
-library(dplyr)
-library(optparse)
-library(purrr)
-library(readr)
-library(stringr)
-library(tidyr)
-library(validate)
+#!/usr/bin/env Rscript 
 
-# install a specific version of variantstring package (this is in development so
-# may not always be backwards-compatible)
-variantstring_version <- "1.8.0"
-if (!requireNamespace("variantstring", quietly = TRUE) ||
-      packageVersion("variantstring") != variantstring_version) {
-   stop(
-      "This script requires variantstring version ",  
-      variantstring_version, 
-      " and it is not installed", 
-      call. = FALSE
-    )
-}
-library(variantstring) 
+# quietly load packages 
+packagesToLoad = c("dplyr", "optparse", "purrr", "readr", "stringr", "tidyr", "validate")
+
+loaded = suppressMessages(lapply(packagesToLoad, require, character.only = TRUE))
+
+options(readr.show_col_types = FALSE)
+options(dplyr.summarise.inform = FALSE)
+
+# function to get not in (makes it easier than doing !(test %in% test_set) )
+`%!in%` <- Negate(`%in%`)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -39,14 +30,46 @@ opts <- list(
     )
   ), 
   make_option(
-    "--output_path", 
+    "--output_path",
     type = "character",
     help = str_c(
       "Path to write an output TSV file containing prevalence and frequency estimates ",
       "for all variants in the data"
     )
+  ), 
+  make_option(
+    "--recalc_single_locus_output_path",
+    type = "character",
+    help = str_c(
+      "An optional output for the re-calculated single locus frequences/prevalences from the multilocus, ",
+      "can be helpful for checking if the multilocus is capturing well all available variants"
+    )
+  ),
+  make_option(
+    "--wsaf_cut_off",
+    type = "double",
+    default = 0.70,
+    help = str_c(
+      "To help determine multi-locus variants, we filter off minor variants to determine ", 
+      "a \"dominant\" strain at each loci that will then be reasonable to assume at least ", 
+      "one haplotype with all variants above that cut off exists"
+    )
   )
 )
+
+#' Check for required arguments, and report which are missing 
+#'
+#' @param arg the parsed arguments from arg parse
+#' @param required_args the required arguments
+#'
+#' @return returns void if all required arguments
+checkOptparseRequiredArgsThrow <- function(arg, required_args){
+  missing <- setdiff(required_args, names(arg))
+  if(length(missing) > 0){
+    missing = paste0("--", missing)
+    stop(paste0("mssing the following arguments: ", paste0(missing, collapse = ", ")))
+  }
+}
 
 #' Read amino acid calls table into a tibble
 #'
@@ -71,11 +94,13 @@ create_aa_table_input <- function(aa_table) {
   df_aa <- read.table(aa_table, header = TRUE)
   rules <- validate::validator(
     is.character(specimen_id), 
-    is.character(gene_id), 
+    is.character(gene), 
+    is.character(gene_id),
     is.integer(aa_position), 
     is.integer(read_count), 
     is.character(aa), 
     ! is.na(specimen_id), 
+    ! is.na(gene), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
     ! is.na(read_count), 
@@ -91,16 +116,10 @@ create_aa_table_input <- function(aa_table) {
       call. = FALSE
     )
   }
-
-  # tidy up columns
-  df_aa <- df_aa |>
-    select(specimen_id, gene_id, aa_position, read_count, aa) |>
-    rename(gene = gene_id,
-           pos = aa_position)
   
-  # get numer of amino acids at each locus
+  # get number of amino acids at each locus
   df_aa <- df_aa |>
-    group_by(specimen_id, gene, pos) |>
+    group_by(specimen_id, gene_id, aa_position) |>
     mutate(n_aa = n()) |>
     ungroup()
 
@@ -154,193 +173,238 @@ create_loci_group_input <- function(loci_groups_path) {
 
 }
 
-#' Convert long form amino acid table to variant strings
-#'
-#' @description
-#' Takes a tibble of amino acid calls. Converts them to 
-#' \href{https://github.com/mrc-ide/variantstring}{variant strings},
-#' which are then returned.
-#'
-#' @param aa_table Tibble of amino acid calls. It should have columns 
-#'   for specimen_id, gene, pos, read_count, aa, and n_aa.
-#' 
-#' @import dplyr
-#' 
-#' @return vector of variant strings corresponding to each specimen.
-aa_table_to_variant <- function(aa_table) {
-  # get list of long format data.frames
-  long_list <- aa_table |>
-    mutate(het = (n_aa > 1),
-           phased = FALSE) |>
-    select(gene, pos, n_aa, het, phased, aa, read_count) |>
-    split(f = aa_table$specimen_id)
-  names(long_list) <- NULL
-  
-  # convert to variant strings
-  vs <- long_to_variant(long_list)
-  
-  return(vs)
-}
 
-
-#' Get all component genotypes from a vector of variant strings
+#' Generate the single locus allele frequencies and prevalence from a table of multilocus calls 
 #'
-#' @description
-#' Takes a vector of variant strings and extracts all multi-locus genotypes that
-#' can be unambiguously identified within these samples. Return these in variant
-#' string format, which will contain no heterozygous loci.
+#' @param multilocus_calls A table of 3 columns, group_id, specimen_id, and variant (in variantstring format)
 #'
-#' @param variant_strings a vector of variant strings.
-#' 
-#' @return vector of component variant strings.
-extract_component_variants <- function(variant_strings) {
-  
-  # Check input arguments
-  check_variant_string(variant_strings)
-  
-  # get all unique positions
-  pos_unique <- position_from_variant_string(variant_strings) |>
-    unique()
-  
-  # get all variant strings at all positions of interest
-  vs_allpos <- mapply(function(x) {
-    subset_position(position_string = x,
-                    variant_strings = variant_strings) |>
-      na.omit() |>
-      unique()
-  }, pos_unique, SIMPLIFY = FALSE) |>
-    unlist() |>
-    unique()
-  
-  # get targets as all component genotypes
-  targets <- get_component_variants(vs_allpos) |>
-    unlist() |>
-    na.omit() |>
-    unique()
-  
-  return(targets)
-}
-
-#' Get prevalence of a set of variants
+#' @returns summarized per group, single locus freq/prev recalculated from the multilocus variant calls 
+#' @export
 #'
-#' @description
-#' Takes a vector of target variants for which we want to calculate prevalence.
-#' Compares each against a dataset, also in variant string format. Calculates
-#' both the prevalence and the allele frequency of each target.
-#'
-#' @param target_variants a vector of target variant strings.
-#' @param comparison_variants a vector of variant strings representing a full dataset.
-#' 
-#' @return data.frame of prevalence and frequency.
-calculate_variant_prevalence <- function(target_variants,
-                                         comparison_variants) {
-  
-  # Check input arguments
-  check_variant_string(target_variants)
-  check_variant_string(comparison_variants)
-  
-  # match each target against the comparison data
-  l <- list()
-  for (i in seq_along(target_variants)) {
-    
-    # make data.frame recording if this target is a match against all comparison
-    # variants
-    df_match <- compare_variant_string(target_string = target_variants[i],
-                                       comparison_strings = comparison_variants)
-    df_match$match_pos <- compare_position_string(target_string = position_from_variant_string(target_variants[i]),
-                                                  comparison_strings = comparison_variants)
-    
-    # convert into prevalence and frequency estimates
-    l[[i]] <- df_match |>
-      filter(match_pos) |>
-      filter(!ambiguous) |>
-      summarise(variant = target_variants[i],
-                prev = mean(match),
-                freq = mean(prop),
-                sample_total = n())
-  }
-  
-  ret <- bind_rows(l)
-  return(ret)
-}
-
-#' Compute the frequency and prevalence for a group of loci
-#'
-#' Given one tibble defining the loci in a group of interest and 
-#' another containing amino acid calls, this function finds the amino 
-#' acid calls corresponding to the group of interest, uses 
-#' `aa_table_to_variant()` and `extract_component_variants()` to 
-#' transform the data into the formats needed by variantstring, and 
-#' then calls `calculate_variant_prevalence()` to compute frequency and 
-#' prevalence.
-#'
-#' @param group_loci A tibble defining a loci group of interest, with 
-#'   columns for gene_id and aa_position.
-#' @inheritParams aa_table_to_variant
-#'
-#' @return A tibble with variant, prev, freq, and sample_total columns
-compute_prevfreq_for_group <- function(group_loci, aa_table) {
-  variant_strings <- aa_table |>
-    # Use inner_join() to remove amino acid calls not relevant to loci 
-    # in this group
-    inner_join(group_loci, by = c("gene" = "gene_id", "pos" = "aa_position")) |>
-    aa_table_to_variant()
-  component_variants <- extract_component_variants(variant_strings)
-  group_prev <- calculate_variant_prevalence(
-    component_variants, 
-    variant_strings
+#' @examples
+generate_single_locus_prev_freq_from_multilocus_groups <-function(multilocus_calls){
+  # validate input
+  # group_id, specimen_id, variant 
+  rules <- validate::validator(
+    is.character(group_id), 
+    is.character(specimen_id), 
+    is.character(variant), 
+    ! is.na(group_id), 
+    ! is.na(specimen_id), 
+    ! is.na(variant)
   )
-
-  return(group_prev)
-}
-
-#' Write a prevalence table to file
-#'
-#' @description
-#' Given a data.frame of prevalence and frequency estimates, writes to a TSV file.
-#'
-#' @param df_prev a data.frame of prevalence and frequency estimates. Must have
-#'   columns group_id, variant, prev, freq, sample_total.
-#' @param output_path the path to write to.
-write_prev <- function(df_prev,
-                       output_path) {
-  
-  # Check input arguments
-  stopifnot(is.data.frame(df_prev))
-  stopifnot(
-    all(
-      names(df_prev) == c("group_id", "variant", "prev", "freq", "sample_total")
+  fails <- validate::confront(multilocus_calls, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input multilocus_calls for function generate_single_locus_prev_freq_from_multilocus_groups failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
     )
-  )
-  stopifnot(is.character(output_path))
+  }
+  # deconstruct the variantstring format into single locus 
+  multilocus_calls_mod = multilocus_calls %>% 
+    group_by(group_id) %>% 
+    mutate(variant_split = strsplit(variant, split = ";")) %>% 
+    unnest(variant_split) %>% 
+    separate(variant_split, into = c("gene_id", "aa_position", "aa"), sep = ":")%>% 
+    mutate(aa_position = strsplit(aa_position, split = "_"), 
+           aa = strsplit(aa, split = "_")) %>% 
+    unnest(c(aa_position, aa)) %>% 
+    mutate(aa_position = as.numeric(aa_position)) %>% 
+    arrange(group_id, gene_id, aa_position, aa)
   
-  write_tsv(df_prev, file = output_path)
+  # now re-calculate allele frequency and prev 
+  multilocus_calls_mod_slaf = multilocus_calls_mod %>% 
+    group_by(group_id, gene_id, aa_position) %>% 
+    mutate(sample_total = n_distinct(specimen_id), 
+           allele_total = n()) %>% 
+    group_by(group_id, gene_id, aa_position, aa, sample_total, allele_total) %>% 
+    summarise(allele_count = n(), 
+              sample_count = n_distinct(specimen_id)) %>% 
+    mutate(freq = allele_count/allele_total, 
+           prev = sample_count/sample_total) %>% 
+    unite(variant,gene_id, aa_position, aa, sep = ":")
+  
+  return (multilocus_calls_mod_slaf)
 }
-
 
 # RUN MODULE -----------------------------------------------------------
 
+
 # parse arguments
 args <- parse_args(OptionParser(option_list = opts))
-# Arguments used for development
+# Arguments used for development, in order to properly test the below, working directory has to be set the directory of this script
 if (interactive()) {
+  args = list()
   args$aa_table <- "../../data/example_amino_acid_calls.tsv"
   args$loci_groups_input <- "../../data/example_loci_groups.tsv"
-  args$output_path <- "../../mlafp.tsv"
+  args$output_path <- "mlafp.tsv"
+  args$recalc_single_locus_output_path <- "recalc_sl_from_ml.tsv"
+  args$wsaf_cut_off = 0.70
 }
 
+# make sure the required options are being provided 
+required_arguments = c("aa_table", "loci_groups_input", "output_path")
+checkOptparseRequiredArgsThrow(args, required_arguments)
 
-# Read in data
+# Read in amino acid data 
 aa_table <- create_aa_table_input(args$aa_table)
-loci_groups <- create_loci_group_input(args$loci_groups_input)
 
+# Read in the loci groups to determine 
+loci_groups <- create_loci_group_input(args$loci_groups_input) %>% 
+  group_by(group_id) %>% 
+  mutate(loci_in_group = n_distinct(paste0(gene_id, "-", aa_position)))
 
-# Compute frequency and prevalence for each group
-df_prev <- loci_groups |>
-  nest(group_loci = c(gene_id, aa_position)) |>
-  mutate(group_mlafp = map(group_loci, compute_prevfreq_for_group, aa_table)) |>
-  select(-group_loci) |>
-  unnest(group_mlafp)
+# split the loci into the groups that will then be processed 
+loci_groups_split = split(loci_groups, loci_groups$group_id)
 
-# write table to file
-write_prev(df_prev = df_prev, output_path = args$output_path)
+# create empty tables to fill with the final results 
+all_aa_table_group_filt_final_prev_freq = tibble()
+all_aa_table_group_filt_final = tibble()
+
+for(loci_group in names(loci_groups_split)){
+  # filter to loci in group and filter to only samples that have calls for all loci in the group 
+  # the inner join here will make it so only the loci of the group of interest will be selected 
+  aa_table_group = aa_table %>% 
+    inner_join(loci_groups_split[[loci_group]], by = c("gene_id", "aa_position")) %>% 
+    group_by(specimen_id) %>% 
+    mutate(loci_called = n_distinct(paste0(gene_id, "-", aa_position))) %>% 
+    filter(loci_called == loci_in_group) %>% 
+    ungroup()
+  
+  # as a first pass will, will first create all the multi-locus groups for when only one of the loci is variable 
+  # e.g. if have 3 loci, 1st and 2nd loci are A and 3rd loci has calls of RS, then we know that A-A-R and A-A-S exist
+  # albeit this relies on reliable genotyping of all loci, if the 1st and 2nd loci don't have good depth and didn't capture minor 
+  # alleles or the 3rd loci is a genotyping error than high chance of creating false haplotypes 
+  aa_table_group_only_1_variable = aa_table_group %>% 
+    group_by(specimen_id) %>% 
+    filter(sum(n_aa == 1) == (loci_in_group - 1))
+  
+  # check if the above check found any groups with this scenario and if so then process 
+  if(nrow(aa_table_group_only_1_variable) > 0){
+    # first filter to the just the variable loci and calculate the within sample allele frequency (wsaf) 
+    aa_table_group_only_1_variable_filt_variable = aa_table_group_only_1_variable %>% 
+      filter(n_aa != 1) %>% 
+      group_by(specimen_id, gene, gene_id, aa_position) %>% 
+      mutate(total_read_count = sum(read_count)) %>%
+      mutate(wsaf = read_count/total_read_count) %>% 
+      group_by(specimen_id) %>% 
+      mutate(within_sample_hap = row_number())
+    
+    # now grab the invariable calls to join with the variable loci, give it hap ID 
+    # so it can be summarized later to create the full multi-locus call 
+    aa_table_group_only_1_variable_filt_invariable = aa_table_group_only_1_variable %>% 
+      filter(n_aa == 1) %>% 
+      ungroup() %>% 
+      select(specimen_id, gene_id, aa_position, aa, group_id) %>% 
+      left_join(
+        aa_table_group_only_1_variable_filt_variable %>% 
+          ungroup() %>% 
+          group_by(specimen_id) %>% 
+          summarise(within_sample_hap = max(within_sample_hap)), 
+        by = c("specimen_id")
+      ) %>% 
+      rowwise() %>% 
+      mutate(within_sample_hap = list(1:within_sample_hap)) %>% 
+      unnest(within_sample_hap)
+    
+    # combine with the variable 
+    aa_table_group_only_1_variable_filt_combined = bind_rows(
+      aa_table_group_only_1_variable_filt_variable, 
+      aa_table_group_only_1_variable_filt_invariable
+    )
+    
+    # now collapse the invariable and variable loci into the multi-locus calls 
+    aa_table_group_only_1_variable_filt_combined_haps = aa_table_group_only_1_variable_filt_combined %>% 
+      arrange(gene_id, aa_position, within_sample_hap) %>% 
+      group_by(specimen_id, gene_id, within_sample_hap) %>% 
+      summarise(positions = paste0(aa_position, collapse = "_"), 
+                aas = paste0(aa, collapse = "_"), 
+                wsaf = ifelse(all(is.na(wsaf)), NA, min(wsaf, na.rm = T))) %>% 
+      unite(per_gene_variant, gene_id, positions, aas, sep = ":") %>% 
+      group_by(specimen_id, within_sample_hap) %>% 
+      summarise(variant = paste0(per_gene_variant, collapse = ";"), 
+                wsaf = min(wsaf, na.rm = T))
+  } else { 
+    # if no specimens with only 1 variable call, create an empty tibble to join with the below 
+    aa_table_group_only_1_variable_filt_combined_haps = tibble()
+  }
+
+  # filter to specimens that didn't have only 1 loci variable 
+  aa_table_group_filt = aa_table_group %>% 
+    filter(specimen_id %!in% aa_table_group_only_1_variable$specimen_id)
+  
+  # now we will determine multi-locus for the specimens by filtering to a specific within sample frequency 
+  # and presume that the multi-locus haplotype exist if all sites have 1 call above this cut off 
+  # cut off should be reasonably high to avoid false haplotype creation for example if setting to 0.51,
+  # would have a high chance of creating false haplotypes
+  # this filter will also capture samples that are completely monoclonal 
+  aa_table_group_filt_dominant = aa_table_group_filt %>% 
+    group_by(specimen_id, gene, gene_id, aa_position) %>% 
+    mutate(total_read_count = sum(read_count)) %>%
+    mutate(wsaf = read_count/total_read_count) %>% 
+    filter(wsaf >= args$wsaf_cut_off) %>% 
+    group_by(specimen_id) %>% 
+    mutate(loci_called = n_distinct(paste0(gene_id, "-", aa_position))) %>% 
+    group_by(specimen_id, gene, gene_id, aa_position) %>% 
+    mutate(n_aa = n_distinct(aa)) %>% 
+    filter(all(n_aa == 1), loci_called == loci_groups_split[[loci_group]]$loci_in_group[1])
+  
+  # collapse the calls to create the multi-locus call 
+  aa_table_group_filt_dominant_collapse = aa_table_group_filt_dominant %>% 
+    arrange(gene_id, aa_position) %>% 
+    group_by(specimen_id, gene_id) %>% 
+    summarise(positions = paste0(aa_position, collapse = "_"), 
+              aas = paste0(aa, collapse = "_")) %>% 
+    unite(per_gene_variant, gene_id, positions, aas, sep = ":") %>% 
+    group_by(specimen_id) %>% 
+    summarise(variant = paste0(per_gene_variant, collapse = ";")) %>% 
+    group_by(specimen_id) %>% 
+    mutate(within_sample_hap = row_number()) %>% 
+    mutate(wsaf = 1)
+  
+  # combine the two approaches to get a final list of multi-locus calls 
+  aa_table_group_filt_final = bind_rows(aa_table_group_filt_dominant_collapse, 
+                                        aa_table_group_only_1_variable_filt_combined_haps)
+  
+  # collect for all groups into one master table 
+  all_aa_table_group_filt_final = bind_rows(
+    all_aa_table_group_filt_final, 
+    aa_table_group_filt_final %>% 
+      mutate(group_id = loci_group)
+  )
+  
+  # now calculate the sample prevalence and allele frequencies 
+  aa_table_group_filt_final_prev_freq = aa_table_group_filt_final %>% 
+    ungroup() %>% 
+    mutate(sample_total = n_distinct(specimen_id), 
+           allele_total = n()) %>% 
+    group_by(variant, sample_total, allele_total) %>% 
+    summarise(allele_count = n(), 
+           sample_count = n_distinct(specimen_id)) %>% 
+    mutate(prev = sample_count/sample_total, 
+           freq = allele_count/allele_total) %>% 
+    ungroup() %>% 
+    mutate(group_id = loci_group) %>% 
+    select(group_id, variant, allele_count, sample_count, allele_total, sample_total, freq, prev)
+    
+  # combine into final table for all groups 
+  all_aa_table_group_filt_final_prev_freq  = bind_rows(
+    all_aa_table_group_filt_final_prev_freq, 
+    aa_table_group_filt_final_prev_freq
+  )
+}
+
+# write out the results 
+write_tsv(all_aa_table_group_filt_final_prev_freq, args$output_path)
+
+if(!is.null(args$recalc_single_locus_output_path)){
+  # if an output path is set for export, also re-calculate single loci frequencies from the multi-locus calls 
+  # these re-calculated frequencies can serve as a sanity check against the single locus freqs/prevs calculated directly
+  # from the data, for example if some allele frequencies aren't present in the re-calcuated calls but are in the direct calculations 
+  # then the multi-locus processing failed to capture any multi-locus haplotypes with that allele and is not capture the full data 
+  slaf_from_ml = generate_single_locus_prev_freq_from_multilocus_groups(all_aa_table_group_filt_final)
+  write_tsv(slaf_from_ml, args$recalc_single_locus_output_path)
+}
