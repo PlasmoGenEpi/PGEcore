@@ -39,7 +39,7 @@ opts <- list(
     help = 
       str_c(
         "Double specifying the convergence tolerance. Passed to ", 
-        "dcifer::calcAfreq. Optional."
+        "dcifer::calcAfreq(). Optional."
       )
   ), 
   make_option(
@@ -49,7 +49,18 @@ opts <- list(
     help = 
       str_c(
         "Double specifying the starting value for frequency estimation. ", 
-        "Passed to dcifer::calcAfreq. Optional."
+        "Passed to dcifer::calcAfreq(). Optional."
+      )
+  ), 
+  make_option(
+    "--coi_lrank", 
+    type = "integer", 
+    default = 2, 
+    help = 
+      str_c(
+        "Integer specifying the rank of the locus used to determine ", 
+        "sample COI. Passed to dcifer::getCOI(). Should not be combined with ", 
+        "--coi_table. Optional."
       )
   ), 
   make_option(
@@ -61,6 +72,11 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
+# Arguments used for development
+if (interactive()) {
+  arg$allele_table <- "../../data/example_allele_table.tsv"
+  arg$slaf_output <- "../../btwn_host_rel.tsv"
+}
 
 #' Read allele table into a tibble
 #'
@@ -213,8 +229,15 @@ dcifer_alleles <- dcifer::formatDat(
 
 # If no COI input was provided, use Dcifer's built-in naive estimation -
 if (is.null(arg$coi_table)) {
-  coi <- dcifer::getCOI(dcifer_alleles)
+  coi <- dcifer::getCOI(dcifer_alleles, lrank = arg$coi_lrank)
 } else {
+  if (arg$coi_lrank != 2) {
+    warning(
+      "The --coi_lrank argument has been changed from the default, but this ", 
+      "will have no effect as --coi_table has also been specified", 
+      call. = FALSE
+    )
+  }
   coi <- create_coi_input(arg$coi_table, dcifer_alleles)
 }
 

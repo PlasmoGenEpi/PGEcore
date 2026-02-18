@@ -23,8 +23,13 @@ https://doi.org/10.1093/genetics/iyac126
 
 ## Input and Output Formats
 
-For input formats, refer to the argument documentation in the script. The output 
-will be a TSV with columns for target\_id, seq, freq, and sample\_total.
+The script requires an allele table (`--allele_table`) and can either take a 
+table with complexity of infection values (`--coi_table`) or can calculate COI 
+with `dcifer::getCOI()`. For specifics on input formats, refer to the argument 
+documentation in the script.
+
+The output will be a TSV with columns for target\_id, seq, freq, and 
+sample\_total.
 
 ## Script Usage
 
