@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # Estimate single-locus allele frequency naively with Dcifer
 
 # Load required libraries ----------------------------------------------
@@ -31,6 +33,26 @@ opts <- list(
       )
   ), 
   make_option(
+    "--tol", 
+    type = "double", 
+    default = 1e-04, 
+    help = 
+      str_c(
+        "Double specifying the convergence tolerance. Passed to ", 
+        "dcifer::calcAfreq. Optional."
+      )
+  ), 
+  make_option(
+    "--qstart", 
+    type = "double", 
+    default = 0.5, 
+    help = 
+      str_c(
+        "Double specifying the starting value for frequency estimation. ", 
+        "Passed to dcifer::calcAfreq. Optional."
+      )
+  ), 
+  make_option(
     "--slaf_output", 
     help = str_c(
       "Path of TSV file to contain single locus allele frequencies, with the ", 
@@ -39,12 +61,6 @@ opts <- list(
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
-# Arguments used for development
-if (interactive()) {
-  arg$allele_table <- "../../results/full/mh/mh_pgecore.tsv"
-  arg$coi_table <- "../../results/full/coi_table.tsv"
-  arg$slaf_output <- "../../results/full/slaf.tsv"
-}
 
 #' Read allele table into a tibble
 #'
@@ -203,7 +219,12 @@ if (is.null(arg$coi_table)) {
 }
 
 # Compute allele frequencies -------------------------------------------
-allele_freqs_list <- dcifer::calcAfreq(dcifer_alleles, coi, tol = 1e-5)
+allele_freqs_list <- dcifer::calcAfreq(
+    dcifer_alleles, 
+    coi, 
+    tol = arg$tol, 
+    qstart = arg$qstart
+  )
 
 # Compute sample sizes for each locus ----------------------------------
 n_samp_per_target <- allele_table %>%

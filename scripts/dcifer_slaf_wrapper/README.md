@@ -21,10 +21,15 @@ Greenhouse, B. (2022). Dcifer: An IBD-based method to calculate genetic distance
 between polyclonal infections. Genetics, 222(2). 
 https://doi.org/10.1093/genetics/iyac126
 
+## Input and Output Formats
+
+For input formats, refer to the argument documentation in the script. The output 
+will be a TSV with columns for target\_id, seq, freq, and sample\_total.
+
 ## Script Usage
 
 ```{r}
-Rscript scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
+scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
     data/example_allele_table.tsv --coi_table data/example_coi_table.tsv \
     --slaf_output slaf.tsv
 ```
