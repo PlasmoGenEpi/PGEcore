@@ -127,6 +127,7 @@ create_allele_table_input <- function(
       col_types = cols(.default = col_character()), 
       progress = FALSE
     ) %>%
+    select(all_of(c(specimen_id_col, target_id_col, target_value_col))) %>%
     # Standardize names
     rename(
       specimen_id = all_of(specimen_id_col), 
@@ -181,6 +182,7 @@ create_coi_input <- function(
       col_types = cols(.default = col_character(), coi = col_integer()), 
       progress = FALSE
     ) %>%
+    select(all_of(specimen_id_col), coi) %>%
     rename(specimen_id = all_of(specimen_id_col))
 
   # Validate fields
@@ -265,7 +267,12 @@ prepare_slaf_output <- function(
 }
 
 # Read in allele table -------------------------------------------------
-allele_table <- create_allele_table_input(arg$allele_table)
+allele_table <- create_allele_table_input(
+  arg$allele_table, 
+  specimen_id_col = arg$specimen_id_col, 
+  target_id_col = arg$target_id_col, 
+  target_value_col = arg$target_value_col
+)
 # Convert to Dcifer format and return
 dcifer_alleles <- dcifer::formatDat(
     allele_table, 

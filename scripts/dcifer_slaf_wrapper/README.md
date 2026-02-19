@@ -28,12 +28,23 @@ table with complexity of infection values (`--coi_table`) or can calculate COI
 with `dcifer::getCOI()`. For specifics on input formats, refer to the argument 
 documentation in the script.
 
-The output will be a TSV with columns for target\_id, seq, freq, and 
-sample\_total.
+The output will be a TSV with columns matching `--target_id_col` and 
+`--target_value_col`, as well as freq and sample\_total columns.
 
 ## Script Usage
 
 ```{r}
+# Amino acid alleles
+scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
+    data/example2_amino_acid_table.tsv --target_id_col aa_locus \
+    --target_value_col aa --slaf_output slaf.tsv
+
+# SNP alleles
+scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
+    data/example_collapsed_snp_calls.tsv --target_id_col snp_name \
+    --target_value_col seq_base --slaf_output slaf.tsv
+
+# Microhaplotype alleles and user-specified COI table
 scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
     data/example_allele_table.tsv --coi_table data/example_coi_table.tsv \
     --slaf_output slaf.tsv
