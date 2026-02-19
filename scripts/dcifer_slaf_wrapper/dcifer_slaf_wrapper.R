@@ -20,16 +20,38 @@ opts <- list(
   make_option(
     "--allele_table", 
     help = str_c(
-      "TSV containing alleles, with the columns: specimen_id, target_id, ", 
-      "read_count, and seq. Required."
+      "TSV containing alleles, with columns identifying specimens, ", 
+      "target names, and target values. The names of these columns are given ", 
+      "by the --specimen_id_col, --target_id_col, and --target_value_col ", 
+      "arguments, respectively. Required."
     )
   ), 
   make_option(
     "--coi_table", 
     help = 
       str_c(
-        "TSV containing specimen COIs, with the columns: specimen_id and ", 
-        "coi. Optional."
+        "TSV containing specimen COIs, with a coi column and a column with ", 
+        "specimen IDs named according to --specimen_id_col. Optional."
+      )
+  ), 
+  make_option(
+    "--specimen_id_col", 
+    default = "specimen_id", 
+    help = "String giving the name of the specimen ID column"
+  ), 
+  make_option(
+    "--target_id_col", 
+    default = "target_id", 
+    help = 
+      "String giving the name of the target ID column (e.g., the locus name)"
+  ), 
+  make_option(
+    "--target_value_col", 
+    default = "seq", 
+    help = 
+      str_c(
+        "String giving the name of the target value column (e.g., the allele ", 
+        "call)"
       )
   ), 
   make_option(
@@ -66,8 +88,9 @@ opts <- list(
   make_option(
     "--slaf_output", 
     help = str_c(
-      "Path of TSV file to contain single locus allele frequencies, with the ", 
-      "columns: target_id, seq, and freq. Required."
+      "Path of TSV file to contain single locus allele frequencies, with ", 
+      "columns with names matching --target_id_col and --target_value_col, ", 
+      "and a freq column. Required."
     )
   )
 )
@@ -75,7 +98,7 @@ arg <- parse_args(OptionParser(option_list = opts))
 # Arguments used for development
 if (interactive()) {
   arg$allele_table <- "../../data/example_allele_table.tsv"
-  arg$slaf_output <- "../../btwn_host_rel.tsv"
+  arg$slaf_output <- "../../slaf.tsv"
 }
 
 #' Read allele table into a tibble
@@ -83,28 +106,42 @@ if (interactive()) {
 #' Read the allele table TSV into a tibble
 #'
 #' @param allele_table_path Path to the TSV file containing the allele 
-#'   table. There should be character columns for specimen_id, 
-#'   target_id, and seq.
+#'   table.
+#' @param specimen_id_col String giving the name of the specimen ID 
+#'   column.
+#' @param target_id_col String giving the name of the target ID column.
+#' @param target_value_col String giving the name of the column 
+#'   containing target values (i.e., the genotypes).
 #'
 #' @return A tibble containing columns for specimen_id, target_id, and 
-#'   seq.
-create_allele_table_input <- function(allele_table_path) {
+#'   target_value.
+create_allele_table_input <- function(
+                                      allele_table_path, 
+                                      specimen_id_col = "specimen_id", 
+                                      target_id_col = "target_id", 
+                                      target_value_col = "seq") {
 
   # Read in table
   allele_table <- read_tsv(
-    allele_table_path, 
-    col_types = cols(.default = col_character()), 
-    progress = FALSE
-  )
+      allele_table_path, 
+      col_types = cols(.default = col_character()), 
+      progress = FALSE
+    ) %>%
+    # Standardize names
+    rename(
+      specimen_id = all_of(specimen_id_col), 
+      target_id = all_of(target_id_col), 
+      target_value = all_of(target_value_col)
+    )
 
   # Validate fields
   rules <- validate::validator(
     is.character(specimen_id), 
     is.character(target_id), 
-    is.character(seq), 
+    is.character(target_value), 
     ! is.na(specimen_id), 
     ! is.na(target_id), 
-    ! is.na(seq)
+    ! is.na(target_value)
   )
   fails <- validate::confront(allele_table, rules, raise = "all") %>%
     validate::summary() %>%
@@ -130,16 +167,21 @@ create_allele_table_input <- function(allele_table_path) {
 #'   have a character specimen_id column and an integer coi column.
 #' @param allele_list The list format output by `dcifer::readDat` and 
 #'   `dcifer::formatDat`.
+#' @inheritParams create_allele_table_input
 #'
 #' @return Vector of COI values, one for each sample.
-create_coi_input <- function(coi_path, allele_list) {
+create_coi_input <- function(
+                             coi_path, 
+                             allele_list, 
+                             specimen_id_col = "specimen_id") {
 
   # Read input table
   coi <- read_tsv(
-    coi_path, 
-    col_types = cols(.default = col_character(), coi = col_integer()), 
-    progress = FALSE
-  )
+      coi_path, 
+      col_types = cols(.default = col_character(), coi = col_integer()), 
+      progress = FALSE
+    ) %>%
+    rename(specimen_id = all_of(specimen_id_col))
 
   # Validate fields
   rules <- validate::validator(
@@ -189,23 +231,24 @@ create_coi_input <- function(coi_path, allele_list) {
 
 }
 
-#' Convert allele frequency list to tibble and write to TSV
+#' Convert allele frequency list to tibble
 #'
 #' This function takes allele frequencies in the list format output by 
-#' `dcifer::calcAfreq()`, converts them into a tibble, and writes that 
-#' tibble to a TSV.
+#' `dcifer::calcAfreq()` and converts them into a tibble in preparation 
+#' for writing to disk.
 #'
 #' @param allele_freqs_list List of allele frequencies produced by 
 #'   `dcifer::calcAfreq()`.
 #' @param n_samp_per_target Tibble containing sample sizes for each 
 #'   locus, with target_id and sample_total columns.
-#' @param output_path Path for TSV of allele frequencies.
-write_slaf_output <- function(
-                              allele_freqs_list, 
-                              n_samp_per_target, 
-                              output_path) {
+#' @inheritParams create_allele_table_input
+prepare_slaf_output <- function(
+                                allele_freqs_list, 
+                                n_samp_per_target, 
+                                target_id_col = "target_id", 
+                                target_value_col = "seq") {
   onetargetaf_list2tib <- function(onetargetaf) {
-    tibble(seq = names(onetargetaf), freq = unname(onetargetaf))
+    tibble(target_value = names(onetargetaf), freq = unname(onetargetaf))
   }
   tibble(
       target_id = names(allele_freqs_list), 
@@ -214,7 +257,11 @@ write_slaf_output <- function(
     mutate(alleles_freqs = map(alleles_freqs, onetargetaf_list2tib)) %>%
     unnest(alleles_freqs) %>%
     left_join(n_samp_per_target, by = "target_id") %>%
-    write_tsv(output_path)
+    # Revert column names back to user-specified names
+    rename(
+      !!target_id_col := target_id, 
+      !!target_value_col := target_value
+    )
 }
 
 # Read in allele table -------------------------------------------------
@@ -224,7 +271,7 @@ dcifer_alleles <- dcifer::formatDat(
     allele_table, 
     svar = "specimen_id", 
     lvar = "target_id", 
-    avar = "seq"
+    avar = "target_value"
   )
 
 # If no COI input was provided, use Dcifer's built-in naive estimation -
@@ -238,7 +285,11 @@ if (is.null(arg$coi_table)) {
       call. = FALSE
     )
   }
-  coi <- create_coi_input(arg$coi_table, dcifer_alleles)
+  coi <- create_coi_input(
+    arg$coi_table, 
+    dcifer_alleles, 
+    specimen_id_col = arg$specimen_id_col
+  )
 }
 
 # Compute allele frequencies -------------------------------------------
@@ -255,4 +306,10 @@ n_samp_per_target <- allele_table %>%
   summarize(sample_total = n_distinct(specimen_id), .groups = "drop")
 
 # Reformat to table and write to disk ----------------------------------
-write_slaf_output(allele_freqs_list, n_samp_per_target, arg$slaf_output)
+prepare_slaf_output(
+    allele_freqs_list, 
+    n_samp_per_target, 
+    target_id_col = arg$target_id_col, 
+    target_value_col = arg$target_value_col
+ ) %>%
+  write_tsv(arg$slaf_output)
