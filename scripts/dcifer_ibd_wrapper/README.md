@@ -1,4 +1,4 @@
-# Dcifer
+# Dcifer IBD Wrapper
 
 Contents: 
 * [Tool Information](#tool-information)
@@ -33,7 +33,7 @@ A tutorial and information about this tool can be found
 To run the wrapper with a user-specified COI table and using two threads:
 
 ```{r}
-Rscript scripts/dcifer_wrapper/dcifer_wrapper.R --allele_table \
+Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R --allele_table \
     data/example_allele_table.tsv --coi_table data/example_coi_table.tsv \
     --threads 2 --btwn_host_rel_output btwn_host_rel.tsv
 ```
@@ -42,7 +42,7 @@ To run the wrapper with a user-specified allele frequency table and built-in COI
 estimation:
 
 ```{r}
-Rscript scripts/dcifer_wrapper/dcifer_wrapper.R --allele_table \
+Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R --allele_table \
     data/example2_allele_table.tsv --allele_freq_table \
     data/example_slaf_mhap.tsv --btwn_host_rel_output btwn_host_rel.tsv
 ```
