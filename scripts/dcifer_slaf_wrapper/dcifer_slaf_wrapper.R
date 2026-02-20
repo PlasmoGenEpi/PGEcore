@@ -6,14 +6,14 @@
 library(dcifer)
 # These will be referenced without the `package::` construct, and thus 
 # are loaded second to avoid masking
-library(dplyr)
+library(dplyr, warn.conflicts = FALSE)
 library(magrittr)
 library(optparse)
-library(purrr)
+library(purrr, warn.conflicts = FALSE)
 library(readr)
 library(stringr)
 library(tibble)
-library(tidyr)
+library(tidyr, warn.conflicts = FALSE)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(

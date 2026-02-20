@@ -36,7 +36,7 @@ The output will be a TSV with columns matching `--target_id_col` and
 ```{r}
 # Amino acid alleles
 scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
-    data/example2_amino_acid_table.tsv --target_id_col aa_locus \
+    data/example2_amino_acid_calls.tsv --target_id_col aa_locus \
     --target_value_col aa --slaf_output slaf.tsv
 
 # SNP alleles
