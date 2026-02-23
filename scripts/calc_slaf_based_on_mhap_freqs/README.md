@@ -14,7 +14,7 @@ Taking amino acid translated loci associated with microhaplotype sequences and c
 Script requires two inputs (the translated loci associated with microhaplotypes and the allele frequencies for the microhaplotypes) and can write out the frequencies collapsed across any overlapping targets (and optionally can also export per target_id as well)
 
 ```         
-Usage: ./slaf_from_hhaps_freqs.R [options]
+Usage: ./slaf_from_mhaps_freqs.R [options]
 
 Options:
     --mhaps_slaf_fnp=MHAPS_SLAF_FNP
@@ -48,7 +48,7 @@ scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
     --loci_of_interest data/example_principal_resistance_marker_info_table.bed \
     --overwrite_dir
 
-./scripts/calc_slaf_based_on_mhap_freqs/slaf_from_hhaps_freqs.R --mhaps_slaf_fnp mhaps_slaf.tsv \ 
+./scripts/calc_slaf_based_on_mhap_freqs/slaf_from_mhaps_freqs.R --mhaps_slaf_fnp mhaps_slaf.tsv \ 
     --loci_of_interest_per_microhaps_fnp translate_output/loci_of_interest_for_target_for_microhap.tsv.gz \
     --slaf_output slaf.tsv
 ```
@@ -56,7 +56,7 @@ scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
 Allele frequencies can be calculated in any way to be given to this script
 
 ```         
-./scripts/calc_slaf_based_on_mhap_freqs/slaf_from_hhaps_freqs.R --mhaps_slaf_fnp data/example_mhaps_slaf.tsv \ 
+./scripts/calc_slaf_based_on_mhap_freqs/slaf_from_mhaps_freqs.R --mhaps_slaf_fnp data/example_mhaps_slaf.tsv \ 
     --loci_of_interest_per_microhaps_fnp data/example_loci_of_interest_for_target_for_microhap.tsv \
     --slaf_output slaf.tsv
 ```
