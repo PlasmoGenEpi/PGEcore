@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 
-packagesToLoad = c("tibble", "dplyr", "stringr", "readr", "optparse")
+packagesToLoad = c("tibble", "dplyr", "tidyr", "stringr", "readr", "optparse")
 
 loaded = lapply(packagesToLoad, library, warn.conflicts = F, character.only = TRUE)
 
@@ -160,11 +160,11 @@ opts <- list(
   )
 )
 # parse arguments
-arg <- parse_args(OptionParser(option_list = opts))
+args <- parse_args(OptionParser(option_list = opts))
 
 ## check for required arguments
-required_arguments = c("mhaps_slaf_fnp", "loci_of_interest_per_microhaps_fnp", "slaf_output", "per_target_slaf_output")
-checkOptparseRequiredArgsThrow(arg, required_arguments)
+required_arguments = c("mhaps_slaf_fnp", "loci_of_interest_per_microhaps_fnp", "slaf_output")
+# checkOptparseRequiredArgsThrow(args, required_arguments)
 
 if(interactive()){
   args$mhaps_slaf_fnp = "../../data/example_mhaps_slaf.tsv" 
@@ -179,7 +179,7 @@ translated_mhaps = process_input_loci_of_interest_per_microhaps(args$loci_of_int
 
 # join together tables 
 translated_mhaps_joined = translated_mhaps %>% 
-  left_join(mhaps_slaf)
+  left_join(mhaps_slaf, by = c("target_id", "seq"))
 
 # check for missing frequency for microhaplotypes 
 translated_mhaps_joined_missing_freqs = translated_mhaps_joined %>% 
@@ -190,7 +190,7 @@ if(nrow(translated_mhaps_joined_missing_freqs) > 0){
 }
 
 # calculate per target, renormalize freq in case input's freqs do not add up to 1 
-translated_mhaps_slaf_per_target = translated_mhaps %>% 
+translated_mhaps_slaf_per_target = translated_mhaps_joined %>% 
   group_by(target_id, gene_id, aa_position, sample_total, aa) %>% 
   summarise(freq = sum(freq)) %>% 
   group_by(target_id, gene_id, aa_position, sample_total) %>% 
@@ -203,7 +203,7 @@ translated_mhaps_slaf_per_target = translated_mhaps %>%
 # @todo consider weighting by the sample total per target to give sample weighted in case one target has very poor coverage 
 # renormalize freq in case input's freqs do not add up to 1
 # take the max sample total between targets to get the sample total 
-translated_mhaps_slaf = translated_mhaps %>% 
+translated_mhaps_slaf = translated_mhaps_joined %>% 
   group_by(gene_id, aa_position, aa) %>% 
   summarise(freq = sum(freq), 
             sample_total = max(sample_total)) %>% 
@@ -214,9 +214,9 @@ translated_mhaps_slaf = translated_mhaps %>%
   unite(variant, gene_id, aa_position, aa, sep = ":")
 
 # write output 
-write_tsv(translated_mhaps_slaf, arg$slaf_output)
+write_tsv(translated_mhaps_slaf, args$slaf_output)
 
 # optionally write output per target if output name given 
-if(!is.null(arg$per_target_slaf_output)){
-  write_tsv(translated_mhaps_slaf_per_target, arg$per_target_slaf_output)
+if(!is.null(args$per_target_slaf_output)){
+  write_tsv(translated_mhaps_slaf_per_target, args$per_target_slaf_output)
 }
