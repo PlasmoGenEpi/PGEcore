@@ -178,19 +178,13 @@ mhaps_slaf = process_input_mhaps_slaf(args$mhaps_slaf_fnp)
 translated_mhaps = process_input_loci_of_interest_per_microhaps(args$loci_of_interest_per_microhaps_fnp)
 
 # join together tables 
-translated_mhaps_joined = translated_mhaps %>% 
-  left_join(mhaps_slaf, by = c("target_id", "seq"))
-
-# check for missing frequency for microhaplotypes 
-translated_mhaps_joined_missing_freqs = translated_mhaps_joined %>% 
-  filter(is.na(freq))
-if(nrow(translated_mhaps_joined_missing_freqs) > 0){
-  missing_freqs = paste0(paste0(translated_mhaps_joined_missing_freqs$target_id, " ", translated_mhaps_joined_missing_freqs$seq), collapse = ", ")
-  stop(paste0("missing frequency estimate for ", missing_freqs))
-}
+# the translated mhaps may come from a full population and therefore there might be translated seqs that are missing from 
+# the population frequencies and there might be hap frequencies that haven't been translated so will do inner join 
+combined_tables = mhaps_slaf  %>% 
+  inner_join(translated_mhaps, by = c("target_id", "seq"))
 
 # calculate per target, renormalize freq in case input's freqs do not add up to 1 
-translated_mhaps_slaf_per_target = translated_mhaps_joined %>% 
+translated_mhaps_slaf_per_target = combined_tables %>% 
   group_by(target_id, gene_id, aa_position, sample_total, aa) %>% 
   summarise(freq = sum(freq)) %>% 
   group_by(target_id, gene_id, aa_position, sample_total) %>% 
@@ -203,7 +197,7 @@ translated_mhaps_slaf_per_target = translated_mhaps_joined %>%
 # @todo consider weighting by the sample total per target to give sample weighted in case one target has very poor coverage 
 # renormalize freq in case input's freqs do not add up to 1
 # take the max sample total between targets to get the sample total 
-translated_mhaps_slaf = translated_mhaps_joined %>% 
+translated_mhaps_slaf = combined_tables %>% 
   group_by(gene_id, aa_position, aa) %>% 
   summarise(freq = sum(freq), 
             sample_total = max(sample_total)) %>% 
