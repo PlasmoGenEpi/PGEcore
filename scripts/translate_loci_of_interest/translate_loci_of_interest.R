@@ -340,9 +340,9 @@ translate_microhap_seqs <-function(allele_table_unique_haps_tab, microhaps_inter
         if(stringr::str_detect(as.character(seq_codon), "-")){
           seq_aa = "X"
         } else{
-          seq_aa = Biostrings::translate(seq_codon)
+          seq_aa = Biostrings::translate(seq_codon, no.init.codon = T)
         }
-        ref_aa = Biostrings::translate(ref_codon)
+        ref_aa = Biostrings::translate(ref_codon, no.init.codon = T)
         
         # create the table with the data of interest 
         loci_of_interest_for_target_for_microhap = 
