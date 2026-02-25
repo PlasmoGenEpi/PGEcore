@@ -340,9 +340,9 @@ translate_microhap_seqs <-function(allele_table_unique_haps_tab, microhaps_inter
         if(stringr::str_detect(as.character(seq_codon), "-")){
           seq_aa = "X"
         } else{
-          seq_aa = Biostrings::translate(seq_codon)
+          seq_aa = Biostrings::translate(seq_codon, no.init.codon = T)
         }
-        ref_aa = Biostrings::translate(ref_codon)
+        ref_aa = Biostrings::translate(ref_codon, no.init.codon = T)
         
         # create the table with the data of interest 
         loci_of_interest_for_target_for_microhap = 
@@ -369,6 +369,8 @@ translate_microhap_seqs <-function(allele_table_unique_haps_tab, microhaps_inter
       )
     }
   }
+  all_loci_of_interest_for_target_for_microhap = all_loci_of_interest_for_target_for_microhap %>% 
+    mutate(aa_locus = paste0(gene_id, ":", aa_position))
   return (all_loci_of_interest_for_target_for_microhap)
 }
 
@@ -385,12 +387,12 @@ collapse_allele_table <- function(allele_table_to_filter, collapse_calls_by_summ
   # collapse amino acid calls 
   if(collapse_calls_by_summing){
     allele_table_out_collapsed = allele_table_to_filter |> 
-      group_by(specimen_id, gene, gene_id, aa_position, ref_aa, aa) |> 
+      group_by(specimen_id, gene, gene_id, aa_position, aa_locus, ref_aa, aa) |> 
       summarise(read_count = sum(read_count), 
                 target_id = paste0(unique(sort(target_id)), collapse = ","))
   } else { 
     allele_table_out_winnerTarget = allele_table_to_filter |> 
-      group_by(specimen_id, gene, gene_id, aa_position, ref_aa, target_id) |> 
+      group_by(specimen_id, gene, gene_id, aa_position, aa_locus, ref_aa, target_id) |> 
       summarise(read_count = sum(read_count)) |> 
       arrange(desc(read_count)) |> 
       mutate(read_count_rank = row_number(), 
@@ -404,12 +406,12 @@ collapse_allele_table <- function(allele_table_to_filter, collapse_calls_by_summ
       left_join(allele_table_out_winnerTarget |> 
                   ungroup() |> 
                   select(-read_count), 
-                by = c("specimen_id", "gene", "gene_id", "aa_position", "ref_aa")) |> 
+                by = c("specimen_id", "gene", "gene_id", "aa_position", "aa_locus", "ref_aa")) |> 
       filter(target_id == best_target_id) |> 
       select(-seq)
     
     allele_table_out_collapsed = allele_table_out_collapsed |> 
-      group_by(specimen_id, target_id, gene, gene_id, aa_position, ref_aa, aa, best_target_id, covered_by_target_ids) |> 
+      group_by(specimen_id, target_id, gene, gene_id, aa_position, aa_locus, ref_aa, aa, best_target_id, covered_by_target_ids) |> 
       summarise(read_count = sum(read_count))
   }
   return (allele_table_out_collapsed)
@@ -703,6 +705,8 @@ run_translate_loci_of_interest <-function(){
   # collapse amino acid calls 
   allele_table_out_collapsed = collapse_allele_table(allele_table_out_filt, arg$collapse_calls_by_summing)
   
+  # writing output seqs 
+  write_tsv(all_loci_of_interest_for_target_for_microhap, file.path(arg$output_directory, "loci_of_interest_for_target_for_microhap.tsv.gz"))
   
   # writing output results 
   write_tsv(allele_table_out, file.path(arg$output_directory, "amino_acid_calls.tsv.gz"))
