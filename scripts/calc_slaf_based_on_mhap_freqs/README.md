@@ -27,7 +27,8 @@ Options:
         the output for the single locus allele frequency, will collapse frequencies across overlapping targets
 
     --per_target_slaf_output=PER_TARGET_SLAF_OUTPUT
-        optional output for the single lcous allele frequency calculated per target
+        optional output for the single locus allele frequency calculated per 
+        target
 
     -h, --help
         Show this help message and exit
@@ -42,7 +43,7 @@ scripts/dcifer_slaf_wrapper/dcifer_slaf_wrapper.R --allele_table \
     data/example2_allele_table.tsv \
     --slaf_output mhaps_slaf.tsv
 
-../scripts/translate_loci_of_interest/translate_loci_of_interest.R \
+./scripts/translate_loci_of_interest/translate_loci_of_interest.R \
     --output_directory translate_output --allele_table data/example2_allele_table.tsv  \
     --ref_bed data/example_PMO_insert_locs_of_panel.bed  \
     --loci_of_interest data/example_principal_resistance_marker_info_table.bed \
