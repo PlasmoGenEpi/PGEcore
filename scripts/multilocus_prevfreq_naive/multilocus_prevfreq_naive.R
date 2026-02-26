@@ -568,7 +568,7 @@ if(!is.null(args$recalc_single_locus_output_path)){
   slaf_from_ml = 
   slaf_from_ml <- switch(
     args$method,
-    wsaf_prop = generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop(aa_table_group_filt_final),
+    wsaf_prop = generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop(all_aa_table_group_filt_final),
     presence_absence = generate_single_locus_prev_freq_from_multilocus_groups_presence_absence(all_aa_table_group_filt_final)
   )
   write_tsv(slaf_from_ml, args$recalc_single_locus_output_path)
