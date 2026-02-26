@@ -46,6 +46,21 @@ opts <- list(
     )
   ),
   make_option(
+    c("--method"),
+    help = stringr::str_c(
+      "Method to use for estimating allele frequency. Options are: ",
+      "wsaf_prop (frequencies are weighted by their within-sample-allele-frequency, no allele_counts will be exported in this case), presence_absence (simply count by how many times each allele appears). Default: %default"
+    ),
+    type = "character",
+    default = "wsaf_prop",
+    callback = function(opt, flag_string, value, parser, ...) {
+      if (!value %in% c("wsaf_prop", "presence_absence")) {
+        stop(stringr::str_c(value, " is not a valid method"))
+      }
+      value
+    }
+  ),
+  make_option(
     "--wsaf_cut_off",
     type = "double",
     default = 0.70,
@@ -57,16 +72,19 @@ opts <- list(
   )
 )
 
+# Set up options
 #' Check for required arguments, and report which are missing 
 #'
-#' @param arg the parsed arguments from arg parse
-#' @param required_args the required arguments
+#' @param parser the parser created from optparse
+#' @param arg the parsed arguments from optparse
+#' @param required_args the required arguments (without the --)
 #'
 #' @return returns void if all required arguments
-checkOptparseRequiredArgsThrow <- function(arg, required_args){
+checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
   missing <- setdiff(required_args, names(arg))
   if(length(missing) > 0){
     missing = paste0("--", missing)
+    print_help(parser)
     stop(paste0("mssing the following arguments: ", paste0(missing, collapse = ", ")))
   }
 }
@@ -174,7 +192,7 @@ create_loci_group_input <- function(loci_groups_path) {
 }
 
 
-#' Generate the single locus allele frequencies and prevalence from a table of multilocus calls 
+#' Generate the single locus allele frequencies and prevalence from a table of multilocus calls weighted by wsaf 
 #'
 #' @param multilocus_calls A table of 3 columns, group_id, specimen_id, and variant (in variantstring format)
 #'
@@ -182,7 +200,66 @@ create_loci_group_input <- function(loci_groups_path) {
 #' @export
 #'
 #' @examples
-generate_single_locus_prev_freq_from_multilocus_groups <-function(multilocus_calls){
+generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop <-function(multilocus_calls){
+  # validate input
+  # group_id, specimen_id, variant 
+  rules <- validate::validator(
+    is.character(group_id), 
+    is.character(specimen_id), 
+    is.character(variant),
+    is.numeric(wsaf),
+    ! is.na(group_id), 
+    ! is.na(specimen_id), 
+    ! is.na(variant), 
+    ! is.na(wsaf)
+  )
+  fails <- validate::confront(multilocus_calls, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input multilocus_calls for function generate_single_locus_prev_freq_from_multilocus_groups failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
+  # deconstruct the variantstring format into single locus 
+  multilocus_calls_mod = multilocus_calls %>% 
+    group_by(group_id) %>% 
+    mutate(variant_split = strsplit(variant, split = ";")) %>% 
+    unnest(variant_split) %>% 
+    separate(variant_split, into = c("gene_id", "aa_position", "aa"), sep = ":")%>% 
+    mutate(aa_position = strsplit(aa_position, split = "_"), 
+           aa = strsplit(aa, split = "_")) %>% 
+    unnest(c(aa_position, aa)) %>% 
+    mutate(aa_position = as.numeric(aa_position)) %>% 
+    arrange(group_id, gene_id, aa_position, aa)
+  
+  # now re-calculate allele frequency and prev 
+  multilocus_calls_mod_slaf = multilocus_calls_mod %>% 
+    group_by(group_id, gene_id, aa_position) %>% 
+    mutate(sample_total = n_distinct(specimen_id), 
+           wsaf_total = sum(wsaf)) %>% 
+    group_by(group_id, gene_id, aa_position, aa, sample_total, wsaf_total) %>% 
+    summarise(wsaf_sum = sum(wsaf), 
+              sample_count = n_distinct(specimen_id)) %>% 
+    mutate(freq = wsaf_sum/wsaf_total, 
+           prev = sample_count/sample_total) %>% 
+    unite(variant,gene_id, aa_position, aa, sep = ":") %>% 
+    select(-wsaf_sum,-wsaf_total)
+  
+  return (multilocus_calls_mod_slaf)
+}
+
+#' Generate the single locus allele frequencies and prevalence from a table of multilocus calls based on presence absence
+#'
+#' @param multilocus_calls A table of 3 columns, group_id, specimen_id, and variant (in variantstring format)
+#'
+#' @returns summarized per group, single locus freq/prev recalculated from the multilocus variant calls 
+#' @export
+#'
+#' @examples
+generate_single_locus_prev_freq_from_multilocus_groups_presence_absence <-function(multilocus_calls){
   # validate input
   # group_id, specimen_id, variant 
   rules <- validate::validator(
@@ -230,16 +307,104 @@ generate_single_locus_prev_freq_from_multilocus_groups <-function(multilocus_cal
   return (multilocus_calls_mod_slaf)
 }
 
+
+#' Calculate the allele frequency and prevalence of multilocus allele weighted by their within sample frequency (wsaf)
+#'
+#' @param multilocus_calls - a table with columns specimen_id, variant, wsaf 
+#'
+#' @returns a tibble with freq and prev calculated 
+#' @export
+#'
+calculate_multilocus_af_prev_wsaf_prop<-function(multilocus_calls){
+  # validate input
+  # specimen_id variant wsaf
+  rules <- validate::validator(
+    is.character(specimen_id), 
+    is.character(variant), 
+    is.numeric(wsaf),
+    ! is.na(specimen_id), 
+    ! is.na(variant), 
+    ! is.na(wsaf)
+  )
+  fails <- validate::confront(multilocus_calls, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input multilocus_calls for function calculate_multilocus_af_prev_presence_absence failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
+  multilocus_calls_prev_freq = multilocus_calls %>% 
+    ungroup() %>% 
+    mutate(sample_total = n_distinct(specimen_id), 
+           wsaf_total = sum(wsaf)) %>% 
+    group_by(variant, sample_total, wsaf_total) %>% 
+    summarise(wsaf_sum = sum(wsaf), 
+              sample_count = n_distinct(specimen_id)) %>% 
+    mutate(prev = sample_count/sample_total, 
+           freq = wsaf_sum/wsaf_total) %>% 
+    ungroup() %>% 
+    select(-wsaf_sum,-wsaf_total)
+  return(multilocus_calls_prev_freq)
+}
+
+#' Calculate the allele frequency and prevalence of multilocus allele by their presence/absence 
+#'
+#' @param multilocus_calls - a table with columns specimen_id, variant 
+#'
+#' @returns a tibble with freq and prev calculated 
+#' @export
+#'
+calculate_multilocus_af_prev_presence_absence<-function(multilocus_calls){
+  # validate input
+  # specimen_id variant 
+  rules <- validate::validator(
+    is.character(specimen_id), 
+    is.character(variant), 
+    ! is.na(specimen_id), 
+    ! is.na(variant)
+  )
+  fails <- validate::confront(multilocus_calls, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  if (nrow(fails) > 0) {
+    stop(
+      "Input multilocus_calls for function calculate_multilocus_af_prev_presence_absence failed one or more validation checks: ", 
+      str_c(fails$expression, collapse = "\n"), 
+      call. = FALSE
+    )
+  }
+  multilocus_calls_prev_freq = multilocus_calls %>% 
+    ungroup() %>% 
+    mutate(sample_total = n_distinct(specimen_id), 
+           allele_total = n()) %>% 
+    group_by(variant, sample_total, allele_total) %>% 
+    summarise(allele_count = n(), 
+              sample_count = n_distinct(specimen_id)) %>% 
+    mutate(prev = sample_count/sample_total, 
+           freq = allele_count/allele_total) %>% 
+    ungroup()
+  return(multilocus_calls_prev_freq)
+}
+
+
+
+
+
+
+
 # RUN MODULE -----------------------------------------------------------
 
 
 # parse arguments
-args <- parse_args(OptionParser(option_list = opts))
+parser <- OptionParser(option_list = opts)
+args <- parse_args(parser)
 # Arguments used for development, in order to properly test the below, working directory has to be set the directory of this script
 if (interactive()) {
-  args = list()
-  args$aa_table <- "../../data/example_amino_acid_calls.tsv"
-  args$loci_groups_input <- "../../data/example_loci_groups.tsv"
+  args$aa_table <- "data/example2_amino_acid_calls.tsv"
+  args$loci_groups_input <- "data/example_loci_groups.tsv"
   args$output_path <- "mlafp.tsv"
   args$recalc_single_locus_output_path <- "recalc_sl_from_ml.tsv"
   args$wsaf_cut_off = 0.70
@@ -247,7 +412,7 @@ if (interactive()) {
 
 # make sure the required options are being provided 
 required_arguments = c("aa_table", "loci_groups_input", "output_path")
-checkOptparseRequiredArgsThrow(args, required_arguments)
+checkOptparseRequiredArgsThrow(parser, args, required_arguments)
 
 # Read in amino acid data 
 aa_table <- create_aa_table_input(args$aa_table)
@@ -357,13 +522,14 @@ for(loci_group in names(loci_groups_split)){
     arrange(gene_id, aa_position) %>% 
     group_by(specimen_id, gene_id) %>% 
     summarise(positions = paste0(aa_position, collapse = "_"), 
-              aas = paste0(aa, collapse = "_")) %>% 
+              aas = paste0(aa, collapse = "_"), 
+              wsaf = min(wsaf)) %>% 
     unite(per_gene_variant, gene_id, positions, aas, sep = ":") %>% 
     group_by(specimen_id) %>% 
-    summarise(variant = paste0(per_gene_variant, collapse = ";")) %>% 
+    summarise(variant = paste0(per_gene_variant, collapse = ";"), 
+              wsaf = min(wsaf)) %>% 
     group_by(specimen_id) %>% 
-    mutate(within_sample_hap = row_number()) %>% 
-    mutate(wsaf = 1)
+    mutate(within_sample_hap = row_number())
   
   # combine the two approaches to get a final list of multi-locus calls 
   aa_table_group_filt_final = bind_rows(aa_table_group_filt_dominant_collapse, 
@@ -376,19 +542,13 @@ for(loci_group in names(loci_groups_split)){
       mutate(group_id = loci_group)
   )
   
-  # now calculate the sample prevalence and allele frequencies 
-  aa_table_group_filt_final_prev_freq = aa_table_group_filt_final %>% 
-    ungroup() %>% 
-    mutate(sample_total = n_distinct(specimen_id), 
-           allele_total = n()) %>% 
-    group_by(variant, sample_total, allele_total) %>% 
-    summarise(allele_count = n(), 
-           sample_count = n_distinct(specimen_id)) %>% 
-    mutate(prev = sample_count/sample_total, 
-           freq = allele_count/allele_total) %>% 
-    ungroup() %>% 
-    mutate(group_id = loci_group) %>% 
-    select(group_id, variant, allele_count, sample_count, allele_total, sample_total, freq, prev)
+  # now calculate the sample prevalence and allele frequencies
+  aa_table_group_filt_final_prev_freq <- switch(
+    args$method,
+    wsaf_prop = calculate_multilocus_af_prev_wsaf_prop(aa_table_group_filt_final),
+    presence_absence = calculate_multilocus_af_prev_presence_absence(aa_table_group_filt_final)
+  ) %>% 
+    mutate(group_id = loci_group) 
     
   # combine into final table for all groups 
   all_aa_table_group_filt_final_prev_freq  = bind_rows(
@@ -405,6 +565,13 @@ if(!is.null(args$recalc_single_locus_output_path)){
   # these re-calculated frequencies can serve as a sanity check against the single locus freqs/prevs calculated directly
   # from the data, for example if some allele frequencies aren't present in the re-calcuated calls but are in the direct calculations 
   # then the multi-locus processing failed to capture any multi-locus haplotypes with that allele and is not capture the full data 
-  slaf_from_ml = generate_single_locus_prev_freq_from_multilocus_groups(all_aa_table_group_filt_final)
+  slaf_from_ml = 
+  slaf_from_ml <- switch(
+    args$method,
+    wsaf_prop = generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop(aa_table_group_filt_final),
+    presence_absence = generate_single_locus_prev_freq_from_multilocus_groups_presence_absence(all_aa_table_group_filt_final)
+  )
   write_tsv(slaf_from_ml, args$recalc_single_locus_output_path)
 }
+
+
