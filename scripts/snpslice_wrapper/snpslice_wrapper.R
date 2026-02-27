@@ -20,9 +20,10 @@ opts <- list(
     "--allele_table", 
     help = str_c(
       "TSV containing alleles, with columns identifying specimens, ", 
-      "target names, and target values. The names of these columns are given ", 
-      "by the --specimen_id_col, --target_id_col, and --target_value_col ", 
-      "arguments, respectively. Required."
+      "target names, target values, and target counts. The names of these ", 
+      "columns are given by the --specimen_id_col, --target_id_col, ", 
+      "--target_value_col, and --target_count_col arguments, respectively. ", 
+      "Required."
     )
   ), 
   make_option(
@@ -46,6 +47,15 @@ opts <- list(
       str_c(
         "String giving the name of the target value column (e.g., the allele ", 
         "call). Optional."
+      )
+  ), 
+  make_option(
+    "--target_count_col", 
+    default = "seq", 
+    help = 
+      str_c(
+        "String giving the name of the target count column (e.g., the read ", 
+        "counts). Optional."
       )
   ), 
   make_option(
@@ -106,6 +116,7 @@ opts <- list(
   make_option(
     "--store_mcmc", 
     action = "store_true", 
+    default = FALSE, 
     help = "Whether to store full MCMC samples (default: FALSE)"
   ), 
   make_option(
@@ -137,7 +148,8 @@ if (interactive()) {
   arg$loci_groups_input <- "../../data/example_loci_groups.tsv"
   arg$target_id_col <- "aa_locus"
   arg$target_value_col <- "aa"
-  arg$slaf_output <- "../../slaf.tsv"
+  arg$target_count_col <- "read_count"
+  arg$n_mcmc <- 100
 }
 
 #' Read allele table into a tibble
@@ -151,37 +163,51 @@ if (interactive()) {
 #' @param target_id_col String giving the name of the target ID column.
 #' @param target_value_col String giving the name of the column 
 #'   containing target values (i.e., the genotypes).
+#' @param target_count_col String giving the name of the column 
+#'   containing target counts.
 #'
-#' @return A tibble containing columns for specimen_id, target_id, and 
-#'   target_value.
+#' @return A tibble containing columns for specimen_id, target_id, 
+#'   target_value, and target_count.
 create_allele_table_input <- function(
                                       allele_table_path, 
                                       specimen_id_col = "specimen_id", 
-                                      target_id_col = "target_id", 
-                                      target_value_col = "seq") {
+                                      target_id_col = "aa_locus", 
+                                      target_value_col = "aa", 
+                                      target_count_col = "read_count") {
 
   # Read in table
   allele_table <- read_tsv(
       allele_table_path, 
-      col_types = cols(.default = col_character()), 
+      col_types = cols(
+        .default = col_character(), 
+        !!target_count_col := col_double()
+      ), 
       progress = FALSE
     ) %>%
-    select(all_of(c(specimen_id_col, target_id_col, target_value_col))) %>%
+    select(
+      all_of(
+        c(specimen_id_col, target_id_col, target_value_col, target_count_col)
+      )
+    ) %>%
     # Standardize names
     rename(
       specimen_id = all_of(specimen_id_col), 
       target_id = all_of(target_id_col), 
-      target_value = all_of(target_value_col)
+      target_value = all_of(target_value_col), 
+      target_count = all_of(target_count_col)
     )
 
+    print(allele_table)
   # Validate fields
   rules <- validate::validator(
     is.character(specimen_id), 
     is.character(target_id), 
     is.character(target_value), 
+    is.double(target_count), 
     ! is.na(specimen_id), 
     ! is.na(target_id), 
-    ! is.na(target_value)
+    ! is.na(target_value), 
+    ! is.na(target_count)
   )
   fails <- validate::confront(allele_table, rules, raise = "all") %>%
     validate::summary() %>%
@@ -249,14 +275,32 @@ create_loci_group_input <- function(
 
 }
 
+options(error = stop)
 # Read inputs ----------------------------------------------------------
 allele_table <- create_allele_table_input(
   arg$allele_table, 
   specimen_id_col = arg$specimen_id_col, 
   target_id_col = arg$target_id_col, 
-  target_value_col = arg$target_value_col
+  target_value_col = arg$target_value_col, 
+  target_count_col = arg$target_count_col
 )
 loci_groups <- create_loci_group_input(
   arg$loci_groups_input, 
   target_id_col = arg$target_id_col
+)
+
+snpslice_res <- snp.slicer::snp_slice(
+  allele_table, 
+  model = arg$model, 
+  n_mcmc = arg$n_mcmc, 
+  burnin = arg$burnin, 
+  alpha = arg$alpha, 
+  rho = arg$rho, 
+  threshold = arg$threshold, 
+  gap = arg$gap, 
+  store_mcmc = arg$store_mcmc, 
+  specimen_id_col = "specimen_id", 
+  target_id_col = "target_id", 
+  target_value_col = "target_value", 
+  target_count_col = "target_count"
 )
