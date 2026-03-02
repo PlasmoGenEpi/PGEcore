@@ -174,7 +174,9 @@ if (interactive()) {
   arg$target_value_col <- "aa"
   arg$target_count_col <- "read_count"
   arg$n_mcmc <- 100
-  arg$use_mcmc_for_af_and_coi <- TRUE
+  arg$use_mcmc_for_af_and_coi <- FALSE
+  arg$mlaf_output <- "../../mlaf.tsv"
+  arg$coi_output <- "../../coi.tsv"
 }
 
 #' Read allele table into a tibble
@@ -381,7 +383,7 @@ prepare_af_output <- function(
       use_map = ! use_mcmc
     )
   # Reformat
-  tibble(
+  af_tib <- tibble(
       group_id = names(snp_slicer_af_by_group), 
       af_tib = snp_slicer_af_by_group
     ) %>%
@@ -396,10 +398,17 @@ prepare_af_output <- function(
     unnest(af_tib) %>%
     rename(
       variant = allele, 
-      freq = frequency, 
-      sample_total = count, 
-      allele_total = total_parasites
+      freq = frequency
     )
+  if (use_mcmc) {
+    af_tib <- af_tib %>%
+      select(-mean_count, -n_samples)
+  } else {
+    af_tib <- af_tib %>%
+      rename(allele_total = total_parasites, allele_count = count)
+  }
+
+  return(af_tib)
 
 }
 
