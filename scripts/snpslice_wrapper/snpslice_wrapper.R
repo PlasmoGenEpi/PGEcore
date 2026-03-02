@@ -85,7 +85,7 @@ opts <- list(
     "--model", 
     default = "negative_binomial", 
     help = str_c(
-      "Observation model to use. Options: 'categorical', 'poisson', ", 
+      "Observation model to use. Options: 'poisson', ", 
       "'binomial', 'negative_binomial' (default). Optional."
     )
   ), 
