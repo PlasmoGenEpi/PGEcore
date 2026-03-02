@@ -1,11 +1,43 @@
-library(tibble)
-library(dplyr)
-library(moire)
-library(tidyr)
-library(optparse)
-library(stringr)
-library(validate)
-library(checkmate)
+#!/usr/bin/env Rscript
+
+library(tibble, warn.conflicts = F)
+library(dplyr, warn.conflicts = F)
+library(moire, warn.conflicts = F)
+library(tidyr, warn.conflicts = F)
+library(optparse, warn.conflicts = F)
+library(stringr, warn.conflicts = F)
+library(validate, warn.conflicts = F)
+library(checkmate, warn.conflicts = F)
+
+# Set up options
+#' Check for required arguments, and report which are missing 
+#'
+#' @param parser the parser created from optparse
+#' @param arg the parsed arguments from optparse
+#' @param required_args the required arguments (without the --)
+#'
+#' @return returns void if all required arguments
+checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
+  missing <- setdiff(required_args, names(arg))
+  if(length(missing) > 0){
+    missing = paste0("--", missing)
+    print_help(parser)
+    stop(paste0("mssing the following arguments: ", paste0(missing, collapse = ", ")))
+  }
+}
+
+
+#' Find missing columns from a tibble 
+#'
+#' @param tib the tibble to check
+#' @param columns the columns to check for
+#'
+#' @return returns any missing columns 
+get_missing_columns <-function(tib, columns){
+  setdiff(columns, colnames(tib))
+}
+
+
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -235,19 +267,17 @@ opts <- list(
       "TSV file for effective COI summary. ",
       "This file will provide the effective complexity of infection estimates."
     )
+  ),
+  make_option(
+    "--mcmc_results_output",
+    default = "",
+    help = str_c(
+      "Optionally can export the full results of moire, which can be helpful for debugging or quality assurance (e.g. checking if MCMC properly converged)"
+    )
   )
 )
 
-arg <- parse_args(OptionParser(option_list = opts))
-# Arguments used for development
-if (interactive()) {
-  arg$allele_table <- "../../data/example2_allele_table.tsv"
-  arg$coi_summary <- "coi_summary.tsv"
-  arg$he_summary <- "he_summary.tsv"
-  arg$allele_freq_summary <- "allele_freq_summary.tsv"
-  arg$relatedness_summary <- "relatedness_summary.tsv"
-  arg$effective_coi_summary <- "effective_coi_summary.tsv"
-}
+
 
 # moire_wrapper functions ------------------------------------------------------
 
@@ -302,6 +332,42 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
                                pt_num_threads, adapt_temp, max_runtime) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
+  
+  # check for require columns 
+  miss_cols = get_missing_columns(input_data, c("specimen_id", "target_id", "seq"))
+  if(length(miss_cols) > 0){
+    stop(paste0(c("missing the following columns from ", input_path, " : ",
+                paste0(miss_cols, collpase = ","),
+                " current columns: ", 
+                paste0(colnames(input_data), collpase = ","))))
+  }
+  # Validate input format
+  print("Validating input format")
+  rules <- validate::validator(
+    # Data columns
+    is.character(specimen_id),
+    is.character(target_id),
+    is.character(seq),
+    
+    # Non-missing values
+    !is.na(specimen_id),
+    !is.na(target_id),
+    !is.na(seq)
+  )
+  # Confront the analysis_object with validation rules
+  print("Confronting input data with validation rules")
+  fails <- validate::confront(input_data, rules, raise = "all") %>%
+    validate::summary() %>%
+    dplyr::filter(fails > 0)
+  
+  # Raise an error if any validations fail
+  if (nrow(fails) > 0) {
+    stop(
+      paste0("Analysis object failed one or more validation checks for input ", input_path, ": "),
+      str_c(fails$expression, collapse = "\n"),
+      call. = FALSE
+    )
+  }
   moire_data <- input_data |>
     dplyr::select(specimen_id, target_id, seq) |>
     dplyr::rename(sample_id = specimen_id, locus = target_id, allele = seq)
@@ -342,20 +408,6 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
     )
   )
 
-  # Validate input format
-  print("Validating input format")
-  rules <- validate::validator(
-    # Data columns
-    is.character(sample_id),
-    is.character(locus),
-    is.character(allele),
-
-    # Non-missing values
-    !is.na(sample_id),
-    !is.na(locus),
-    !is.na(allele)
-  )
-
   # Validate parameters
   assert_logical(moire_object$moire_parameters$allow_relatedness, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$burnin, any.missing = FALSE, len = 1)
@@ -376,20 +428,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
 
-  # Confront the analysis_object with validation rules
-  print("Confronting input data with validation rules")
-  fails <- validate::confront(moire_object$moire_data, rules, raise = "all") %>%
-    validate::summary() %>%
-    dplyr::filter(fails > 0)
 
-  # Raise an error if any validations fail
-  if (nrow(fails) > 0) {
-    stop(
-      "Analysis object failed one or more validation checks: ",
-      str_c(fails$expression, collapse = "\n"),
-      call. = FALSE
-    )
-  }
 
   print("Returning Moire object")
   return(moire_object)
@@ -559,6 +598,22 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
 
 # Main-----------------------------------------------------------------
 
+# first parse options and check for required 
+parser = OptionParser(option_list = opts)
+arg <- parse_args(parser)
+# Arguments used for development
+if (interactive()) {
+  arg$allele_table <- "../../data/example2_allele_table.tsv"
+  arg$coi_summary <- "coi_summary.tsv"
+  arg$he_summary <- "he_summary.tsv"
+  arg$allele_freq_summary <- "allele_freq_summary.tsv"
+  arg$relatedness_summary <- "relatedness_summary.tsv"
+  arg$effective_coi_summary <- "effective_coi_summary.tsv"
+}
+
+# check for required allele_table input 
+checkOptparseRequiredArgsThrow(parser, arg, c("allele_table"))
+
 # Create Moire object -------------------------------------------------
 moire_object <- create_moire_input(arg$allele_table,
   arg$allow_relatedness,
@@ -589,4 +644,11 @@ moire_results <- run_moire(moire_object)
 
 # Generate summaries
 summarize_and_write_results(moire_object, moire_results, arg$coi_summary, arg$he_summary, arg$allele_freq_summary, arg$relatedness_summary, arg$effective_coi_summary)
+
+
+# optionally write out mcmc results 
+if(!is.null(arg$mcmc_results_output)){
+  saveRDS(moire_results, arg$mcmc_results_output)
+}
+
 
