@@ -50,9 +50,9 @@ group of loci. Briefly, it takes the following steps:
 1.  Filter input loci data to the loci of interest in each group
 2.  Determine unambiguous phased genotypes from the data by:
     -   Determining samples with only a single heterozygous locus, and
-        combining all variants at that site\
+        combining all variants at that site
     -   Filtering all loci to a within sample frequency (default is 0.70
-        and can be changed with --wsaf_cut_off) and if all loci have 1
+        and can be changed with `--wsaf_cut_off`) and if all loci have 1
         called allele then adding this as a phased multilocus haplotype
 
 ## Script Usage {#script-usage}
@@ -75,7 +75,9 @@ Options:
         Path to write an output TSV file containing prevalence and frequency estimates for all variants in the data
 
     --recalc_single_locus_output_path=RECALC_SINGLE_LOCUS_OUTPUT_PATH
-        An optional output for the re-calculated single locus frequences/prevalences from the multilocus, can be helpful for checking if the multilocus is capturing well all available variants
+        An optional output for the re-calculated single locus 
+        frequencies/prevalences from the multilocus, can be helpful for checking 
+        if the multilocus is capturing well all available variants
 
     --method=METHOD
         Method to use for estimating allele frequency. Options are: wsaf_prop (frequencies are weighted by their within-sample-allele-frequency, no allele_counts will be exported in this case), presence_absence (simply count by how many times each allele appears). Default: wsaf_prop
@@ -108,5 +110,5 @@ Rscript scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
         --aa_table data/example_amino_acid_calls.tsv \
         --loci_groups_input data/example_loci_groups.tsv\
         --output_path mlafp.tsv \
-        --recalc_single_locus_output_path aa_sl_from_ml.tsv"
+        --recalc_single_locus_output_path aa_sl_from_ml.tsv
 ```

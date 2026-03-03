@@ -196,7 +196,7 @@ create_loci_group_input <- function(loci_groups_path) {
 #'
 #' @param multilocus_calls A table of 3 columns, group_id, specimen_id, and variant (in variantstring format)
 #'
-#' @returns summarized per group, single locus freq/prev recalculated from the multilocus variant calls 
+#' @return summarized per group, single locus freq/prev recalculated from the multilocus variant calls 
 #' @export
 #'
 #' @examples
@@ -255,7 +255,7 @@ generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop <-function(mult
 #'
 #' @param multilocus_calls A table of 3 columns, group_id, specimen_id, and variant (in variantstring format)
 #'
-#' @returns summarized per group, single locus freq/prev recalculated from the multilocus variant calls 
+#' @return summarized per group, single locus freq/prev recalculated from the multilocus variant calls 
 #' @export
 #'
 #' @examples
@@ -312,7 +312,7 @@ generate_single_locus_prev_freq_from_multilocus_groups_presence_absence <-functi
 #'
 #' @param multilocus_calls - a table with columns specimen_id, variant, wsaf 
 #'
-#' @returns a tibble with freq and prev calculated 
+#' @return a tibble with freq and prev calculated 
 #' @export
 #'
 calculate_multilocus_af_prev_wsaf_prop<-function(multilocus_calls){
@@ -354,7 +354,7 @@ calculate_multilocus_af_prev_wsaf_prop<-function(multilocus_calls){
 #'
 #' @param multilocus_calls - a table with columns specimen_id, variant 
 #'
-#' @returns a tibble with freq and prev calculated 
+#' @return a tibble with freq and prev calculated 
 #' @export
 #'
 calculate_multilocus_af_prev_presence_absence<-function(multilocus_calls){
@@ -565,7 +565,6 @@ if(!is.null(args$recalc_single_locus_output_path)){
   # these re-calculated frequencies can serve as a sanity check against the single locus freqs/prevs calculated directly
   # from the data, for example if some allele frequencies aren't present in the re-calcuated calls but are in the direct calculations 
   # then the multi-locus processing failed to capture any multi-locus haplotypes with that allele and is not capture the full data 
-  slaf_from_ml = 
   slaf_from_ml <- switch(
     args$method,
     wsaf_prop = generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop(all_aa_table_group_filt_final),
