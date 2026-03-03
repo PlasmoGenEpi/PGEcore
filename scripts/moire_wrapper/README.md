@@ -19,42 +19,13 @@ Within the [moire website](https://eppicenter.github.io/moire/articles/mcmc_demo
 
 ## Script Usage
 
-The script can be run using the following command and default parameters
-
 ```
-Rscript moire_wrapper.R --allele_table <allele_table.tsv>
-```
+# Basic usage
+Rscript scripts/moire_wrapper/moire_wrapper.R \
+    --allele_table data/example2_allele_table.tsv
 
-Running the with all available parameters:
-
+# Store MCMC results to be able to check convergence
+Rscript scripts/moire_wrapper/moire_wrapper.R \
+    --allele_table data/example2_allele_table.tsv \
+    --mcmc_results_output mcmc_results.rds
 ```
-Rscript Moire_wrapper.R --allele_table <allele_table.tsv> \
-  --allow_relatedness TRUE \
-  --burnin 10000 \
-  --samples_per_chain 1000 \
-  --verbose FALSE \
-  --eps_pos_alpha 1 \
-  --eps_pos_beta 1 \
-  --eps_neg_alpha 1 \
-  --eps_neg_beta 1 \
-  --r_alpha 1 \
-  --r_beta 1 \
-  --mean_coi_shape 0.1 \
-  --mean_coi_scale 10 \
-  --max_eps_pos 2 \
-  --max_eps_neg 2 \
-  --record_latent_genotypes FALSE \
-  --num_chains 1 \
-  --num_cores 1 \
-  --pt_chains 1 \
-  --pt_grad 1 \
-  --pt_num_threads 1 \
-  --adapt_temp FALSE \
-  --max_runtime Inf \
-  --coi_summary <coi_summary.tsv> \
-  --he_summary <he_summary.tsv> \
-  --allele_freq_summary <allele_freq_summary.tsv> \
-  --relatedness_summary <relatedness_summary.tsv> \
-  --effective_coi_summary <effective_coi_summary.tsv>
-```
-

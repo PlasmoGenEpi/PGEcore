@@ -270,7 +270,6 @@ opts <- list(
   ),
   make_option(
     "--mcmc_results_output",
-    default = "",
     help = str_c(
       "Optionally can export the full results of moire, which can be helpful for debugging or quality assurance (e.g. checking if MCMC properly converged)"
     )
