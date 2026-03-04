@@ -49,14 +49,14 @@ credible interval of the COI estimate. Note these columns will be NA if the
 # Basic usage
 scripts/snpslice_wrapper/snpslice_wrapper.R \
     --allele_table data/example_amino_acid_calls.tsv \
-    --loci_groups data/example_loci_groups.tsv \
+    --loci_groups_input data/example_loci_groups.tsv \
     --mlaf_output mlaf.tsv \
     --coi_output coi.tsv
 
 # Use MCMC results for estimating MLAF and COI
 scripts/snpslice_wrapper/snpslice_wrapper.R \
     --allele_table data/example_amino_acid_calls.tsv \
-    --loci_groups data/example_loci_groups.tsv \
+    --loci_groups_input data/example_loci_groups.tsv \
     --mlaf_output mlaf.tsv \
     --coi_output coi.tsv \
     --use_mcmc_for_af_and_coi

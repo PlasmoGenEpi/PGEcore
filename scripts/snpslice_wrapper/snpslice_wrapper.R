@@ -165,7 +165,8 @@ opts <- list(
     )
   )
 )
-arg <- parse_args(OptionParser(option_list = opts))
+parser <- OptionParser(option_list = opts)
+arg <- parse_args(parser)
 # Arguments used for development
 if (interactive()) {
   arg$allele_table <- "../../data/example2_amino_acid_calls.tsv"
@@ -179,7 +180,22 @@ if (interactive()) {
   arg$coi_output <- "../../coi.tsv"
 }
 
-#' Read allele table into a tibble
+#' Check for required arguments, and report which are missing 
+#'
+#' @param parser the parser created from optparse
+#' @param arg the parsed arguments from optparse
+#' @param required_args the required arguments (without the --)
+#'
+#' @return returns void if all required arguments
+checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
+  missing <- setdiff(required_args, names(arg))
+  if(length(missing) > 0){
+    missing = paste0("--", missing)
+    print_help(parser)
+    stop(paste0("missing the following arguments: ", paste0(missing, collapse = ", ")))
+  }
+}
+
 #'
 #' Read the allele table TSV into a tibble
 #'
@@ -412,6 +428,14 @@ prepare_af_output <- function(
 
 }
 
+# Check for required arguments -----------------------------------------
+required_arguments = c(
+  "allele_table", 
+  "loci_groups_input", 
+  "mlaf_output", 
+  "coi_output"
+)
+checkOptparseRequiredArgsThrow(parser, arg, required_arguments)
 
 # Read inputs ----------------------------------------------------------
 allele_table <- create_allele_table_input(
