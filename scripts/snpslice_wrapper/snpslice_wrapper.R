@@ -428,6 +428,37 @@ prepare_af_output <- function(
 
 }
 
+#' Calculate and format COI from SNP-Slice results
+#'
+#' This function takes a snp.slicer results object, calculates COI from 
+#' this object, and formats the output into a tibble suitable for 
+#' writing to disk.
+#'
+#' @param snp_slice_res A snp.slicer results object produced by 
+#'   `snp.slicer::snp_slice()`.
+#' @inheritParams create_allele_table_input
+#' @inheritParams prepare_af_output
+#'
+#' @return A tibble with a coi column and a specimen ID column with name 
+#'   matching specimen_id_col.
+prepare_coi_output <- function(
+                              snp_slice_res, 
+                              specimen_id_col, 
+                              use_mcmc) {
+  coi_tib <- snp_slice_res %>%
+    snp.slicer::calculate_individual_coi(
+      use_map = ! arg$use_mcmc_for_af_and_coi
+    ) %>%
+    select(-host_index) %>%
+    rename(!! arg$specimen_id_col := host_id, coi = coi_estimate)
+  if (! arg$use_mcmc_for_af_and_coi) {
+    coi_tib <- coi_tib %>%
+      select(-coi_sd, -coi_lower, -coi_upper)
+  }
+
+  return(coi_tib)
+}
+
 # Check for required arguments -----------------------------------------
 required_arguments = c(
   "allele_table", 
@@ -476,9 +507,5 @@ snpslice_res %>%
 
 # Calculate and write COI ----------------------------------------------
 snpslice_res %>%
-  snp.slicer::calculate_individual_coi(
-    use_map = ! arg$use_mcmc_for_af_and_coi
-  ) %>%
-  select(-host_index) %>%
-  rename(!! arg$specimen_id_col := host_id, coi = coi_estimate) %>%
+  prepare_coi_output(arg$specimen_id_col, arg$use_mcmc_for_af_and_coi) %>%
   write_tsv(arg$coi_output)

@@ -37,11 +37,13 @@ the argument documentation in the script.
 
 The MLAF output will be a TSV with group\_id, variant, and freq columns. If the 
 `--use_mcmc_for_af_and_coi` flag was not used, it will also have allele\_count 
-and allele\_total columns. The COI output will be a TSV with a column matching 
-`--specimen_id_col` and coi, coi\_sd, coi\_lower, and coi\_upper columns. The 
-latter three are the standard deviation and lower and upper bounds of the 95% 
-credible interval of the COI estimate. Note these columns will be NA if the 
-`--use_mcmc_for_af_and_coi` flag is not used.
+and allele\_total columns.
+
+The COI output will be a TSV with a column matching `--specimen_id_col` and a 
+coi column. If the `--use_mcmc_for_af_and_coi` flag was used, it will also have 
+coi\_sd, coi\_lower, and coi\_upper columns. The latter three are the standard 
+deviation and lower and upper bounds of the 95% credible interval of the COI 
+estimate.
 
 ## Script Usage
 
