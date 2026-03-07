@@ -211,7 +211,6 @@ checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
   }
 }
 
-#'
 #' Read the allele table TSV into a tibble
 #'
 #' @param allele_table_path Path to the TSV file containing the allele 
@@ -401,6 +400,12 @@ prepare_af_output <- function(
     prep_variantstring_input <- function(allele, loci_names) {
       aa <- str_split_1(allele, "\\|")
       tibble(gene_pos = loci_names, aa = aa) %>%
+        # SNP-Slice outputs frequencies for some haplotypes that 
+        # include ?s to indicate unknown alleles at that position. 
+        # There is no clear way to format these as a variant string, so 
+        # instead these positions are omitted and the smaller, 
+        # unambiguous haplotype is reported.
+        filter(aa != "?") %>%
         separate_wider_delim(gene_pos, ":", names = c("gene", "pos")) %>%
         mutate(pos = as.integer(pos)) %>%
         mutate(n_aa = 1, het = FALSE, phased = TRUE, read_count = NA) %>%
