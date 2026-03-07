@@ -82,6 +82,17 @@ opts <- list(
     )
   ), 
   make_option(
+    "--loci_limit", 
+    type = "integer", 
+    help = str_c(
+      "To prevent SNP-Slice from running for a long time on large datasets, ", 
+      "the input loci can be subsetted to contain the loci of interest in ", 
+      "loci_groups_input and additional random loci, up to the limit ", 
+      "specified here. Using more loci will improve COI estimation, but ", 
+      "increase computation time. If not provided, all loci will be used."
+    )
+  ), 
+  make_option(
     "--model", 
     default = "negative_binomial", 
     help = str_c(
@@ -174,11 +185,15 @@ if (interactive()) {
   arg$target_id_col <- "aa_locus"
   arg$target_value_col <- "aa"
   arg$target_count_col <- "read_count"
+  arg$loci_limit <- 24
   arg$n_mcmc <- 100
+  arg$verbose <- TRUE
   arg$use_mcmc_for_af_and_coi <- FALSE
   arg$mlaf_output <- "../../mlaf.tsv"
   arg$coi_output <- "../../coi.tsv"
 }
+
+set.seed(arg$seed)
 
 #' Check for required arguments, and report which are missing 
 #'
@@ -319,25 +334,41 @@ create_loci_group_input <- function(
   # Convert to list format
   loci_groups <- split(loci_groups$target_id, loci_groups$group_id)
 
-  # Check for non-biallelic loci
-  loci_groups_copy <- loci_groups
-  for (lg in names(loci_groups_copy)) {
+  # Check for missing and non-biallelic loci
+  for (lg in names(loci_groups)) {
+    missing_trgs <- setdiff(loci_groups[[lg]], allele_table$target_id)
+    if (length(missing_trgs) > 0) {
+      warning(
+        "The target(s) ", 
+        str_c(missing_trgs, collapse = ", "), 
+        " in the group ", 
+        lg, 
+        " are missing and will be excluded.", 
+        call. = FALSE
+      )
+    }
     non_biallelic_trgs <- allele_table %>%
-      filter(target_id %in% loci_groups_copy[[lg]]) %>%
+      filter(target_id %in% loci_groups[[lg]]) %>%
       group_by(target_id) %>%
       filter(n_distinct(target_value) > 2) %$%
       unique(target_id)
     if (length(non_biallelic_trgs > 0)) {
       warning(
-        "The targets ", 
+        "The target(s) ", 
         str_c(non_biallelic_trgs, collapse = ", "), 
         " in the group ", 
         lg, 
-        " have more than two alleles and this group will be excluded.", 
+        " have more than two alleles and will be excluded.", 
         call. = FALSE
       )
-      loci_groups[[lg]] <- NULL
     }
+    loci_groups[[lg]] <- setdiff(
+      loci_groups[[lg]], 
+      c(missing_trgs, non_biallelic_trgs)
+    )
+  }
+  if (length(unlist(loci_groups)) == 0) {
+    stop("The data is missing all loci in loci groups", call. = FALSE)
   }
 
   return(loci_groups)
@@ -481,6 +512,23 @@ loci_groups <- create_loci_group_input(
   allele_table, 
   target_id_col = arg$target_id_col
 )
+
+# Subset loci if loci_limit provided -----------------------------------
+if (! is.null(arg$loci_limit)) {
+  if (n_distinct(allele_table$target_id) > arg$loci_limit) {
+    # Loci in loci groups that must be included
+    loci_oi <- unique(unlist(loci_groups))
+    # Randomly sample additional loci to reach limit
+    n_loci_select <- arg$loci_limit - length(loci_oi)
+    loci_random <- sample(
+      setdiff(allele_table$target_id, loci_oi), 
+      n_loci_select
+    )
+    loci_selected <- c(loci_oi, loci_random)
+    allele_table <- allele_table %>%
+      filter(target_id %in% loci_selected)
+  }
+}
 
 # Run SNP-Slice --------------------------------------------------------
 snpslice_res <- snp.slicer::snp_slice(
