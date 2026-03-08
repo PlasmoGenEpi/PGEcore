@@ -185,10 +185,10 @@ if (interactive()) {
   arg$target_id_col <- "aa_locus"
   arg$target_value_col <- "aa"
   arg$target_count_col <- "read_count"
-  arg$loci_limit <- 24
+  arg$loci_limit <- 20
   arg$n_mcmc <- 100
   arg$verbose <- TRUE
-  arg$use_mcmc_for_af_and_coi <- FALSE
+  arg$use_mcmc_for_af_and_coi <- TRUE
   arg$mlaf_output <- "../../mlaf.tsv"
   arg$coi_output <- "../../coi.tsv"
 }
@@ -425,6 +425,10 @@ prepare_af_output <- function(
           loci_groups[[group_id]]
         )
       ) %>%
+      # After the filtering in prep_variantstring_input(), it is 
+      # possible allele will be an empty string if all of the positions 
+      # were unknown (i.e., a "?")
+      filter(map_lgl(allele, ~nrow(.x) > 0)) %>%
       mutate(allele = variantstring::long_to_variant(allele))
   }
 
