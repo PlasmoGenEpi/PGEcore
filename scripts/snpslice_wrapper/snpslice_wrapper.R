@@ -66,7 +66,7 @@ opts <- list(
   ), 
   make_option(
     "--target_count_col", 
-    default = "read_count", 
+    default = "reads", 
     help = 
       str_c(
         "String giving the name of the target count column (e.g., the read ", 
@@ -173,7 +173,7 @@ if (interactive()) {
   arg$loci_groups_input <- "../../data/example_loci_groups.tsv"
   arg$target_name_col <- "aa_locus"
   arg$target_value_col <- "aa"
-  arg$target_count_col <- "read_count"
+  arg$target_count_col <- "reads"
   arg$n_mcmc <- 100
   arg$use_mcmc_for_af_and_coi <- FALSE
   arg$mlaf_output <- "../../mlaf.tsv"
@@ -216,7 +216,7 @@ create_allele_table_input <- function(
                                       specimen_name_col = "specimen_name", 
                                       target_name_col = "target_name", 
                                       target_value_col = "aa", 
-                                      target_count_col = "read_count") {
+                                      target_count_col = "reads") {
 
   # Read in table
   allele_table <- read_tsv(

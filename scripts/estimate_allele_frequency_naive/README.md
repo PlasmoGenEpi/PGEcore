@@ -16,10 +16,10 @@ Allele frequency is estimated in two ways:
 ## Arguments
 
 `--aa_calls`: A TSV with columns for specimen_name, gene_id, aa_position, aa, and 
-read_count.
+reads.
 
 `--mh_calls`: A TSV with columns for specimen_name, target_name, seq, and 
-read_count.
+reads.
 
 `--method`: A string containing either "read_count_prop" or "presence_absence".
 

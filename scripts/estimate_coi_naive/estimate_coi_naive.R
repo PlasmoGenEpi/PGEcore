@@ -14,7 +14,7 @@ opts <- list(
     type = "character",
     help = str_c(
       "Path to a TSV file containing allele calls, with the columns: specimen_name, ", 
-      "target_name, read_count, seq"
+      "target_name, reads, seq"
     )
   ), 
   make_option(
@@ -72,7 +72,7 @@ opts <- list(
 #' of naturally accounting for the number of loci.
 #'
 #' @param input_path Path to a TSV file with allele calls. It should 
-#'   have columns for specimen_name, target_name, read_count, seq.
+#'   have columns for specimen_name, target_name, reads, seq.
 #' @param method Which method to use. One of `integer_method` or `quantile_method`.
 #' @param integer_threshold Which sorted value to use as the COI estimate. Only
 #'   used if `method = integer_method`.
@@ -98,18 +98,18 @@ run_estimate_coi_naive <- function(input_path,
   # Read allele calls from file
   df_alleles <- read_tsv(
     input_path, 
-    col_types = cols(.default = col_character(), read_count = col_integer()), 
+    col_types = cols(.default = col_character(), reads = col_integer()), 
     progress = FALSE
   )
   
   # Validate input format
   rules <- validate::validator(is.character(specimen_name),
                                is.character(target_name),
-                               is.numeric(read_count) & read_count == as.integer(read_count) & read_count > 0,
+                               is.numeric(reads) & reads == as.integer(reads) & reads > 0,
                                is.character(seq),
                                ! is.na(specimen_name),
                                ! is.na(target_name),
-                               ! is.na(read_count),
+                               ! is.na(reads),
                                ! is.na(seq)
                                )
   df_fails <- validate::confront(df_alleles, rules, raise = "all") |>

@@ -86,12 +86,12 @@ A tab-separated values (TSV) file with the following columns:
 |--------|------|-------------|
 | `specimen_name` | String | Unique identifier for each specimen |
 | `snp_name` | String | Unique identifier for each genomic target/locus |
-| `read_count` | Integer | Number of reads supporting this allele |
+| `reads` | Integer | Number of reads supporting this allele |
 | `seq_base` | String | Nucleotide base (A, C, G, T) |
 
 **Example SNP data:**
 ```tsv
-specimen_name	snp_name	read_count	seq_base
+specimen_name	snp_name	reads	seq_base
 sample_001	locus_001	150	A
 sample_001	locus_001	50	T
 sample_001	locus_002	200	C

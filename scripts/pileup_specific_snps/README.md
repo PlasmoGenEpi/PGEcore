@@ -19,7 +19,7 @@ Usage: ./pileup_specific_snps.R [options]
 
 Options:
 	--allele_table=ALLELE_TABLE
-		TSV containing the columns: specimen_name, target_name, read_count, seq
+		TSV containing the columns: specimen_name, target_name, reads, seq
 
 	--ref_bed=REF_BED
 		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_name, length, strand, ref_seq
@@ -53,7 +53,7 @@ Four required options: `--allele_table`, `--ref_bed`, `--snps_of_interest`, `--o
 
 Table of microhaplotype calls, needs 4 columns named: 
 
-| specimen_name | target_name | read_count | seq |  
+| specimen_name | target_name | reads | seq |  
 | --- | --- | --- | --- |  
 | Laos2017-01 | Pf3D7\_01\_v3-0181544-0181729 | 4648.0 |   TTTCATTATTGTTTTCATTCTTTTTTTAACGAAAACTATTCATCTCAAAAATATAAGATATTTTATATGACGAATGCCATTGTATTTTTTGTTACGTAAAACCTGACTTCTTCAGGGAAAACACATGCGCATTTTCACCAATTTTTGCCTAAGCTTATTATAAAAAGTATATTAAATGTATGACT |  
 |Laos2017-01|Pf3D7\_01\_v3-0528889-0529073|5032.0|  ATTTGATTCTTTTTAATGAAAAAGAAGCTAAAGATATGTCAGACGATATAATTTCCCAACAAAAACGTTATTGCTCTACCAATATTCATAGTAATTATAATAATAAAATATGTATATGTAAAAATAAGCGACATCATAACAAAAGAGGGAAAGGAATAAAGCATCCTGACATACATCAAAAGGA|
@@ -102,7 +102,7 @@ This has the snps calls per loci per seq per sample, this all calls even if the 
 
 *  specimen_name - The name of the specimen/sample from the allele table  
 *  target_name - The name of the target  
-*  read_count - The read count for this sample for this SNP  
+*  reads - The read count for this sample for this SNP  
 *  seq - the microhaplotype sequence  
 *  chrom - the chromosome of the SNP
 *  pos - the chromosome position of the SNP (0-based)  

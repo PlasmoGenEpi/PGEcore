@@ -1,4 +1,4 @@
-specimen_name	target_name	gene	aa_locus	gene_id	aa_position	ref_aa	aa	best_target_name	covered_by_target_names	read_count
+specimen_name	target_name	gene	aa_locus	gene_id	aa_position	ref_aa	aa	best_target_name	covered_by_target_names	reads
 Laos2017-01	Pf3D7_04_v3-0748128-0748326	dhfr-ts	PF3D7_0417200.1:16	PF3D7_0417200.1	16	A	A	Pf3D7_04_v3-0748128-0748326	Pf3D7_04_v3-0748128-0748326	5721
 Laos2017-01	Pf3D7_04_v3-0748128-0748326	dhfr-ts	PF3D7_0417200.1:51	PF3D7_0417200.1	51	N	I	Pf3D7_04_v3-0748128-0748326	Pf3D7_04_v3-0748128-0748326	5721
 Laos2017-01	Pf3D7_04_v3-0748128-0748326	dhfr-ts	PF3D7_0417200.1:59	PF3D7_0417200.1	59	C	R	Pf3D7_04_v3-0748128-0748326	Pf3D7_04_v3-0748128-0748326	5721

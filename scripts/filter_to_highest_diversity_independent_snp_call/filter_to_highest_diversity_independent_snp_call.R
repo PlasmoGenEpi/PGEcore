@@ -140,7 +140,7 @@ validate_columns_types <-function(snp_table){
   # validate columns snp_table
   snp_table_rules <- validate::validator(
     is.character(specimen_name),
-    is.numeric(read_count),
+    is.numeric(reads),
     is.character(target_name), 
     is.character(ref_base),
     is.character(seq_base), 
@@ -149,7 +149,7 @@ validate_columns_types <-function(snp_table){
     is.numeric(pos),
     is.logical(is_biallelic),
     ! is.na(specimen_name), 
-    ! is.na(read_count), 
+    ! is.na(reads), 
     ! is.na(target_name), 
     ! is.na(ref_base),
     ! is.na(seq_base), 
@@ -258,7 +258,7 @@ opts <- list(
   make_option(
     "--snp_table_in", 
     help = str_c(
-      "TSV containing at least the columns: specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic"
+      "TSV containing at least the columns: specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic"
     )
   ),
   make_option(
@@ -340,7 +340,7 @@ warnings = c()
 snp_table_in = readr::read_tsv(arg$snp_table_in)
 
 # sanity check the input
-warnings = c(warnings, genWarningsMissCols(snp_table_in, c("specimen_name", "target_name", "chrom", "pos", "snp_name", "ref_base", "seq_base", "read_count", "is_biallelic"), arg$snp_table_in))
+warnings = c(warnings, genWarningsMissCols(snp_table_in, c("specimen_name", "target_name", "chrom", "pos", "snp_name", "ref_base", "seq_base", "reads", "is_biallelic"), arg$snp_table_in))
 if(length(warnings) > 0){
   stop(paste0("\n", paste0(warnings, collapse = "\n")) )
 }

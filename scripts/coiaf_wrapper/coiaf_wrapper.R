@@ -25,7 +25,7 @@
 #   SNP data (required): TSV file with columns:
 #     - specimen_name: The specimen ID
 #     - snp_name: The SNP name
-#     - read_count: The read count
+#     - reads: The read count
 #     - seq_base: The sequence base (A, C, G, T)
 #
 #   PLMAF data (optional): TSV file with columns:
@@ -59,7 +59,7 @@ suppressPackageStartupMessages({
 #' @param snp_data A data frame with the following columns:
 #' - specimen_name: The specimen ID
 #' - snp_name: The SNP name
-#' - read_count: The read count
+#' - reads: The read count
 #' - seq_base: the sequence base (A, C, G, T)
 #' @param plmaf An optional data frame with the following columns:
 #' - snp_name: The SNP name
@@ -75,9 +75,9 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
   complete_snp_data <- snp_data |>
     tidyr::complete(
       specimen_name, tidyr::nesting(snp_name, seq_base),
-      fill = list(read_count = 0)
+      fill = list(reads = 0)
     ) |>
-    dplyr::select(specimen_name, snp_name, seq_base, read_count) |>
+    dplyr::select(specimen_name, snp_name, seq_base, reads) |>
     dplyr::group_by(specimen_name, snp_name) |>
     dplyr::mutate(n_snps = dplyr::n())
 
@@ -96,10 +96,10 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
   # Process SNP data to calculate within-sample minor allele frequencies
   processed <- complete_snp_data |>
     dplyr::group_by(specimen_name, snp_name) |>
-    dplyr::mutate(coverage = sum(read_count)) |>
+    dplyr::mutate(coverage = sum(reads)) |>
     dplyr::ungroup() |>
-    dplyr::mutate(wsmaf = read_count / coverage) |>
-    dplyr::select(specimen_name, snp_name, seq_base, wsmaf, read_count)
+    dplyr::mutate(wsmaf = reads / coverage) |>
+    dplyr::select(specimen_name, snp_name, seq_base, wsmaf, reads)
     
 
   # Calculate population-level minor allele frequencies if not provided
@@ -107,9 +107,9 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
     cat("Calculating population-level minor allele frequencies...\n")
     plmaf <- complete_snp_data |>
       dplyr::group_by(snp_name, seq_base) |>
-      dplyr::summarize(read_count = sum(read_count), .groups = "drop") |>
+      dplyr::summarize(reads = sum(reads), .groups = "drop") |>
       dplyr::group_by(snp_name) |>
-      dplyr::mutate(plmaf = read_count / sum(read_count)) |>
+      dplyr::mutate(plmaf = reads / sum(reads)) |>
       dplyr::arrange(plmaf, .by_group = TRUE) |>
       dplyr::slice(1) |>
       dplyr::ungroup() |>
@@ -139,12 +139,12 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
     dplyr::group_by(specimen_name) |>
     dplyr::summarize(
       coi_freq = coiaf::optimize_coi(
-        tibble::tibble(wsmaf, plmaf, coverage = read_count),
+        tibble::tibble(wsmaf, plmaf, coverage = reads),
         data_type = "real", coi_method = "frequency",
         seq_error = seq_error, max_coi = max_coi
       ),
       coi_variant = coiaf::optimize_coi(
-        tibble::tibble(wsmaf, plmaf, coverage = read_count),
+        tibble::tibble(wsmaf, plmaf, coverage = reads),
         data_type = "real", coi_method = "variant",
         seq_error = seq_error, max_coi = max_coi
       ),
@@ -257,7 +257,7 @@ main <- function() {
     # Read SNP data
     cat("Reading SNP data...\n")
     snp_data <- readr::read_tsv(opt$snp_data, show_col_types = FALSE)
-    validate_data(snp_data, c("specimen_name", "snp_name", "read_count", "seq_base"), "SNP data")
+    validate_data(snp_data, c("specimen_name", "snp_name", "reads", "seq_base"), "SNP data")
     
     # Read PLMAF data if provided
     plmaf_data <- NULL

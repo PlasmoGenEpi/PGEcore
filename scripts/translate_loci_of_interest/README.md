@@ -28,7 +28,7 @@ install.packages("tibble", "dplyr", "stringr", "readr", "optparse")
 ```
 Options:
 	--allele_table=ALLELE_TABLE
-		TSV containing the columns: specimen_name, target_name, read_count, seq
+		TSV containing the columns: specimen_name, target_name, reads, seq
 
 	--ref_bed=REF_BED
 		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target\_id, length, strand, ref\_seq
@@ -61,7 +61,7 @@ Four required options: `--allele_table`, `--ref_bed`, `--loci_of_interest`, `--o
 
 Table of microhaplotype calls, needs 4 columns named: 
 
-| specimen_name | target_name | read_count | seq |  
+| specimen_name | target_name | reads | seq |  
 | --- | --- | --- | --- |  
 | Laos2017-01 | Pf3D7\_01\_v3-0181544-0181729 | 4648.0 |   TTTCATTATTGTTTTCATTCTTTTTTTAACGAAAACTATTCATCTCAAAAATATAAGATATTTTATATGACGAATGCCATTGTATTTTTTGTTACGTAAAACCTGACTTCTTCAGGGAAAACACATGCGCATTTTCACCAATTTTTGCCTAAGCTTATTATAAAAAGTATATTAAATGTATGACT |  
 |Laos2017-01|Pf3D7\_01\_v3-0528889-0529073|5032.0|  ATTTGATTCTTTTTAATGAAAAAGAAGCTAAAGATATGTCAGACGATATAATTTCCCAACAAAAACGTTATTGCTCTACCAATATTCATAGTAATTATAATAATAAAATATGTATATGTAAAAATAAGCGACATCATAACAAAAGAGGGAAAGGAATAAAGCATCCTGACATACATCAAAAGGA|

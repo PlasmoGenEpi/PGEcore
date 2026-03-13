@@ -18,7 +18,7 @@ opts <- list(
     type = "character",
     help = str_c(
       "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ", 
-      "gene, pos, read_count, aa"
+      "gene, pos, reads, aa"
     )
   ), 
   make_option(
@@ -97,12 +97,12 @@ checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
 #' tibble with this information.
 #'
 #' @param aa_table Path to a TSV file with amino acid calls. It should have
-#'   columns for specimen_name, gene, pos, read_count, aa.
+#'   columns for specimen_name, gene, pos, reads, aa.
 #' 
 #' @import dplyr
 #' 
 #' @return Tibble of amino acid calls with specimen_name, gene, pos, 
-#'   read_count, aa, and n_aa columns.
+#'   reads, aa, and n_aa columns.
 create_aa_table_input <- function(aa_table) {
   
   # Check input arguments
@@ -115,13 +115,13 @@ create_aa_table_input <- function(aa_table) {
     is.character(gene), 
     is.character(gene_id),
     is.integer(aa_position), 
-    is.integer(read_count), 
+    is.integer(reads), 
     is.character(aa), 
     ! is.na(specimen_name), 
     ! is.na(gene), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
-    ! is.na(read_count), 
+    ! is.na(reads), 
     ! is.na(aa)
   )
   fails <- validate::confront(df_aa, rules, raise = "all") %>%
@@ -453,8 +453,8 @@ for(loci_group in names(loci_groups_split)){
     aa_table_group_only_1_variable_filt_variable = aa_table_group_only_1_variable %>% 
       filter(n_aa != 1) %>% 
       group_by(specimen_name, gene, gene_id, aa_position) %>% 
-      mutate(total_read_count = sum(read_count)) %>%
-      mutate(wsaf = read_count/total_read_count) %>% 
+      mutate(total_reads = sum(reads)) %>%
+      mutate(wsaf = reads/total_reads) %>% 
       group_by(specimen_name) %>% 
       mutate(within_sample_hap = row_number())
     
@@ -508,8 +508,8 @@ for(loci_group in names(loci_groups_split)){
   # this filter will also capture samples that are completely monoclonal 
   aa_table_group_filt_dominant = aa_table_group_filt %>% 
     group_by(specimen_name, gene, gene_id, aa_position) %>% 
-    mutate(total_read_count = sum(read_count)) %>%
-    mutate(wsaf = read_count/total_read_count) %>% 
+    mutate(total_reads = sum(reads)) %>%
+    mutate(wsaf = reads/total_reads) %>% 
     filter(wsaf >= args$wsaf_cut_off) %>% 
     group_by(specimen_name) %>% 
     mutate(loci_called = n_distinct(paste0(gene_id, "-", aa_position))) %>% 

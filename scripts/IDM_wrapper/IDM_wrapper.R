@@ -735,7 +735,7 @@ get_optparse_args <- function() {
       default = "",
       help = str_c(
         "TSV containing allele calls, with the columns: specimen_name, ",
-        "target_name, seq, read_count. ",
+        "target_name, seq, reads. ",
         "Default: %default"
       )
     ),
@@ -807,7 +807,7 @@ prepare_input_4_allele_table <- function(allele_table_input) {
     allele_table_input,
     col_types = cols(
       .default = col_character(),
-      read_count = col_integer()
+      reads = col_integer()
     )
   )
 
@@ -816,11 +816,11 @@ prepare_input_4_allele_table <- function(allele_table_input) {
     is.character(specimen_name),
     is.character(target_name),
     is.character(seq),
-    is.integer(read_count),
+    is.integer(reads),
     !is.na(specimen_name),
     !is.na(target_name),
     !is.na(seq),
-    !is.na(read_count)
+    !is.na(reads)
   )
   fails <- validate::confront(df, rules, raise = "all") %>%
     validate::summary() %>%

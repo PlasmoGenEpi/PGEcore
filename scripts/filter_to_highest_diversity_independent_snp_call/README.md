@@ -19,7 +19,7 @@ Usage: ./filter_to_highest_diversity_independent_snp_call.R [options]
 
 Options:
 	--snp_table_in=SNP_TABLE_IN
-		TSV containing at least the columns: specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic
+		TSV containing at least the columns: specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic
 
 	--snp_table_out=SNP_TABLE_OUT
 		the output filename path for the output filtered file
@@ -50,7 +50,7 @@ Two required options of `--snp_table_in` and `--snp_table_out`. Details below fo
 
 
 ### \-\-snp_table 
-The expected input is the collapsed SNP calls from `pileup_specific_snps/pileup_specific_snps.R` though any table with columns of `specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic` will work as long as the input has only 1 call per `specimen_name` and `seq_base` (e.g. SNP calls that have the same SNPs accross different target will cause the script to throw an error). 
+The expected input is the collapsed SNP calls from `pileup_specific_snps/pileup_specific_snps.R` though any table with columns of `specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic` will work as long as the input has only 1 call per `specimen_name` and `seq_base` (e.g. SNP calls that have the same SNPs accross different target will cause the script to throw an error). 
 
 #### Example
 

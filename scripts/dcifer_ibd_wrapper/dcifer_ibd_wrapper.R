@@ -22,7 +22,7 @@ opts <- list(
     "--allele_table", 
     help = str_c(
       "TSV containing alleles, with the columns: specimen_name, target_name, ", 
-      "read_count, and seq. Required."
+      "reads, and seq. Required."
     )
   ), 
   make_option(

@@ -375,31 +375,31 @@ collapse_allele_table <- function(allele_table_to_collpase, collapse_calls_by_su
   if(collapse_calls_by_summing){
     allele_table_out_collapsed = allele_table_to_collpase |> 
       group_by(specimen_name, chrom, pos, snp_name, ref_base, seq_base) |> 
-      summarise(read_count = sum(read_count), 
+      summarise(reads = sum(reads), 
                 target_name = paste0(sort(target_name), collapse = ","))
   } else { 
     allele_table_out_winnerTarget = allele_table_to_collpase |> 
       group_by(specimen_name, chrom, pos, snp_name, ref_base, target_name) |> 
-      summarise(read_count = sum(read_count)) |> 
-      arrange(desc(read_count)) |> 
-      mutate(read_count_rank = row_number(), 
+      summarise(reads = sum(reads)) |> 
+      arrange(desc(reads)) |> 
+      mutate(reads_rank = row_number(), 
              covered_by_target_names = paste0(sort(target_name), collapse = ",")) |> 
-      filter(read_count_rank == 1) |> 
+      filter(reads_rank == 1) |> 
       ungroup() |> 
-      select(-read_count_rank) |> 
+      select(-reads_rank) |> 
       dplyr::rename(best_target_name = target_name)
     
     allele_table_out_collapsed = allele_table_to_collpase |> 
       left_join(allele_table_out_winnerTarget |> 
                   ungroup() |> 
-                  select(-read_count), 
+                  select(-reads), 
                 by = c("specimen_name", "chrom", "pos", "snp_name", "ref_base")) |> 
       filter(target_name == best_target_name) |> 
       select(-seq)
     
     allele_table_out_collapsed = allele_table_out_collapsed |> 
       group_by(specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, best_target_name, covered_by_target_names) |> 
-      summarise(read_count = sum(read_count))
+      summarise(reads = sum(reads))
   }
   
   return(allele_table_out_collapsed)
@@ -411,7 +411,7 @@ opts <- list(
   make_option(
     "--allele_table", 
     help = str_c(
-      "TSV containing the columns: specimen_name, target_name, read_count, seq"
+      "TSV containing the columns: specimen_name, target_name, reads, seq"
     )
   ),
   make_option(
@@ -530,11 +530,11 @@ validate_columns_types <-function(ref_bed, snps_of_interest, allele_table){
   # validate columns allele_table
   allele_table_rules <- validate::validator(
     is.character(specimen_name),
-    is.numeric(read_count),
+    is.numeric(reads),
     is.character(target_name), 
     is.character(seq),
     ! is.na(specimen_name), 
-    ! is.na(read_count), 
+    ! is.na(reads), 
     ! is.na(target_name), 
     ! is.na(seq)
   )
@@ -579,7 +579,7 @@ run_pileup_specific_snps <-function(){
   
   # read in allele table for the microhaplotype data 
   allele_table = readr::read_tsv(arg$allele_table)
-  warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_name","target_name","read_count","seq"), arg$allele_table))
+  warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_name","target_name","reads","seq"), arg$allele_table))
   if(length(warnings) > 0){
     stop(paste0("\n", paste0(warnings, collapse = "\n")) )
   }

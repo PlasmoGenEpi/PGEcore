@@ -1,3 +1,6 @@
+Rscript scripts/slaf_from_stave_mlaf/slaf_from_stave_mlaf.R --mlaf_input data/example_mlaf.tsv --output single_locus_allele_freq.tsv
+Rscript scripts/filter_biallelic_calls/filter_biallelic_calls.R --amino_acid_calls data/example2_amino_acid_calls.tsv --out biallelic.tsv
+Rscript scripts/allele_per_locus_summary/allele_per_locus_summary.R --allele_table data/example2_allele_table.tsv
 Rscript scripts/add_ref_seq_to_ref_bed_table/add_ref_seqs_with_full_genome_ref_fasta.R --ref_bed data/example_PMO_insert_locs_of_panel.bed --genome_fasta ~/Downloads/PkPfPmPoPv.fasta --out example.bed 
 Rscript scripts/add_ref_seq_to_ref_bed_table/add_ref_seqs_with_targeted_ref_fasta.R --ref_bed data/example_PMO_insert_locs_of_panel.bed --target_fasta data/example_PMO_insert_locs_of_panel_refseqs.fasta --out test_out.bed 
 Rscript scripts/translate_loci_of_interest/translate_loci_of_interest.R --allele_table data/example2_allele_table.tsv --ref_bed data/example_PMO_insert_locs_of_panel.bed --loci_of_interest data/example_principal_resistance_marker_info_table.bed --output_directory tmp_dir --overwrite_dir
@@ -7,7 +10,6 @@ Rscript scripts/snpslice_wrapper/snpslice_wrapper.R --allele_table data/example_
 Rscript scripts/pileup_specific_snps/pileup_specific_snps.R --allele_table data/example2_allele_table.tsv --ref_bed data/example_PMO_insert_locs_of_panel.bed --snps_of_interest data/MAD4HATTER_coveredSnps.bed --output_directory tmp_output --overwrite_dir
 Rscript scripts/per_locus_popgen_summary_wrapper/per_locus_tajima_d_summary_wrapper.R --allele_table data/example2_allele_table.tsv
 Rscript scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R --aa_table data/example_amino_acid_calls.tsv --loci_groups_input data/example_loci_groups.tsv --output_path mlafp.tsv 
-Rscript scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R --aa_table data/example2_amino_acid_calls.tsv --loci_groups_input data/example_loci_groups.tsv --output_path mlafp.tsv
 Rscript scripts/moire_wrapper/moire_wrapper.R --allele_table data/example2_allele_table.tsv --mcmc_results_output moire_output.tsv
 Rscript scripts/MultiLociBiallelicModel_wrapper/MultiLociBiallelicModel_wrapper.R --aa_calls data/example_amino_acid_calls.tsv --loci_group_table data/example_loci_groups.tsv --mlaf_output mlaf.tsv
 Rscript scripts/malariaem_wrapper/malariaem_wrapper.R  --allele_table data/example2_allele_table.tsv --subset_targets TRUE --target_groups data/example_target_groups.tsv --freq_output freq_out.tsv --phase_out phase_out.tsv

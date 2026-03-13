@@ -128,7 +128,7 @@ read_groups <- function(groups_path){
 #' are biallelic in the population
 #'
 #' @param input_data dataframe object containing the columns specimen_name, target_name,
-#' read_count, gene_id, aa_position, ref_aa, aa
+#' reads, gene_id, aa_position, ref_aa, aa
 #' 
 #' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){

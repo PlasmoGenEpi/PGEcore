@@ -29,7 +29,7 @@ opts <- list(
     type = "character",
     help = str_c(
       "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ", 
-      "gene, pos, read_count, aa"
+      "gene, pos, reads, aa"
     )
   ), 
   make_option(
@@ -58,12 +58,12 @@ opts <- list(
 #' tibble with this information.
 #'
 #' @param aa_table Path to a TSV file with amino acid calls. It should have
-#'   columns for specimen_name, gene, pos, read_count, aa.
+#'   columns for specimen_name, gene, pos, reads, aa.
 #' 
 #' @import dplyr
 #' 
 #' @return Tibble of amino acid calls with specimen_name, gene, pos, 
-#'   read_count, aa, and n_aa columns.
+#'   reads, aa, and n_aa columns.
 create_aa_table_input <- function(aa_table) {
   
   # Check input arguments
@@ -75,12 +75,12 @@ create_aa_table_input <- function(aa_table) {
     is.character(specimen_name), 
     is.character(gene_id), 
     is.integer(aa_position), 
-    is.integer(read_count), 
+    is.integer(reads), 
     is.character(aa), 
     ! is.na(specimen_name), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
-    ! is.na(read_count), 
+    ! is.na(reads), 
     ! is.na(aa)
   )
   fails <- validate::confront(df_aa, rules, raise = "all") %>%
@@ -96,7 +96,7 @@ create_aa_table_input <- function(aa_table) {
 
   # tidy up columns
   df_aa <- df_aa |>
-    select(specimen_name, gene_id, aa_position, read_count, aa) |>
+    select(specimen_name, gene_id, aa_position, reads, aa) |>
     rename(gene = gene_id,
            pos = aa_position)
   
@@ -164,7 +164,7 @@ create_loci_group_input <- function(loci_groups_path) {
 #' which are then returned.
 #'
 #' @param aa_table Tibble of amino acid calls. It should have columns 
-#'   for specimen_name, gene, pos, read_count, aa, and n_aa.
+#'   for specimen_name, gene, pos, reads, aa, and n_aa.
 #' 
 #' @import dplyr
 #' 
@@ -174,7 +174,7 @@ aa_table_to_variant <- function(aa_table) {
   long_list <- aa_table |>
     mutate(het = (n_aa > 1),
            phased = FALSE) |>
-    select(gene, pos, n_aa, het, phased, aa, read_count) |>
+    select(gene, pos, n_aa, het, phased, aa, read_count = reads) |>
     split(f = aa_table$specimen_name)
   names(long_list) <- NULL
   

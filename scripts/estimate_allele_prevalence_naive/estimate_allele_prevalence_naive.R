@@ -16,7 +16,7 @@ opts <- list(
     c("--aa_calls"),
     help = stringr::str_c(
       "TSV containing amino acid calls, with the columns: specimen_name, ",
-      "target_name, gene_id, aa_position, ref_aa, aa, read_count"
+      "target_name, gene_id, aa_position, ref_aa, aa, reads"
     ),
     type = "character",
     default = NULL,
@@ -31,7 +31,7 @@ opts <- list(
     c("--mh_calls"),
     help = stringr::str_c(
       "TSV containing microhaplotype genotypes, with the columns: ", 
-      "specimen_name, target_name, seq, read_count"
+      "specimen_name, target_name, seq, reads"
     ),
     type = "character",
     default = NULL,
@@ -69,7 +69,7 @@ parse_aa_calls <- function(path) {
       col_types = readr::cols(
         specimen_name = readr::col_character(),
         gene_id = readr::col_character(),
-        read_count = readr::col_integer(),
+        reads = readr::col_integer(),
         aa_position = readr::col_integer(),
         ref_aa = readr::col_character(),
         aa = readr::col_character()
@@ -92,7 +92,7 @@ parse_mh_calls <- function(path) {
         specimen_name = readr::col_character(),
         target_name = readr::col_character(),
         seq = readr::col_character(),
-        read_count = readr::col_integer()
+        reads = readr::col_integer()
       )
     ) |>
     dplyr::rename(variant = seq)
