@@ -14,13 +14,13 @@ microhaplotype calls.
 
 ## Arguments
 
-`--aa_calls`: A TSV with columns for specimen_id, gene_id, aa_position, and aa.
+`--aa_calls`: A TSV with columns for specimen_name, gene_id, aa_position, and aa.
 
-`--mh_calls`: A TSV with columns for specimen_id, target_id, and seq.
+`--mh_calls`: A TSV with columns for specimen_name, target_name, and seq.
 
 `--output`: Path for output TSV. If `--aa_calls` was provided, it will have 
 columns for variant, formatted as a STAVE string, prev, and sample_total. If 
-`--mh_calls` was provided, it will have columns for target_id, seq, prev, and 
+`--mh_calls` was provided, it will have columns for target_name, seq, prev, and 
 sample_total.
 
 ## Script Usage 

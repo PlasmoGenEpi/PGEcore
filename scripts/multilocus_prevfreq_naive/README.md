@@ -66,7 +66,7 @@ Usage: ./multilocus_prevfreq_naive.R [options]
 
 Options:
     --aa_table=AA_TABLE
-        Path to a TSV file containing amino acid calls, with the columns: specimen_id, gene, pos, read_count, aa
+        Path to a TSV file containing amino acid calls, with the columns: specimen_name, gene, pos, reads, aa
 
     --loci_groups_input=LOCI_GROUPS_INPUT
         Path to a TSV file containing loci group definitions, with the columns: group_id, gene_id, aa_position

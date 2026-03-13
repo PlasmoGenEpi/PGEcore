@@ -10,7 +10,7 @@ opts = list(
     "--allele_table",
     help = str_c(
       "TSV containing allele present/absent per specimen, with the
-       columns: specimen_id, target_id, seq"
+       columns: specimen_name, target_name, seq"
     )
   ), 
   make_option(
@@ -41,8 +41,8 @@ opts = list(
 #' containing sample IDs, target IDs, and allele sequences.
 #'
 #' @param input_path A string specifying the path to the input file. The file should be tab-separated
-#' and contain columns for `specimen_id`, `target_id`, and `seq`.
-#' @return A data frame with columns `sample_id`, `target_id`, and `allele`.
+#' and contain columns for `specimen_name`, `target_name`, and `seq`.
+#' @return A data frame with columns `sample_id`, `target_name`, and `allele`.
 #' @details This function reads the input data from a file, validates the format using
 #' predefined rules (ensuring all values are non-missing and of the correct type), and
 #' returns a cleaned data frame suitable for further analysis.
@@ -59,19 +59,19 @@ create_locus_data <- function(input_path) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
   locus_data <- input_data |>
-    dplyr::select(specimen_id, target_id, seq) |> 
-    dplyr::rename(sample_id = specimen_id, allele = seq)
+    dplyr::select(specimen_name, target_name, seq) |> 
+    dplyr::rename(sample_id = specimen_name, allele = seq)
   
   print("Validating input format")
   rules <- validate::validator(
     # Data columns
     is.character(sample_id),
-    is.character(target_id),
+    is.character(target_name),
     is.character(allele),
   
     # Non-missing values
     !is.na(sample_id),
-    !is.na(target_id),
+    !is.na(target_name),
     !is.na(allele)
   )
   
@@ -142,32 +142,32 @@ calculate_popgen_stats <- function(allele_data, msa_method = "Muscle") {
 # Calculate nucleotide diversity, segregating sites, and Tajima's D ------------
 #' Calculate Population Genetics Statistics by Target ID
 #'
-#' Groups allele data by `target_id` and calculates population genetic statistics
+#' Groups allele data by `target_name` and calculates population genetic statistics
 #' (nucleotide diversity, number of segregating sites, and Tajima's D) for each group.
 #'
-#' @param locus_data A data frame containing columns `sample_id`, `target_id`, and `allele`.
+#' @param locus_data A data frame containing columns `sample_id`, `target_name`, and `allele`.
 #' @param msa_method the method used to create the multiple sequence alignment 
 #' @return a table of results.
-#' Each row corresponds to a `target_id`, and columns include:
+#' Each row corresponds to a `target_name`, and columns include:
 #' \describe{
-#'   \item{target_id}{The target identifier.}
+#'   \item{target_name}{The target identifier.}
 #'   \item{Nucleotide_Diversity}{Nucleotide diversity (π).}
 #'   \item{Segregating_Sites}{The number of segregating sites.}
 #'   \item{Tajima_D}{Tajima's D statistic.}
 #' }
-#' @details This function computes population genetic statistics for each unique `target_id` in the input data,
+#' @details This function computes population genetic statistics for each unique `target_name` in the input data,
 #' and writes the results to a tab-separated file.
 #' @examples
 #' \dontrun{
-#'   calculate_stats_by_target_id(locus_data)
+#'   calculate_stats_by_target_name(locus_data)
 #' }
 #' @importFrom dplyr group_by summarise
 #' @importFrom tidyr unnest_wider
 #' @importFrom readr write_tsv
 #' @export
-calculate_stats_by_target_id <- function(locus_data, msa_method = "Muscle") {
+calculate_stats_by_target_name <- function(locus_data, msa_method = "Muscle") {
   results <- locus_data %>%
-    dplyr::group_by(target_id) %>%
+    dplyr::group_by(target_name) %>%
     dplyr::summarise(
       stats = list(calculate_popgen_stats(allele, msa_method))
     ) %>%
@@ -187,7 +187,7 @@ if(!(arg$msa_method %in% c('ClustalW', 'ClustalOmega', 'Muscle'))){
 locus_data = create_locus_data(arg$allele_table)
 
 # Calculate nuc gens
-res = calculate_stats_by_target_id(locus_data)
+res = calculate_stats_by_target_name(locus_data)
 colnames(res) = tolower(colnames(res))
 readr::write_tsv(res, arg$out)
 

@@ -1,4 +1,4 @@
-specimen_id	target_id	read_count	gene	aa_locus	gene_id	aa_position	ref_aa	aa
+specimen_name	target_name	reads	gene	aa_locus	gene_id	aa_position	ref_aa	aa
 specimen1	pfdhfr_1_150	5	dhfr-ts	PF3D7_0417200.1:51	PF3D7_0417200.1	51	N	N
 specimen1	pfdhfr_1_150	5	dhfr-ts	PF3D7_0417200.1:59	PF3D7_0417200.1	59	C	R
 specimen1	pfdhfr_1_150	5	dhfr-ts	PF3D7_0417200.1:108	PF3D7_0417200.1	108	S	N

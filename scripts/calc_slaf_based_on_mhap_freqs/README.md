@@ -11,17 +11,17 @@ Taking amino acid translated loci associated with microhaplotype sequences and c
 
 ## Script Usage {#script-usage}
 
-Script requires two inputs (the translated loci associated with microhaplotypes and the allele frequencies for the microhaplotypes) and can write out the frequencies collapsed across any overlapping targets (and optionally can also export per target_id as well)
+Script requires two inputs (the translated loci associated with microhaplotypes and the allele frequencies for the microhaplotypes) and can write out the frequencies collapsed across any overlapping targets (and optionally can also export per target_name as well)
 
 ```         
 Usage: ./slaf_from_mhaps_freqs.R [options]
 
 Options:
     --mhaps_slaf_fnp=MHAPS_SLAF_FNP
-        TSV containing the columns: target_id, seq, freq, sample_total. The target_id and seq columns should match up with the columns in loci_of_interest_per_microhaps_fnp
+        TSV containing the columns: target_name, seq, freq, sample_total. The target_name and seq columns should match up with the columns in loci_of_interest_per_microhaps_fnp
 
     --loci_of_interest_per_microhaps_fnp=LOCI_OF_INTEREST_PER_MICROHAPS_FNP
-        TSV containing the columns: target_id, seq, gene_id, aa_position, aa. The target_id and seq columns should match up with the columns in mhaps_slaf_fnp
+        TSV containing the columns: target_name, seq, gene_id, aa_position, aa. The target_name and seq columns should match up with the columns in mhaps_slaf_fnp
 
     --slaf_output=SLAF_OUTPUT
         the output for the single locus allele frequency, will collapse frequencies across overlapping targets

@@ -2155,7 +2155,7 @@ get_optparse_args <- function() {
       type = "character",
       help = str_c(
         "TSV containing snp calls, with at least the following columns: ",
-        "specimen_id, target_id, snp_name, pos, seq_base, read_counts, he. ",
+        "specimen_name, target_name, snp_name, pos, seq_base, reads, he. ",
         "Required"
       )
     ),
@@ -2311,10 +2311,10 @@ validate_data <- function(data, required_cols, data_name) {
 #'
 #' @param snp_call_input Path to the indpedent, collapsed SNP call table
 #' @return A dataframe with columns named
-#' specimen_id, snp_name, seq_base, read_count
+#' specimen_name, snp_name, seq_base, reads
 read_and_preprocess_snp_call <- function(snp_calls_input) {
   # read indepdent snp call table
-  required_cols <- c("specimen_id", "snp_name", "read_count", "seq_base")
+  required_cols <- c("specimen_name", "snp_name", "reads", "seq_base")
   df_snp_call <- read_tsv(snp_calls_input)
   validate_data(df_snp_call, required_cols, "SNP data")
   df_snp_call <- df_snp_call |>
@@ -2335,7 +2335,7 @@ prep_input_categorical <- function(df) {
   # get site major allele
   major_allele <- df %>%
     group_by(snp_name, seq_base) %>%
-    summarize(total = sum(read_count), .groups = "keep") %>%
+    summarize(total = sum(reads), .groups = "keep") %>%
     group_by(snp_name) %>%
     slice_max(total, n = 1, with_ties = FALSE) %>%
     select(snp_name, seq_base) %>%
@@ -2344,8 +2344,8 @@ prep_input_categorical <- function(df) {
   df_recode <- df %>%
     left_join(major_allele, by = "snp_name") %>%
     mutate(allele_idx = if_else(seq_base == major_allele, 1, 0)) %>%
-    select(specimen_id, snp_name, "allele_idx") %>%
-    group_by(specimen_id, snp_name) %>%
+    select(specimen_name, snp_name, "allele_idx") %>%
+    group_by(specimen_name, snp_name) %>%
     summarise(
       count = n(),
       score = case_when(
@@ -2369,7 +2369,7 @@ prep_input_categorical <- function(df) {
   # change it back
   colnames(df_mat) <- colnames(df_wide)[-1]
 
-  rownames(df_mat) <- pull(df_wide, specimen_id)
+  rownames(df_mat) <- pull(df_wide, specimen_name)
 
   return(df_mat)
 }
@@ -2394,8 +2394,8 @@ prep_input_prop <- function(df) {
   # get signal matrix for alleles with index 1
   df_allele1 <- df_with_allele_idx %>%
     filter(allele_idx == 1) %>%
-    select(specimen_id, snp_name, read_count) %>%
-    pivot_wider(values_from = read_count, names_from = snp_name, ) %>%
+    select(specimen_name, snp_name, reads) %>%
+    pivot_wider(values_from = reads, names_from = snp_name, ) %>%
     mutate(across(everything(), ~ replace_na(., 0)))
 
   # NOTE: data.frame changes column names. The following code changes them back
@@ -2403,15 +2403,15 @@ prep_input_prop <- function(df) {
   df_allele1 <- data.frame(df_allele1)
   colnames(df_allele1) <- column_names
 
-  # set specimen_id as row name of the signal matrix
-  row.names(df_allele1) <- df_allele1$specimen_id
+  # set specimen_name as row name of the signal matrix
+  row.names(df_allele1) <- df_allele1$specimen_name
   df_allele1 <- df_allele1[, -1]
 
   # get signal matrix for alleles with index 2
   df_allele2 <- df_with_allele_idx %>%
     filter(allele_idx == 2) %>%
-    select(specimen_id, snp_name, read_count) %>%
-    pivot_wider(values_from = read_count, names_from = snp_name, ) %>%
+    select(specimen_name, snp_name, reads) %>%
+    pivot_wider(values_from = reads, names_from = snp_name, ) %>%
     mutate(across(everything(), ~ replace_na(., 0)))
 
   # NOTE: data.frame changes column names. The following code changes them back
@@ -2419,8 +2419,8 @@ prep_input_prop <- function(df) {
   df_allele2 <- data.frame(df_allele2)
   colnames(df_allele2) <- column_names
 
-  # set specimen_id as row name of the signal matrix
-  row.names(df_allele2) <- df_allele2$specimen_id
+  # set specimen_name as row name of the signal matrix
+  row.names(df_allele2) <- df_allele2$specimen_name
   df_allele2 <- df_allele2[, -1]
 
   df_a1_a2 <- list(a1 = df_allele1, a2 = df_allele2)
@@ -2497,7 +2497,7 @@ format_output <- function() {
   df_coi <- df_mccoil %>%
     filter(CorP == "C") %>%
     select(name, median) %>%
-    rename(specimen_id = name, coi = median)
+    rename(specimen_name = name, coi = median)
 
   return(list(slaf = df_slaf, coi = df_coi))
 }

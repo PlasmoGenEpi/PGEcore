@@ -6,7 +6,7 @@ options(dplyr.summarise.inform = FALSE)
 opts <- list(
   make_option(
     c("-i", "--coi_calls"),
-    help = "TSV containing coi calls, with the columns: specimen_id, coi ",
+    help = "TSV containing coi calls, with the columns: specimen_name, coi ",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -35,10 +35,10 @@ load_coi_calls <- function(path) {
   coi_dat <- readr::read_tsv(
     path,
     col_types = readr::cols(
-      specimen_id = readr::col_character(),
+      specimen_name = readr::col_character(),
       coi = readr::col_double()
     ),
-    col_select = c("specimen_id", "coi")
+    col_select = c("specimen_name", "coi")
   )
   # round coi to integer
   coi_dat$coi <- round(coi_dat$coi)

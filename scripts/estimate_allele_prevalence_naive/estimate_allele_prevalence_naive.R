@@ -15,8 +15,8 @@ opts <- list(
   make_option(
     c("--aa_calls"),
     help = stringr::str_c(
-      "TSV containing amino acid calls, with the columns: specimen_id, ",
-      "target_id, gene_id, aa_position, ref_aa, aa, read_count"
+      "TSV containing amino acid calls, with the columns: specimen_name, ",
+      "target_name, gene_id, aa_position, ref_aa, aa, reads"
     ),
     type = "character",
     default = NULL,
@@ -31,7 +31,7 @@ opts <- list(
     c("--mh_calls"),
     help = stringr::str_c(
       "TSV containing microhaplotype genotypes, with the columns: ", 
-      "specimen_id, target_id, seq, read_count"
+      "specimen_name, target_name, seq, reads"
     ),
     type = "character",
     default = NULL,
@@ -67,19 +67,19 @@ parse_aa_calls <- function(path) {
   aa_dat <- readr::read_tsv(
       path,
       col_types = readr::cols(
-        specimen_id = readr::col_character(),
+        specimen_name = readr::col_character(),
         gene_id = readr::col_character(),
-        read_count = readr::col_integer(),
+        reads = readr::col_integer(),
         aa_position = readr::col_integer(),
         ref_aa = readr::col_character(),
         aa = readr::col_character()
       ),
       col_select = c(
-        "specimen_id", "gene_id",
+        "specimen_name", "gene_id",
         "aa_position", "aa"
       )
     ) |>
-    unite(target_id, gene_id, aa_position, sep = ":") |>
+    unite(target_name, gene_id, aa_position, sep = ":") |>
     rename(variant = aa)
   return(aa_dat)
 }
@@ -89,10 +89,10 @@ parse_mh_calls <- function(path) {
   mh_dat <- readr::read_tsv(
       path,
       col_types = readr::cols(
-        specimen_id = readr::col_character(),
-        target_id = readr::col_character(),
+        specimen_name = readr::col_character(),
+        target_name = readr::col_character(),
         seq = readr::col_character(),
-        read_count = readr::col_integer()
+        reads = readr::col_integer()
       )
     ) |>
     dplyr::rename(variant = seq)
@@ -102,11 +102,11 @@ parse_mh_calls <- function(path) {
 #' Calculate allele prevalence
 calculate_prevalence <- function(allele_table) {
   prev <- allele_table |>
-    dplyr::group_by(.data$target_id) |>
-    dplyr::mutate(sample_total = dplyr::n_distinct(.data$specimen_id)) |>
-    dplyr::group_by(.data$target_id, .data$variant, .data$sample_total) |>
+    dplyr::group_by(.data$target_name) |>
+    dplyr::mutate(sample_total = dplyr::n_distinct(.data$specimen_name)) |>
+    dplyr::group_by(.data$target_name, .data$variant, .data$sample_total) |>
     dplyr::summarise(
-      sample_count = dplyr::n_distinct(.data$specimen_id)
+      sample_count = dplyr::n_distinct(.data$specimen_name)
     ) |>
     dplyr::mutate(prev = .data$sample_count / .data$sample_total) |>
     dplyr::relocate(prev, .before = sample_total)
@@ -126,7 +126,7 @@ prevalence <- calculate_prevalence(allele_table)
 if (! is.null(args$aa_calls)) {
   prev_output <- prevalence |>
     tidyr::separate_wider_delim(
-      target_id, 
+      target_name, 
       ":", 
       names = c("gene_id", "aa_position")
     ) |>
