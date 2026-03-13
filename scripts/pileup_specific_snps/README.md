@@ -19,10 +19,10 @@ Usage: ./pileup_specific_snps.R [options]
 
 Options:
 	--allele_table=ALLELE_TABLE
-		TSV containing the columns: specimen_id, target_id, read_count, seq
+		TSV containing the columns: specimen_name, target_name, read_count, seq
 
 	--ref_bed=REF_BED
-		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand, ref_seq
+		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_name, length, strand, ref_seq
 
 	--snps_of_interest=SNPS_OF_INTEREST
 		a bed file containing the snps of interest to calculate pileup, is genomic location of the snp position so all snps should be of size 1, should have columns, #chrom, start, end, name, length, strand
@@ -30,10 +30,10 @@ Options:
 	--output_directory=OUTPUT_DIRECTORY
 		the output directory to write results to
 
-	--select_target_ids=SELECT_TARGET_IDS
+	--select_target_names=SELECT_TARGET_NAMES
 		only process these targets
 
-	--select_specimen_ids=SELECT_SPECIMEN_IDS
+	--select_specimen_names=SELECT_SPECIMEN_NAMES
 		only process these samples
 
 	--overwrite_dir
@@ -53,7 +53,7 @@ Four required options: `--allele_table`, `--ref_bed`, `--snps_of_interest`, `--o
 
 Table of microhaplotype calls, needs 4 columns named: 
 
-| specimen_id | target_id | read_count | seq |  
+| specimen_name | target_name | read_count | seq |  
 | --- | --- | --- | --- |  
 | Laos2017-01 | Pf3D7\_01\_v3-0181544-0181729 | 4648.0 |   TTTCATTATTGTTTTCATTCTTTTTTTAACGAAAACTATTCATCTCAAAAATATAAGATATTTTATATGACGAATGCCATTGTATTTTTTGTTACGTAAAACCTGACTTCTTCAGGGAAAACACATGCGCATTTTCACCAATTTTTGCCTAAGCTTATTATAAAAAGTATATTAAATGTATGACT |  
 |Laos2017-01|Pf3D7\_01\_v3-0528889-0529073|5032.0|  ATTTGATTCTTTTTAATGAAAAAGAAGCTAAAGATATGTCAGACGATATAATTTCCCAACAAAAACGTTATTGCTCTACCAATATTCATAGTAATTATAATAATAAAATATGTATATGTAAAAATAAGCGACATCATAACAAAAGAGGGAAAGGAATAAAGCATCCTGACATACATCAAAAGGA|
@@ -100,8 +100,8 @@ The output will have 3-4 files.
 
 This has the snps calls per loci per seq per sample, this all calls even if the input targets overlap for SNPs so SNPs could occur more than once in the file if covered by multiple targets  
 
-*  specimen_id - The name of the specimen/sample from the allele table  
-*  target_id - The name of the target  
+*  specimen_name - The name of the specimen/sample from the allele table  
+*  target_name - The name of the target  
 *  read_count - The read count for this sample for this SNP  
 *  seq - the microhaplotype sequence  
 *  chrom - the chromosome of the SNP

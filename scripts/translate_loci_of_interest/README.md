@@ -28,7 +28,7 @@ install.packages("tibble", "dplyr", "stringr", "readr", "optparse")
 ```
 Options:
 	--allele_table=ALLELE_TABLE
-		TSV containing the columns: specimen_id, target_id, read_count, seq
+		TSV containing the columns: specimen_name, target_name, read_count, seq
 
 	--ref_bed=REF_BED
 		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target\_id, length, strand, ref\_seq
@@ -39,10 +39,10 @@ Options:
 	--output_directory=OUTPUT_DIRECTORY
 		the output directory to write results to
 
-	--select_target_ids=SELECT_TARGET_IDS
+	--select_target_names=SELECT_TARGET_NAMES
 		only process these targets
 
-	--select_specimen_ids=SELECT_SPECIMEN_IDS
+	--select_specimen_names=SELECT_SPECIMEN_NAMES
 		only process these samples
 
 	--overwrite_dir
@@ -61,7 +61,7 @@ Four required options: `--allele_table`, `--ref_bed`, `--loci_of_interest`, `--o
 
 Table of microhaplotype calls, needs 4 columns named: 
 
-| specimen_id | target_id | read_count | seq |  
+| specimen_name | target_name | read_count | seq |  
 | --- | --- | --- | --- |  
 | Laos2017-01 | Pf3D7\_01\_v3-0181544-0181729 | 4648.0 |   TTTCATTATTGTTTTCATTCTTTTTTTAACGAAAACTATTCATCTCAAAAATATAAGATATTTTATATGACGAATGCCATTGTATTTTTTGTTACGTAAAACCTGACTTCTTCAGGGAAAACACATGCGCATTTTCACCAATTTTTGCCTAAGCTTATTATAAAAAGTATATTAAATGTATGACT |  
 |Laos2017-01|Pf3D7\_01\_v3-0528889-0529073|5032.0|  ATTTGATTCTTTTTAATGAAAAAGAAGCTAAAGATATGTCAGACGATATAATTTCCCAACAAAAACGTTATTGCTCTACCAATATTCATAGTAATTATAATAATAAAATATGTATATGTAAAAATAAGCGACATCATAACAAAAGAGGGAAAGGAATAAAGCATCCTGACATACATCAAAAGGA|

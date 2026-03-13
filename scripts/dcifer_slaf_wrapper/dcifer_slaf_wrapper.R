@@ -22,7 +22,7 @@ opts <- list(
     help = str_c(
       "TSV containing alleles, with columns identifying specimens, ", 
       "target names, and target values. The names of these columns are given ", 
-      "by the --specimen_id_col, --target_id_col, and --target_value_col ", 
+      "by the --specimen_name_col, --target_name_col, and --target_value_col ", 
       "arguments, respectively. Required."
     )
   ), 
@@ -31,19 +31,19 @@ opts <- list(
     help = 
       str_c(
         "TSV containing specimen COIs, with a coi column and a column with ", 
-        "specimen IDs named according to --specimen_id_col. Optional."
+        "specimen IDs named according to --specimen_name_col. Optional."
       )
   ), 
   make_option(
-    "--specimen_id_col", 
-    default = "specimen_id", 
+    "--specimen_name_col", 
+    default = "specimen_name", 
     help = "String giving the name of the specimen ID column"
   ), 
   make_option(
-    "--target_id_col", 
-    default = "target_id", 
+    "--target_name_col", 
+    default = "target_name", 
     help = 
-      "String giving the name of the target ID column (e.g., the locus name)"
+      "String giving the name of the target name column (e.g., the locus name)"
   ), 
   make_option(
     "--target_value_col", 
@@ -89,7 +89,7 @@ opts <- list(
     "--slaf_output", 
     help = str_c(
       "Path of TSV file to contain single locus allele frequencies, with ", 
-      "columns with names matching --target_id_col and --target_value_col, ", 
+      "columns with names matching --target_name_col and --target_value_col, ", 
       "and a freq column. Required."
     )
   )
@@ -107,18 +107,18 @@ if (interactive()) {
 #'
 #' @param allele_table_path Path to the TSV file containing the allele 
 #'   table.
-#' @param specimen_id_col String giving the name of the specimen ID 
+#' @param specimen_name_col String giving the name of the specimen ID 
 #'   column.
-#' @param target_id_col String giving the name of the target ID column.
+#' @param target_name_col String giving the name of the target name column.
 #' @param target_value_col String giving the name of the column 
 #'   containing target values (i.e., the genotypes).
 #'
-#' @return A tibble containing columns for specimen_id, target_id, and 
+#' @return A tibble containing columns for specimen_name, target_name, and 
 #'   target_value.
 create_allele_table_input <- function(
                                       allele_table_path, 
-                                      specimen_id_col = "specimen_id", 
-                                      target_id_col = "target_id", 
+                                      specimen_name_col = "specimen_name", 
+                                      target_name_col = "target_name", 
                                       target_value_col = "seq") {
 
   # Read in table
@@ -127,21 +127,21 @@ create_allele_table_input <- function(
       col_types = cols(.default = col_character()), 
       progress = FALSE
     ) %>%
-    select(all_of(c(specimen_id_col, target_id_col, target_value_col))) %>%
+    select(all_of(c(specimen_name_col, target_name_col, target_value_col))) %>%
     # Standardize names
     rename(
-      specimen_id = all_of(specimen_id_col), 
-      target_id = all_of(target_id_col), 
+      specimen_name = all_of(specimen_name_col), 
+      target_name = all_of(target_name_col), 
       target_value = all_of(target_value_col)
     )
 
   # Validate fields
   rules <- validate::validator(
-    is.character(specimen_id), 
-    is.character(target_id), 
+    is.character(specimen_name), 
+    is.character(target_name), 
     is.character(target_value), 
-    ! is.na(specimen_id), 
-    ! is.na(target_id), 
+    ! is.na(specimen_name), 
+    ! is.na(target_name), 
     ! is.na(target_value)
   )
   fails <- validate::confront(allele_table, rules, raise = "all") %>%
@@ -165,7 +165,7 @@ create_allele_table_input <- function(
 #' from the allele list to ensure order matches, and return as a vector.
 #'
 #' @param coi_path Path to TSV containing specimen COIs. It should 
-#'   have a character specimen_id column and an integer coi column.
+#'   have a character specimen_name column and an integer coi column.
 #' @param allele_list The list format output by `dcifer::readDat` and 
 #'   `dcifer::formatDat`.
 #' @inheritParams create_allele_table_input
@@ -174,7 +174,7 @@ create_allele_table_input <- function(
 create_coi_input <- function(
                              coi_path, 
                              allele_list, 
-                             specimen_id_col = "specimen_id") {
+                             specimen_name_col = "specimen_name") {
 
   # Read input table
   coi <- read_tsv(
@@ -182,14 +182,14 @@ create_coi_input <- function(
       col_types = cols(.default = col_character(), coi = col_integer()), 
       progress = FALSE
     ) %>%
-    select(all_of(specimen_id_col), coi) %>%
-    rename(specimen_id = all_of(specimen_id_col))
+    select(all_of(specimen_name_col), coi) %>%
+    rename(specimen_name = all_of(specimen_name_col))
 
   # Validate fields
   rules <- validate::validator(
-    is.character(specimen_id), 
+    is.character(specimen_name), 
     is.integer(coi), 
-    ! is.na(specimen_id), 
+    ! is.na(specimen_name), 
     ! is.na(coi)
   )
   fails <- validate::confront(coi, rules, raise = "all") %>%
@@ -205,7 +205,7 @@ create_coi_input <- function(
 
   # Check that all specimen IDs in the allele table are in the COI 
   # input, and vice versa
-  specimen_inallele_notincoi <- setdiff(names(allele_list), coi$specimen_id)
+  specimen_inallele_notincoi <- setdiff(names(allele_list), coi$specimen_name)
   if (length(specimen_inallele_notincoi) > 0) {
     stop(
       "The following specimen IDs appear in the allele table and not in the ", 
@@ -214,7 +214,7 @@ create_coi_input <- function(
       call. = FALSE
     )
   }
-  specimen_incoi_notinallele <- setdiff(coi$specimen_id, names(allele_list))
+  specimen_incoi_notinallele <- setdiff(coi$specimen_name, names(allele_list))
   if (length(specimen_incoi_notinallele) > 0) {
     warning(
       "The following specimen IDs appear in the allele table and not in the ", 
@@ -225,11 +225,11 @@ create_coi_input <- function(
   }
 
   # Join COI to allele list to ensure order matches
-  coi <- tibble(specimen_id = names(allele_list)) %>%
-    left_join(coi, by = "specimen_id")
+  coi <- tibble(specimen_name = names(allele_list)) %>%
+    left_join(coi, by = "specimen_name")
 
   # Create and return named vector of COI
-  setNames(coi$coi, coi$specimen_id)
+  setNames(coi$coi, coi$specimen_name)
 
 }
 
@@ -242,26 +242,26 @@ create_coi_input <- function(
 #' @param allele_freqs_list List of allele frequencies produced by 
 #'   `dcifer::calcAfreq()`.
 #' @param n_samp_per_target Tibble containing sample sizes for each 
-#'   locus, with target_id and sample_total columns.
+#'   locus, with target_name and sample_total columns.
 #' @inheritParams create_allele_table_input
 prepare_slaf_output <- function(
                                 allele_freqs_list, 
                                 n_samp_per_target, 
-                                target_id_col = "target_id", 
+                                target_name_col = "target_name", 
                                 target_value_col = "seq") {
   onetargetaf_list2tib <- function(onetargetaf) {
     tibble(target_value = names(onetargetaf), freq = unname(onetargetaf))
   }
   tibble(
-      target_id = names(allele_freqs_list), 
+      target_name = names(allele_freqs_list), 
       alleles_freqs = unname(allele_freqs_list)
     ) %>%
     mutate(alleles_freqs = map(alleles_freqs, onetargetaf_list2tib)) %>%
     unnest(alleles_freqs) %>%
-    left_join(n_samp_per_target, by = "target_id") %>%
+    left_join(n_samp_per_target, by = "target_name") %>%
     # Revert column names back to user-specified names
     rename(
-      !!target_id_col := target_id, 
+      !!target_name_col := target_name, 
       !!target_value_col := target_value
     )
 }
@@ -269,15 +269,15 @@ prepare_slaf_output <- function(
 # Read in allele table -------------------------------------------------
 allele_table <- create_allele_table_input(
   arg$allele_table, 
-  specimen_id_col = arg$specimen_id_col, 
-  target_id_col = arg$target_id_col, 
+  specimen_name_col = arg$specimen_name_col, 
+  target_name_col = arg$target_name_col, 
   target_value_col = arg$target_value_col
 )
 # Convert to Dcifer format and return
 dcifer_alleles <- dcifer::formatDat(
     allele_table, 
-    svar = "specimen_id", 
-    lvar = "target_id", 
+    svar = "specimen_name", 
+    lvar = "target_name", 
     avar = "target_value"
   )
 
@@ -295,7 +295,7 @@ if (is.null(arg$coi_table)) {
   coi <- create_coi_input(
     arg$coi_table, 
     dcifer_alleles, 
-    specimen_id_col = arg$specimen_id_col
+    specimen_name_col = arg$specimen_name_col
   )
 }
 
@@ -309,14 +309,14 @@ allele_freqs_list <- dcifer::calcAfreq(
 
 # Compute sample sizes for each locus ----------------------------------
 n_samp_per_target <- allele_table %>%
-  group_by(target_id) %>%
-  summarize(sample_total = n_distinct(specimen_id), .groups = "drop")
+  group_by(target_name) %>%
+  summarize(sample_total = n_distinct(specimen_name), .groups = "drop")
 
 # Reformat to table and write to disk ----------------------------------
 prepare_slaf_output(
     allele_freqs_list, 
     n_samp_per_target, 
-    target_id_col = arg$target_id_col, 
+    target_name_col = arg$target_name_col, 
     target_value_col = arg$target_value_col
  ) %>%
   write_tsv(arg$slaf_output)

@@ -28,7 +28,7 @@ opts <- list(
     "--aa_table", 
     type = "character",
     help = str_c(
-      "Path to a TSV file containing amino acid calls, with the columns: specimen_id, ", 
+      "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ", 
       "gene, pos, read_count, aa"
     )
   ), 
@@ -58,11 +58,11 @@ opts <- list(
 #' tibble with this information.
 #'
 #' @param aa_table Path to a TSV file with amino acid calls. It should have
-#'   columns for specimen_id, gene, pos, read_count, aa.
+#'   columns for specimen_name, gene, pos, read_count, aa.
 #' 
 #' @import dplyr
 #' 
-#' @return Tibble of amino acid calls with specimen_id, gene, pos, 
+#' @return Tibble of amino acid calls with specimen_name, gene, pos, 
 #'   read_count, aa, and n_aa columns.
 create_aa_table_input <- function(aa_table) {
   
@@ -72,12 +72,12 @@ create_aa_table_input <- function(aa_table) {
   # read in amino acid calls and validate columns
   df_aa <- read.table(aa_table, header = TRUE)
   rules <- validate::validator(
-    is.character(specimen_id), 
+    is.character(specimen_name), 
     is.character(gene_id), 
     is.integer(aa_position), 
     is.integer(read_count), 
     is.character(aa), 
-    ! is.na(specimen_id), 
+    ! is.na(specimen_name), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
     ! is.na(read_count), 
@@ -96,13 +96,13 @@ create_aa_table_input <- function(aa_table) {
 
   # tidy up columns
   df_aa <- df_aa |>
-    select(specimen_id, gene_id, aa_position, read_count, aa) |>
+    select(specimen_name, gene_id, aa_position, read_count, aa) |>
     rename(gene = gene_id,
            pos = aa_position)
   
   # get numer of amino acids at each locus
   df_aa <- df_aa |>
-    group_by(specimen_id, gene, pos) |>
+    group_by(specimen_name, gene, pos) |>
     mutate(n_aa = n()) |>
     ungroup()
 
@@ -164,7 +164,7 @@ create_loci_group_input <- function(loci_groups_path) {
 #' which are then returned.
 #'
 #' @param aa_table Tibble of amino acid calls. It should have columns 
-#'   for specimen_id, gene, pos, read_count, aa, and n_aa.
+#'   for specimen_name, gene, pos, read_count, aa, and n_aa.
 #' 
 #' @import dplyr
 #' 
@@ -175,7 +175,7 @@ aa_table_to_variant <- function(aa_table) {
     mutate(het = (n_aa > 1),
            phased = FALSE) |>
     select(gene, pos, n_aa, het, phased, aa, read_count) |>
-    split(f = aa_table$specimen_id)
+    split(f = aa_table$specimen_name)
   names(long_list) <- NULL
   
   # convert to variant strings

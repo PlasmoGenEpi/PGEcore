@@ -734,8 +734,8 @@ get_optparse_args <- function() {
       type = "character",
       default = "",
       help = str_c(
-        "TSV containing allele calls, with the columns: specimen_id, ",
-        "target_id, seq, read_count. ",
+        "TSV containing allele calls, with the columns: specimen_name, ",
+        "target_name, seq, read_count. ",
         "Default: %default"
       )
     ),
@@ -744,8 +744,8 @@ get_optparse_args <- function() {
       type = "character",
       default = "",
       help = str_c(
-        "TSV containing amino acid calls, with the columns: specimen_id, ",
-        "target_id, gene_id, aa_position, ref_aa, aa. Optional",
+        "TSV containing amino acid calls, with the columns: specimen_name, ",
+        "target_name, gene_id, aa_position, ref_aa, aa. Optional",
         "Default: %default"
       )
     ),
@@ -813,12 +813,12 @@ prepare_input_4_allele_table <- function(allele_table_input) {
 
   # Validate fields
   rules <- validate::validator(
-    is.character(specimen_id),
-    is.character(target_id),
+    is.character(specimen_name),
+    is.character(target_name),
     is.character(seq),
     is.integer(read_count),
-    !is.na(specimen_id),
-    !is.na(target_id),
+    !is.na(specimen_name),
+    !is.na(target_name),
     !is.na(seq),
     !is.na(read_count)
   )
@@ -836,11 +836,11 @@ prepare_input_4_allele_table <- function(allele_table_input) {
   # Reformat and return
   df <- df %>%
     mutate(
-      locus = target_id,
-      variants = str_c(target_id, seq, sep = ":")
+      locus = target_name,
+      variants = str_c(target_name, seq, sep = ":")
     ) %>%
-    select(specimen_id, locus, variants) %>%
-    distinct(specimen_id, locus, variants)
+    select(specimen_name, locus, variants) %>%
+    distinct(specimen_name, locus, variants)
   return(df)
 }
 
@@ -861,14 +861,14 @@ prepare_input_4_aa_calls <- function(aa_calls_input) {
 
   # Validate fields
   rules <- validate::validator(
-    is.character(specimen_id),
-    is.character(target_id),
+    is.character(specimen_name),
+    is.character(target_name),
     is.character(gene_id),
     is.integer(aa_position),
     is.character(ref_aa),
     is.character(aa),
-    !is.na(specimen_id),
-    !is.na(target_id),
+    !is.na(specimen_name),
+    !is.na(target_name),
     !is.na(gene_id),
     !is.na(aa_position),
     !is.na(ref_aa),
@@ -891,7 +891,7 @@ prepare_input_4_aa_calls <- function(aa_calls_input) {
       locus = str_c(gene_id, aa_position, sep = ":"),
       variants = str_c(gene_id, aa_position, aa, sep = ":")
     ) %>%
-    select(specimen_id, locus, variants)
+    select(specimen_name, locus, variants)
   return(df)
 }
 
@@ -919,7 +919,7 @@ run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
     # prepare input (per locus): a two-column text file
     tmp_df <- df %>%
       filter(locus == l) %>%
-      select(specimen_id, variants)
+      select(specimen_name, variants)
     write.table(tmp_df, "tmp.txt", sep = "\t", row.names = FALSE)
 
     # Load input data and run the MLE for this locus
@@ -956,11 +956,11 @@ run_idm_mle_across_loci <- function(df, model = "IDM", lambda_initial = 1.0,
 #' @param slaf_output Output file path where the result table will be saved.
 #' @param allele_table Boolean indicating whether the data is 
 #'   microhaplotype sequences (i.e., "allele table" input). If so, the 
-#'   variant column will be split into target_id and seq columns.
+#'   variant column will be split into target_name and seq columns.
 write_output <- function(res, slaf_output, allele_table = FALSE) {
   if (allele_table) {
     res %>%
-      separate_wider_delim(variant, ":", names = c("target_id", "seq")) %>%
+      separate_wider_delim(variant, ":", names = c("target_name", "seq")) %>%
       write_tsv(slaf_output)
   } else {
     write_tsv(res, slaf_output)

@@ -52,49 +52,49 @@ genWarningsMissCols <- function(tib, cols, fnp){
 
 
 
-#' Check for sub selecting arguments of target_ids and specimen_ids
+#' Check for sub selecting arguments of target_names and specimen_names
 #'
 #' @param parsed_args 
 #'
-#' @return a list with two named vectors, select_target_ids and select_specimen_ids
+#' @return a list with two named vectors, select_target_names and select_specimen_names
 check_subselecting_args <- function(parsed_args){
-  select_target_ids = c()
-  if("select_target_ids" %in% names(parsed_args)){
-    if(file.exists(parsed_args$select_target_ids)){
-      select_target_ids = readr::read_tsv(parsed_args$select_target_ids, col_names = F)$X1
+  select_target_names = c()
+  if("select_target_names" %in% names(parsed_args)){
+    if(file.exists(parsed_args$select_target_names)){
+      select_target_names = readr::read_tsv(parsed_args$select_target_names, col_names = F)$X1
     } else { 
-      select_target_ids = unlist(strsplit(parsed_args$select_target_ids, split = ","))
+      select_target_names = unlist(strsplit(parsed_args$select_target_names, split = ","))
     }
   }
   
-  select_specimen_ids = c()
-  if("select_specimen_ids" %in% names(parsed_args)){
-    if(file.exists(parsed_args$select_specimen_ids)){
-      select_specimen_ids = readr::read_tsv(parsed_args$select_specimen_ids, col_names = F)$X1
+  select_specimen_names = c()
+  if("select_specimen_names" %in% names(parsed_args)){
+    if(file.exists(parsed_args$select_specimen_names)){
+      select_specimen_names = readr::read_tsv(parsed_args$select_specimen_names, col_names = F)$X1
     } else { 
-      select_specimen_ids = unlist(strsplit(parsed_args$select_specimen_ids, split = ","))
+      select_specimen_names = unlist(strsplit(parsed_args$select_specimen_names, split = ","))
     }
   }
-  list(select_target_ids = select_target_ids, 
-       select_specimen_ids = select_specimen_ids)
+  list(select_target_names = select_target_names, 
+       select_specimen_names = select_specimen_names)
 }
 
 
-#' Fitler an snp table for select target_ids and specimen_ids 
+#' Fitler an snp table for select target_names and specimen_names 
 #'
 #' @param snp_data the snp data 
-#' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_ids and select_specimen_ids
+#' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_names and select_specimen_names
 #'
 #' @return a filtered snp_data table 
 filter_snp_table_for_optional_subselecting <- function (snp_data, opt_sub_sels){
-  if(length(opt_sub_sels$select_specimen_ids) > 0 ){
+  if(length(opt_sub_sels$select_specimen_names) > 0 ){
     snp_data = snp_data |> 
-      filter(specimen_id %in% opt_sub_sels$select_specimen_ids)
+      filter(specimen_name %in% opt_sub_sels$select_specimen_names)
   }
   
-  if(length(opt_sub_sels$select_target_ids) > 0 ){
+  if(length(opt_sub_sels$select_target_names) > 0 ){
     snp_data = snp_data |> 
-      filter(target_id %in% opt_sub_sels$select_target_ids)
+      filter(target_name %in% opt_sub_sels$select_target_names)
   }
   return(snp_data)
 }
@@ -103,24 +103,24 @@ filter_snp_table_for_optional_subselecting <- function (snp_data, opt_sub_sels){
 #' generate warnings for sub selecting for selections that don't exist 
 #'
 #' @param snp_data the snp data 
-#' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_ids and select_specimen_ids 
+#' @param opt_sub_sels the optional subselections, a list with two named vectors: select_target_names and select_specimen_names 
 #' @param snp_table_fnp the table the snp data was read from 
 #'
 #' @return warnings about missing sub-selections
 check_warnings_for_subselecting_snp_table <- function(snp_data, opt_sub_sels, snp_table_fnp){
   warns = c()
-  if(length(opt_sub_sels$select_specimen_ids) > 0 ){
-    missing_sel_specs = setdiff(opt_sub_sels$select_specimen_ids, unique(snp_data$specimen_id))
+  if(length(opt_sub_sels$select_specimen_names) > 0 ){
+    missing_sel_specs = setdiff(opt_sub_sels$select_specimen_names, unique(snp_data$specimen_name))
     if(length(missing_sel_specs) > 0 ){
-      warns = c(warns, paste0("supplied --select_specimen_ids but the following specimen_ids are missing from ", snp_table_fnp, "\n", 
+      warns = c(warns, paste0("supplied --select_specimen_names but the following specimen_names are missing from ", snp_table_fnp, "\n", 
                               paste0(missing_sel_specs, collapse = ",")))
     }
   }
   
-  if(length(opt_sub_sels$select_target_ids) > 0 ){
-    missing_sel_tars = setdiff(opt_sub_sels$select_target_ids, unique(snp_data$target_id))
+  if(length(opt_sub_sels$select_target_names) > 0 ){
+    missing_sel_tars = setdiff(opt_sub_sels$select_target_names, unique(snp_data$target_name))
     if(length(missing_sel_tars) > 0 ){
-      warns = c(warns, paste0("supplied --select_target_ids but the following target_ids are missing from ", snp_table_fnp, "\n", 
+      warns = c(warns, paste0("supplied --select_target_names but the following target_names are missing from ", snp_table_fnp, "\n", 
                               paste0(missing_sel_tars, collapse = ",")))
     }
   }
@@ -139,18 +139,18 @@ validate_columns_types <-function(snp_table){
   warns = c()
   # validate columns snp_table
   snp_table_rules <- validate::validator(
-    is.character(specimen_id),
+    is.character(specimen_name),
     is.numeric(read_count),
-    is.character(target_id), 
+    is.character(target_name), 
     is.character(ref_base),
     is.character(seq_base), 
     is.character(chrom),
     is.character(snp_name),
     is.numeric(pos),
     is.logical(is_biallelic),
-    ! is.na(specimen_id), 
+    ! is.na(specimen_name), 
     ! is.na(read_count), 
-    ! is.na(target_id), 
+    ! is.na(target_name), 
     ! is.na(ref_base),
     ! is.na(seq_base), 
     ! is.na(chrom),
@@ -189,17 +189,17 @@ filter_to_highest_diversity_independent_snp_call <-function(snp_table_in,
       filter(is_biallelic)
   }
   # for counts and he calc to work, SNPs need to be collapsed already 
-  snp_table_counts_per_specimen_id = snp_table_in |> 
-    group_by(specimen_id, chrom, pos, snp_name, ref_base, seq_base) |> 
+  snp_table_counts_per_specimen_name = snp_table_in |> 
+    group_by(specimen_name, chrom, pos, snp_name, ref_base, seq_base) |> 
     mutate(n = n())
   
   warnings = c()
-  snp_table_counts_per_specimen_id_multi = snp_table_counts_per_specimen_id |> 
+  snp_table_counts_per_specimen_name_multi = snp_table_counts_per_specimen_name |> 
     filter(n > 1)
-  if(nrow(snp_table_counts_per_specimen_id_multi) > 0){
-    warnings = c(warnings, paste0("the following snps were found to have multiple calls per specimen_id for the same seq_base, make sure calls are collapsed", 
+  if(nrow(snp_table_counts_per_specimen_name_multi) > 0){
+    warnings = c(warnings, paste0("the following snps were found to have multiple calls per specimen_name for the same seq_base, make sure calls are collapsed", 
                                   ":\n", 
-                                  paste0(unique(snp_table_counts_per_specimen_id_multi$snp_name), collapse = ",")))
+                                  paste0(unique(snp_table_counts_per_specimen_name_multi$snp_name), collapse = ",")))
   }
   if(length(warnings) > 0){
     stop(paste0("\n", paste0(warnings, collapse = "\n")) )
@@ -239,7 +239,7 @@ filter_to_highest_diversity_independent_snp_call <-function(snp_table_in,
     snp_table_he_filt = snp_table_he_filt |> 
       filter(he > 0)
   }
-  # join back and get the max per target_id 
+  # join back and get the max per target_name 
   snp_table_in = snp_table_in |> 
     left_join(snp_table_he |> 
                 select(-keep), by = c("chrom", "pos", "snp_name", "ref_base"))
@@ -258,7 +258,7 @@ opts <- list(
   make_option(
     "--snp_table_in", 
     help = str_c(
-      "TSV containing at least the columns: specimen_id, target_id, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic"
+      "TSV containing at least the columns: specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, read_count, is_biallelic"
     )
   ),
   make_option(
@@ -276,13 +276,13 @@ opts <- list(
     )
   ), 
   make_option(
-    "--select_target_ids", 
+    "--select_target_names", 
     help = str_c(
       "only process these targets"
     )
   ), 
   make_option(
-    "--select_specimen_ids", 
+    "--select_specimen_names", 
     help = str_c(
       "only process these samples"
     )
@@ -340,7 +340,7 @@ warnings = c()
 snp_table_in = readr::read_tsv(arg$snp_table_in)
 
 # sanity check the input
-warnings = c(warnings, genWarningsMissCols(snp_table_in, c("specimen_id", "target_id", "chrom", "pos", "snp_name", "ref_base", "seq_base", "read_count", "is_biallelic"), arg$snp_table_in))
+warnings = c(warnings, genWarningsMissCols(snp_table_in, c("specimen_name", "target_name", "chrom", "pos", "snp_name", "ref_base", "seq_base", "read_count", "is_biallelic"), arg$snp_table_in))
 if(length(warnings) > 0){
   stop(paste0("\n", paste0(warnings, collapse = "\n")) )
 }

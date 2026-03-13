@@ -15,8 +15,8 @@ opts <- list(
   make_option(
     c("--aa_calls"),
     help = stringr::str_c(
-      "TSV containing amino acid calls, with the columns: specimen_id, ",
-      "target_id, gene_id, aa_position, ref_aa, aa, read_count"
+      "TSV containing amino acid calls, with the columns: specimen_name, ",
+      "target_name, gene_id, aa_position, ref_aa, aa, read_count"
     ),
     type = "character",
     default = NULL,
@@ -31,7 +31,7 @@ opts <- list(
     c("--mh_calls"),
     help = stringr::str_c(
       "TSV containing microhaplotype genotypes, with the columns: ", 
-      "specimen_id, target_id, seq, read_count"
+      "specimen_name, target_name, seq, read_count"
     ),
     type = "character",
     default = NULL,
@@ -82,7 +82,7 @@ parse_aa_calls <- function(path) {
   aa_dat <- readr::read_tsv(
       path,
       col_types = readr::cols(
-        specimen_id = readr::col_character(),
+        specimen_name = readr::col_character(),
         gene_id = readr::col_character(),
         read_count = readr::col_integer(),
         aa_position = readr::col_integer(),
@@ -90,11 +90,11 @@ parse_aa_calls <- function(path) {
         aa = readr::col_character()
       ),
       col_select = c(
-        "specimen_id", "gene_id", "read_count",
+        "specimen_name", "gene_id", "read_count",
         "aa_position", "aa"
       )
     ) |>
-    unite(target_id, gene_id, aa_position, sep = ":") |>
+    unite(target_name, gene_id, aa_position, sep = ":") |>
     rename(variant = aa)
   return(aa_dat)
 }
@@ -104,8 +104,8 @@ parse_mh_calls <- function(path) {
   mh_dat <- readr::read_tsv(
       path,
       col_types = readr::cols(
-        specimen_id = readr::col_character(),
-        target_id = readr::col_character(),
+        specimen_name = readr::col_character(),
+        target_name = readr::col_character(),
         seq = readr::col_character(),
         read_count = readr::col_integer()
       )
@@ -118,17 +118,17 @@ parse_mh_calls <- function(path) {
 calculate_af_read_count_prop <- function(allele_table) {
   af <- allele_table |>
     dplyr::group_by(
-      .data$specimen_id, .data$target_id
+      .data$specimen_name, .data$target_name
     ) |>
     # calculate the within-sample allele frequency for each position
     dplyr::mutate(wsaf = .data$read_count / sum(.data$read_count)) |>
     dplyr::ungroup() |>
     dplyr::group_by(
-      .data$target_id, .data$variant
+      .data$target_name, .data$variant
     ) |>
     # sum af by gene and variant across all samples
     dplyr::summarise(freq = sum(.data$wsaf)) |>
-    dplyr::group_by(.data$target_id) |>
+    dplyr::group_by(.data$target_name) |>
     # normalize by the total number of samples with data at each position
     dplyr::mutate(total = sum(.data$freq), freq = .data$freq / .data$total) |>
     dplyr::select(-total) |>
@@ -139,11 +139,11 @@ calculate_af_read_count_prop <- function(allele_table) {
 #' Calculate allele frequency by presence/absence
 calculate_af_presence_absence <- function(allele_table) {
   af <- allele_table |>
-    dplyr::group_by(.data$target_id) |>
+    dplyr::group_by(.data$target_name) |>
     dplyr::mutate(allele_total = dplyr::n()) |>
     dplyr::ungroup() |>
     dplyr::group_by(
-      .data$target_id, .data$variant, .data$allele_total
+      .data$target_name, .data$variant, .data$allele_total
     ) |>
     dplyr::summarise(
       allele_count = dplyr::n(),
@@ -170,7 +170,7 @@ out <- switch(
 if (! is.null(args$aa_calls)) {
   freq_output <- out |>
     tidyr::separate_wider_delim(
-      target_id, 
+      target_name, 
       ":", 
       names = c("gene_id", "aa_position")
     ) |>

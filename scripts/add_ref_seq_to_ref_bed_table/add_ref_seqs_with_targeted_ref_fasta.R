@@ -76,24 +76,24 @@ genWarningsMissCols <- function(tib, cols, fnp){
 gen_warnings_multiple_inputs <-function(ref_bed, dna_tab, arg){
   warnings = c()
   
-  # check if multiple target_id loaded 
+  # check if multiple target_name loaded 
   ref_bed_name_sum_multi = ref_bed |> 
-    group_by(target_id) |> 
+    group_by(target_name) |> 
     count() |> 
     filter(n > 1)
   
   if(nrow(ref_bed_name_sum_multi) > 0){
-    warnings = c(warnings, paste0("found multi names for target_id in ", arg$ref_bed, " found the following multiple times: ", paste0(ref_bed_name_sum_multi$target_id, collapse = ",")) ) 
+    warnings = c(warnings, paste0("found multi names for target_name in ", arg$ref_bed, " found the following multiple times: ", paste0(ref_bed_name_sum_multi$target_name, collapse = ",")) ) 
   }
   
-  # check if multiple target_id loaded 
+  # check if multiple target_name loaded 
   dna_tab_sum_multi = dna_tab |> 
-    group_by(target_id) |> 
+    group_by(target_name) |> 
     count() |> 
     filter(n > 1)
   
   if(nrow(dna_tab_sum_multi) > 0){
-    warnings = c(warnings, paste0("found multi names for target_id in ", arg$target_fasta, " found the following multiple times: ", paste0(dna_tab_sum_multi$target_id, collapse = ",")) ) 
+    warnings = c(warnings, paste0("found multi names for target_name in ", arg$target_fasta, " found the following multiple times: ", paste0(dna_tab_sum_multi$target_name, collapse = ",")) ) 
   }
   
   return(warnings)
@@ -111,13 +111,13 @@ gen_warns_on_validate_ref_bed_cols <- function(ref_bed){
     is.character(`#chrom`), 
     is.numeric(start),
     is.numeric(end),
-    is.character(target_id), 
+    is.character(target_name), 
     is.numeric(length), 
     is.character(strand), 
     ! is.na(`#chrom`), 
     ! is.na(start), 
     ! is.na(end), 
-    ! is.na(target_id), 
+    ! is.na(target_name), 
     ! is.na(length), 
     ! is.na(strand)
   )
@@ -140,13 +140,13 @@ opts <- list(
   make_option(
     "--ref_bed", 
     help = str_c(
-      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand"
+      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_name, length, strand"
     )
   ), 
   make_option(
     "--target_fasta", 
     help = str_c(
-      "a fasta file with the ref sequences for the targets, the names of the records should match up with the target_id of the --ref_bed file"
+      "a fasta file with the ref sequences for the targets, the names of the records should match up with the target_name of the --ref_bed file"
     )
   ), 
   make_option(
@@ -183,7 +183,7 @@ run_add_ref_seqs_from_fasta <- function(){
   
   # read in the panel reference information 
   ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
-  warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand"), arg$ref_bed))
+  warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_name", "length", "strand"), arg$ref_bed))
   
   if(file.exists(arg$out) & !arg$overwrite){
     warnings = c(warnings, "file ", arg$out, " already exist, use --overwrite to over write it") 
@@ -200,7 +200,7 @@ run_add_ref_seqs_from_fasta <- function(){
   warnings = c(warnings, gen_warns_on_validate_ref_bed_cols(ref_bed))
   
   # check to see if values between dataets are similar 
-  ref_allele_decomp = set_decompose(ref_bed$target_id, names(dna))
+  ref_allele_decomp = set_decompose(ref_bed$target_name, names(dna))
   
   if(length(ref_allele_decomp$only_in_vectorA) > 0){
     warnings = c(warnings, paste0("the following loci were missing from the fasta file ", arg$target_fasta, " but are in ", arg$ref_bed,
@@ -211,11 +211,11 @@ run_add_ref_seqs_from_fasta <- function(){
   
   # convert into a table for joining 
   dna_tab = tibble(
-    target_id = names(dna), 
+    target_name = names(dna), 
     ref_seq = as.character(dna)
   )
   
-  # check if multiple target_id loaded 
+  # check if multiple target_name loaded 
   warnings = c(warnings, gen_warnings_multiple_inputs(ref_bed, dna_tab, arg))
   
   if(length(warnings) > 0){
@@ -230,7 +230,7 @@ run_add_ref_seqs_from_fasta <- function(){
   
   # join the ref_seq
   ref_bed = ref_bed |> 
-    left_join(dna_tab, by = "target_id")
+    left_join(dna_tab, by = "target_name")
   
   # write out 
   write_tsv(ref_bed, arg$out)

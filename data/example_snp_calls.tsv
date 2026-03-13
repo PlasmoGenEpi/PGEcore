@@ -1,4 +1,4 @@
-specimen_id	target_id	chrom	pos	snp_name	ref_base	seq_base	best_target_id	covered_by_target_ids	read_count	is_biallelic	he
+specimen_name	target_name	chrom	pos	snp_name	ref_base	seq_base	best_target_name	covered_by_target_names	read_count	is_biallelic	he
 Laos2017-01	Pf3D7_01_v3-0181544-0181729	Pf3D7_01_v3	181574	Pf3D7_01_v3-181574-181575	G	G	Pf3D7_01_v3-0181544-0181729	Pf3D7_01_v3-0181544-0181729	4648	TRUE	0.49744897959183676
 Laos2017-01	Pf3D7_01_v3-0528889-0529073	Pf3D7_01_v3	528933	Pf3D7_01_v3-528933-528934	C	G	Pf3D7_01_v3-0528889-0529073	Pf3D7_01_v3-0528889-0529073	5032	FALSE	0.5469678953626635
 Laos2017-01	Pf3D7_02_v3-0290610-0290789	Pf3D7_02_v3	290666	Pf3D7_02_v3-290666-290667	G	G	Pf3D7_02_v3-0290610-0290789	Pf3D7_02_v3-0290610-0290789	5220	TRUE	0.375

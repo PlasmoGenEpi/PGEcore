@@ -15,17 +15,17 @@ Allele frequency is estimated in two ways:
 
 ## Arguments
 
-`--aa_calls`: A TSV with columns for specimen_id, gene_id, aa_position, aa, and 
+`--aa_calls`: A TSV with columns for specimen_name, gene_id, aa_position, aa, and 
 read_count.
 
-`--mh_calls`: A TSV with columns for specimen_id, target_id, seq, and 
+`--mh_calls`: A TSV with columns for specimen_name, target_name, seq, and 
 read_count.
 
 `--method`: A string containing either "read_count_prop" or "presence_absence".
 
 `--output`: Path for output TSV. If `--aa_calls` was provided, it will have 
 columns for variant, formatted as a STAVE string, and freq. If `--mh_calls` was 
-provided, it will have columns for target_id, seq, and freq.
+provided, it will have columns for target_name, seq, and freq.
 
 ## Example Usage 
 

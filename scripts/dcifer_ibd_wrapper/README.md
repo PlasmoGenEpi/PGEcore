@@ -25,7 +25,7 @@ Greenhouse, B. (2022). Dcifer: An IBD-based method to calculate genetic distance
 between polyclonal infections. Genetics, 222(2). 
 https://doi.org/10.1093/genetics/iyac126
 
-A tutorial and information about this tool can be found 
+A tutorial and information about this tool, including installation instructions, can be found 
 [here](https://mrc-ide.github.io/PGEforge/tutorials/dcifer/dcifer_background.html).
 
 ## Script Usage

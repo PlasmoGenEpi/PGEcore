@@ -84,14 +84,14 @@ A tab-separated values (TSV) file with the following columns:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `specimen_id` | String | Unique identifier for each specimen |
+| `specimen_name` | String | Unique identifier for each specimen |
 | `snp_name` | String | Unique identifier for each genomic target/locus |
 | `read_count` | Integer | Number of reads supporting this allele |
 | `seq_base` | String | Nucleotide base (A, C, G, T) |
 
 **Example SNP data:**
 ```tsv
-specimen_id	snp_name	read_count	seq_base
+specimen_name	snp_name	read_count	seq_base
 sample_001	locus_001	150	A
 sample_001	locus_001	50	T
 sample_001	locus_002	200	C
@@ -125,13 +125,13 @@ The script outputs a tab-separated values (TSV) file with the following columns:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `specimen_id` | String | Unique identifier for each specimen |
+| `specimen_name` | String | Unique identifier for each specimen |
 | `coi_freq` | Numeric | COI estimate using frequency method |
 | `coi_variant` | Numeric | COI estimate using variant method |
 
 **Example output:**
 ```tsv
-specimen_id	coi_freq	coi_variant
+specimen_name	coi_freq	coi_variant
 sample_001	2.5	2.3
 sample_002	1.8	1.7
 sample_003	3.2	3.1

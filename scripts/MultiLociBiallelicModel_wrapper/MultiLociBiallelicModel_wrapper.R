@@ -13,7 +13,7 @@ library(readr)
 
 # install a specific version of variantstring package (this is in development so
 # may not always be backwards-compatible)
-variantstring_version <- "1.8.0"
+variantstring_version <- "1.8.6"
 if (!requireNamespace("variantstring", quietly = TRUE) ||
   packageVersion("variantstring") != variantstring_version) {
   stop(
@@ -805,7 +805,7 @@ opts <- list(
     "--aa_calls",
     type = "character",
     help = str_c(
-      "TSV containing aminoacid calls per specimen, with the columns: specimen_id, gene_id, aa_position, ref_aa, and aa."
+      "TSV containing aminoacid calls per specimen, with the columns: specimen_name, gene_id, aa_position, ref_aa, and aa."
     )
   ),
   make_option(
@@ -867,7 +867,7 @@ if (interactive()) {
 #' This function performs the following steps:
 #' \enumerate{
 #'   \item Reads the allele table from `input_path` and processes it to create a wide-format tibble.
-#'   \item Validates the allele data to ensure all loci columns (excluding `specimen_id`) are numeric.
+#'   \item Validates the allele data to ensure all loci columns (excluding `specimen_name`) are numeric.
 #'   \item Processes the loci group file from `loci_group` and validates it against predefined rules.
 #'   \item Matches loci from the allele table to their corresponding groups, creating subtables for each group.
 #'   \item Generates a `MLBM_object` containing all processed data and grouped subtables.
@@ -896,7 +896,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group, aa_samp
     # by applying this filter, it will remove the specimen if it's included in a group with this loci 
     original_input_data = original_input_data %>% 
       group_by(gene_id, aa_position, aa) %>% 
-      mutate(sample_count = n_distinct(specimen_id)) %>% 
+      mutate(sample_count = n_distinct(specimen_name)) %>% 
       filter(sample_count > aa_sample_occurence_cut_off)
     input_data = original_input_data %>% 
       ungroup() %>% 
@@ -908,7 +908,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group, aa_samp
   
   MLBM_data <- input_data %>%
     mutate(identifier = paste(gene_id, aa_position, sep = ":")) %>%
-    group_by(specimen_id, identifier) %>%
+    group_by(specimen_name, identifier) %>%
     mutate(value = case_when(
       n_distinct(aa) > 2 ~ NA_real_, # More than two distinct amino acids
       all(ref_aa == aa) ~ 0, # All entries have ref_aa == aa
@@ -916,7 +916,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group, aa_samp
       any(ref_aa == aa) & any(ref_aa != aa) ~ 2 # Mixed entries
     )) %>%
     ungroup() %>%
-    select(specimen_id, identifier, value) %>%
+    select(specimen_name, identifier, value) %>%
     distinct() %>%
     tidyr::pivot_wider(names_from = identifier, values_from = value, values_fill = NA) %>%
     # Remove any sample with missing data
@@ -932,7 +932,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group, aa_samp
     )
   }
 
-  # Generate validation rules to check if all columns (except `specimen_id`) are numeric
+  # Generate validation rules to check if all columns (except `specimen_name`) are numeric
   # Validate package couldn't handle a tibble with variable number of columns.
   all_doubles <- all(sapply(MLBM_data[-1], is.double))
 
@@ -1028,7 +1028,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group, aa_samp
   
   # Generate subtables
   result_tables <- lapply(names(result_list), function(group_name) {
-    columns <- c("specimen_id", result_list[[group_name]])
+    columns <- c("specimen_name", result_list[[group_name]])
     subtable <- MLBM_data %>% select(all_of(columns))
     return(subtable)
   })

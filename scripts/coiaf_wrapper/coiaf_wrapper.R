@@ -23,7 +23,7 @@
 #
 # Input file formats:
 #   SNP data (required): TSV file with columns:
-#     - specimen_id: The specimen ID
+#     - specimen_name: The specimen ID
 #     - snp_name: The SNP name
 #     - read_count: The read count
 #     - seq_base: The sequence base (A, C, G, T)
@@ -35,7 +35,7 @@
 #
 # Output:
 #   TSV file with columns:
-#     - specimen_id: The specimen ID
+#     - specimen_name: The specimen ID
 #     - coi_freq: COI estimate using frequency method
 #     - coi_variant: COI estimate using variant method
 #
@@ -57,7 +57,7 @@ suppressPackageStartupMessages({
 #' Estimate Complexity of Infection (COI) using COIAF
 #'
 #' @param snp_data A data frame with the following columns:
-#' - specimen_id: The specimen ID
+#' - specimen_name: The specimen ID
 #' - snp_name: The SNP name
 #' - read_count: The read count
 #' - seq_base: the sequence base (A, C, G, T)
@@ -74,11 +74,11 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
 
   complete_snp_data <- snp_data |>
     tidyr::complete(
-      specimen_id, tidyr::nesting(snp_name, seq_base),
+      specimen_name, tidyr::nesting(snp_name, seq_base),
       fill = list(read_count = 0)
     ) |>
-    dplyr::select(specimen_id, snp_name, seq_base, read_count) |>
-    dplyr::group_by(specimen_id, snp_name) |>
+    dplyr::select(specimen_name, snp_name, seq_base, read_count) |>
+    dplyr::group_by(specimen_name, snp_name) |>
     dplyr::mutate(n_snps = dplyr::n())
 
   if (any(complete_snp_data$n_snps > 2)) {
@@ -95,11 +95,11 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
 
   # Process SNP data to calculate within-sample minor allele frequencies
   processed <- complete_snp_data |>
-    dplyr::group_by(specimen_id, snp_name) |>
+    dplyr::group_by(specimen_name, snp_name) |>
     dplyr::mutate(coverage = sum(read_count)) |>
     dplyr::ungroup() |>
     dplyr::mutate(wsmaf = read_count / coverage) |>
-    dplyr::select(specimen_id, snp_name, seq_base, wsmaf, read_count)
+    dplyr::select(specimen_name, snp_name, seq_base, wsmaf, read_count)
     
 
   # Calculate population-level minor allele frequencies if not provided
@@ -132,11 +132,11 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
     dplyr::left_join(plmaf, by = c("snp_name", "seq_base")) |>
     dplyr::filter(!is.na(plmaf))
 
-  cat("Estimating COI for", length(unique(filtered_processed$specimen_id)), "specimens...\n")
+  cat("Estimating COI for", length(unique(filtered_processed$specimen_name)), "specimens...\n")
   
   # Estimate COI using both frequency and variant methods
   coi <- filtered_processed |>
-    dplyr::group_by(specimen_id) |>
+    dplyr::group_by(specimen_name) |>
     dplyr::summarize(
       coi_freq = coiaf::optimize_coi(
         tibble::tibble(wsmaf, plmaf, coverage = read_count),
@@ -257,7 +257,7 @@ main <- function() {
     # Read SNP data
     cat("Reading SNP data...\n")
     snp_data <- readr::read_tsv(opt$snp_data, show_col_types = FALSE)
-    validate_data(snp_data, c("specimen_id", "snp_name", "read_count", "seq_base"), "SNP data")
+    validate_data(snp_data, c("specimen_name", "snp_name", "read_count", "seq_base"), "SNP data")
     
     # Read PLMAF data if provided
     plmaf_data <- NULL
