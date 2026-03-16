@@ -19,10 +19,10 @@ Usage: ./add_ref_seqs_with_targeted_ref_fasta.R [options]
 
 Options:
 	--ref_bed=REF_BED
-		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand
+		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_name, length, strand
 
 	--target_fasta=FASTA
-		a fasta file with the ref sequences for the targets, the names of the records should match up with the target_id of the --ref_bed file
+		a fasta file with the ref sequences for the targets, the names of the records should match up with the target_name of the --ref_bed file
 
 	--out=OUT
 		the out file to write to
@@ -56,7 +56,7 @@ Usage: ./add_ref_seqs_with_full_genome_ref_fasta.R [options]
 
 Options:
 	--ref_bed=REF_BED
-		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand
+		a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_name, length, strand
 
 	--genome_fasta=GENOME
 		a genome file to extract the ref_seq

@@ -16,7 +16,7 @@ opts <- list(
   make_option(
     "--allele_table",
     help = str_c("TSV containing alleles present in each specimen, with columns: ",
-                 "specimen_id, target_id, seq"),
+                 "specimen_name, target_name, seq"),
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...){
@@ -28,14 +28,14 @@ opts <- list(
   ),
   make_option(
     "--subset_targets",
-    help = "A logical to indicate whether the matrix should be subset by user-supplied target_id",
+    help = "A logical to indicate whether the matrix should be subset by user-supplied target_name",
     type = "logical",
     default = FALSE
   ),
   make_option(
     "--target_groups",
     help = str_c("TSV containing the targets that should be analyzed for specific groups (eg pfdhr/pfdhps), with columns: ",
-                 "group_id, target_id"),
+                 "group_id, target_name"),
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...){
@@ -94,9 +94,9 @@ if (length(missing_args) > 0) {
 #' Load and format allele table for malaria.em
 #' 
 #' This function loads the allele table in .tsv format and reshapes it into a matrix suitable as input for the `malaria.em` package.
-#' The input file should contain columns named `specimen_id`, `target_id`, and `seq`. 
+#' The input file should contain columns named `specimen_name`, `target_name`, and `seq`. 
 #'
-#' @param file_path Character. Path to the input .tsv file containing allele calls with columns `specimen_id`, `target_id`, and `seq`. 
+#' @param file_path Character. Path to the input .tsv file containing allele calls with columns `specimen_name`, `target_name`, and `seq`. 
 #'
 #' @return A matrix where rows represent specimens/samples and columns represent alleles, with each cell containing the unique sequence.
 #' This matrix is formatted for use with `malaria.em::malaria_em()` and wrapper function `run_malariaem()`.
@@ -125,20 +125,20 @@ load_allele_table <- function(file_path){
   mhap <- readr::read_tsv(
     file_path,
     col_types = readr::cols(
-      specimen_id = readr::col_character(),
-      target_id = readr::col_character(),
+      specimen_name = readr::col_character(),
+      target_name = readr::col_character(),
       seq = readr::col_character()
     ),
-    col_select = c("specimen_id", "target_id", "seq")
+    col_select = c("specimen_name", "target_name", "seq")
   )
   
   # Validate input data
   rules <- validate::validator(
-    is.character(specimen_id), 
-    is.character(target_id), 
+    is.character(specimen_name), 
+    is.character(target_name), 
     is.character(seq), 
-    ! is.na(specimen_id), 
-    ! is.na(target_id), 
+    ! is.na(specimen_name), 
+    ! is.na(target_name), 
     ! is.na(seq)
   )
   fails <- validate::confront(mhap, rules, raise = "all") %>%
@@ -155,12 +155,12 @@ load_allele_table <- function(file_path){
   print("Converting to matrix...")
   
   matrix <- mhap |>
-    select(specimen_id, target_id, seq) |>
-    group_by(specimen_id, target_id) |>
-    pivot_wider(names_from = target_id,
+    select(specimen_name, target_name, seq) |>
+    group_by(specimen_name, target_name) |>
+    pivot_wider(names_from = target_name,
                 values_from = seq,
                 values_fn = ~ paste(unique(.), collapse = " ")) |>
-    column_to_rownames(var = "specimen_id") |>
+    column_to_rownames(var = "specimen_name") |>
     as.matrix()
   
   return(matrix)
@@ -168,9 +168,9 @@ load_allele_table <- function(file_path){
 
 #' Load target groups data
 #' 
-#' This function loads the target groups data in .tsv format. The input file should contain columns named `group_id` and `target_id`.
+#' This function loads the target groups data in .tsv format. The input file should contain columns named `group_id` and `target_name`.
 #'
-#' @param file_path Character. Path to the input .tsv file with columns `group_id` and `target_id`.
+#' @param file_path Character. Path to the input .tsv file with columns `group_id` and `target_name`.
 #'
 #' @return A dataframe containing groups of targets to be analyzed separately by `malaria.em`.
 #' This object can be optionally supplied to the wrapper function `run_malariaem()` to run `malaria.em` on subsets of targets. 
@@ -196,7 +196,7 @@ load_target_groups <- function(file_path) {
   
   target_groups <- read_tsv(file_path, 
                             col_types = cols(group_id = col_character(),
-                                             target_id = col_character()
+                                             target_name = col_character()
                             ),
                             show_col_types = FALSE
   )
@@ -204,9 +204,9 @@ load_target_groups <- function(file_path) {
   # Validate
   rules <- validate::validator(
     is.character(group_id), 
-    is.character(target_id), 
+    is.character(target_name), 
     ! is.na(group_id), 
-    ! is.na(target_id) 
+    ! is.na(target_name) 
   )
   fails <- validate::confront(target_groups, rules, raise = "all") %>%
     validate::summary() %>%
@@ -235,7 +235,7 @@ load_target_groups <- function(file_path) {
 #' @param test_size Value of the maximum size to test or "min" to use the minimum allowed level. Overridden by the minimum allowed.
 #' @param max_size Value of the maximum size to throw an error in case of an override.
 #' @param subset_targets Logical. If `TRUE`, run `malaria.em` separately for each group defined in `target_groups`, otherwise run once on all columns in the `matrix`. Default is `FALSE`.
-#' @param target_groups A data frame with columns `group_id` and `target_id`. When `subset_targets = TRUE`, `target_groups` must be supplied and each unique `group_id` defines a set of targets to include in a separate run. All `target_id` values must be column names in `matrix`.
+#' @param target_groups A data frame with columns `group_id` and `target_name`. When `subset_targets = TRUE`, `target_groups` must be supplied and each unique `group_id` defines a set of targets to include in a separate run. All `target_name` values must be column names in `matrix`.
 #' @param output_dir Character path to the directory where TSV outputs are written (note this directory must already exist). If `NULL`, uses `getwd()` and outputs to the current working directory. 
 #' 
 #' #' @details
@@ -244,15 +244,15 @@ load_target_groups <- function(file_path) {
 #'   \item \code{gt_freq_summary.tsv}: Population-level multilocus genotype frequency estimates. Columns:
 #'     \itemize{
 #'       \item \code{gt_id}: Unique genotype ID (global across all samples).
-#'       \item \code{target_id}: Allele name.
+#'       \item \code{target_name}: Allele name.
 #'       \item \code{seq}: Allele sequence at the locus.
 #'       \item \code{freq}: Estimated population-level frequency of the multilocus genotype.
 #'       \item \code{freq_se}: Standard error of the estimated frequency.
 #'     }
 #'   \item \code{gt_phase_summary.tsv}: Sample-level phased multilocus genotypes with posterior probabilities. Columns:
 #'     \itemize{
-#'       \item \code{specimen_id}: Sample identifier.
-#'       \item \code{target_id}: Allele name.
+#'       \item \code{specimen_name}: Sample identifier.
+#'       \item \code{target_name}: Allele name.
 #'       \item \code{seq}: Allele sequence at the locus.
 #'       \item \code{gt_id}: Multi-locus genotype ID (global across samples). 
 #'       \item \code{posterior_est}: Posterior probability of the phased genotype.
@@ -337,7 +337,7 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
   checkmate::assert_flag(subset_targets)
   if (subset_targets) {
     checkmate::assert_data_frame(target_groups, min.rows = 1, min.cols = 2)
-    checkmate::assert_subset(c("group_id", "target_id"), choices = names(target_groups))
+    checkmate::assert_subset(c("group_id", "target_name"), choices = names(target_groups))
   }
   
   # Set output directory for writing results
@@ -375,8 +375,8 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
     # get sample names
     sample_name <- matrix |> 
       as.data.frame() |> 
-      rownames_to_column("specimen_id") |> 
-      distinct(specimen_id) |> 
+      rownames_to_column("specimen_name") |> 
+      distinct(specimen_name) |> 
       rowid_to_column("ids") 
     
     # get target names
@@ -394,7 +394,7 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
                    names_to = "hap_id", 
                    values_to = "seq") |>
       select(gt_id, 
-             target_id = hap_id, 
+             target_name = hap_id, 
              seq, 
              freq = hap.prob, 
              freq_se = hap.prob.std)
@@ -413,15 +413,15 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
       left_join(haplo_pred_prob, 
                 by = join_by(ids, haplo.set)) |>
       left_join(sample_name, join_by(ids)) |>
-      select(specimen_id,
+      select(specimen_name,
              haplo.set,
              posterior_est = post.p) |> 
       separate_rows(haplo.set, sep = " ") |> 
       rename(gt_id = haplo.set) |>
       mutate(gt_id = as.integer(gt_id)) |>
       left_join(gt_freq_summary, join_by(gt_id), relationship = "many-to-many") |>
-      select(specimen_id, target_id, seq, gt_id, posterior_est) |> 
-      mutate(phase_id = dense_rank(gt_id), .by = specimen_id)
+      select(specimen_name, target_name, seq, gt_id, posterior_est) |> 
+      mutate(phase_id = dense_rank(gt_id), .by = specimen_name)
     
     if (!is.null(label)) {
       gt_phase_summary <- gt_phase_summary |> mutate(group_id = label)
@@ -450,7 +450,7 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
   
   for (gid in group_ids) {
     # get targets for this gid
-    targets <- unique(target_groups$target_id[target_groups$group_id == gid])
+    targets <- unique(target_groups$target_name[target_groups$group_id == gid])
     
     if (length(targets) == 0L) {
       warning("No targets found for group_id '", gid, "'. Skipping.")

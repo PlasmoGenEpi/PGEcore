@@ -13,7 +13,7 @@ library(readr)
 
 # install a specific version of variantstring package (this is in development so
 # may not always be backwards-compatible)
-variantstring_version <- "1.8.0"
+variantstring_version <- "1.8.6"
 if (!requireNamespace("variantstring", quietly = TRUE) ||
   packageVersion("variantstring") != variantstring_version) {
   stop(
@@ -805,7 +805,7 @@ opts <- list(
     "--aa_calls",
     type = "character",
     help = str_c(
-      "TSV containing aminoacid calls per specimen, with the columns: specimen_id, gene_id, aa_position, ref_aa, and aa."
+      "TSV containing aminoacid calls per specimen, with the columns: specimen_name, gene_id, aa_position, ref_aa, and aa."
     )
   ),
   make_option(
@@ -822,6 +822,14 @@ opts <- list(
     help = str_c(
       "TSV to contain multilocus allele frequency estimates, with the ",
       "columns group_id, variant, and freq"
+    )
+  ),
+  make_option(
+    "--aa_sample_occurence_cut_off",
+    type = "integer",
+    default = 0,
+    help = str_c(
+      "Amino acid calls must occur in more than this number of samples to be included in final input data"
     )
   )
 )
@@ -845,6 +853,7 @@ if (interactive()) {
 #'
 #' @param input_path A string specifying the path to the input allele table (in tab-delimited format).
 #' @param loci_group A string specifying the path to the loci group file (in tab-delimited format).
+#' @param aa_sample_occurence_cut_off Amino acid calls must occur in more than this number of samples to be included in final input data 
 #'
 #' @return A list (`MLBM_object`) containing:
 #' \describe{
@@ -858,7 +867,7 @@ if (interactive()) {
 #' This function performs the following steps:
 #' \enumerate{
 #'   \item Reads the allele table from `input_path` and processes it to create a wide-format tibble.
-#'   \item Validates the allele data to ensure all loci columns (excluding `specimen_id`) are numeric.
+#'   \item Validates the allele data to ensure all loci columns (excluding `specimen_name`) are numeric.
 #'   \item Processes the loci group file from `loci_group` and validates it against predefined rules.
 #'   \item Matches loci from the allele table to their corresponding groups, creating subtables for each group.
 #'   \item Generates a `MLBM_object` containing all processed data and grouped subtables.
@@ -876,13 +885,30 @@ if (interactive()) {
 #' @import tidyr
 #' @import validate
 #' @export
-create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
+create_MultiLociBiallelicModel_input <- function(input_path, loci_group, aa_sample_occurence_cut_off = 0) {
   # Read the allele table
   print("Reading input data")
-  input_data <- read_tsv(input_path)
+  original_input_data <- read_tsv(input_path)
+  
+  # filter data 
+  if(aa_sample_occurence_cut_off > 0){
+    # might not be the best way to do this but with this filter, the below filter will remove any specimen with missing data so
+    # by applying this filter, it will remove the specimen if it's included in a group with this loci 
+    original_input_data = original_input_data %>% 
+      group_by(gene_id, aa_position, aa) %>% 
+      mutate(sample_count = n_distinct(specimen_name)) %>% 
+      filter(sample_count > aa_sample_occurence_cut_off)
+    input_data = original_input_data %>% 
+      ungroup() %>% 
+      select(-sample_count)
+  } else {
+    # if no filter, just copy original data 
+    input_data = original_input_data
+  }
+  
   MLBM_data <- input_data %>%
     mutate(identifier = paste(gene_id, aa_position, sep = ":")) %>%
-    group_by(specimen_id, identifier) %>%
+    group_by(specimen_name, identifier) %>%
     mutate(value = case_when(
       n_distinct(aa) > 2 ~ NA_real_, # More than two distinct amino acids
       all(ref_aa == aa) ~ 0, # All entries have ref_aa == aa
@@ -890,7 +916,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
       any(ref_aa == aa) & any(ref_aa != aa) ~ 2 # Mixed entries
     )) %>%
     ungroup() %>%
-    select(specimen_id, identifier, value) %>%
+    select(specimen_name, identifier, value) %>%
     distinct() %>%
     tidyr::pivot_wider(names_from = identifier, values_from = value, values_fill = NA) %>%
     # Remove any sample with missing data
@@ -906,7 +932,7 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     )
   }
 
-  # Generate validation rules to check if all columns (except `specimen_id`) are numeric
+  # Generate validation rules to check if all columns (except `specimen_name`) are numeric
   # Validate package couldn't handle a tibble with variable number of columns.
   all_doubles <- all(sapply(MLBM_data[-1], is.double))
 
@@ -967,12 +993,30 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
       call. = FALSE
     )
   }
+  identifiers_in_groups = unique(paste0(loci_groups$gene_id, ":", loci_groups$aa_position))
+  
+  # later matching does not work if there is a loci with multi-allelic calls 
+  input_data_aa_calls_check = input_data %>%
+    mutate(identifier = paste0(gene_id, ":", aa_position)) %>%
+    filter(identifier %in% identifiers_in_groups) %>%
+    group_by(gene_id, aa_position) %>%
+    summarise(distinct_aas = n_distinct(aa),
+              aas = paste0(unique(sort(aa)), collapse = ",")) %>%
+    filter(distinct_aas > 2)
+  
+  if(nrow(input_data_aa_calls_check) > 0){
+    warning_message = "The following positions are not biallelic "
+    for(row in 1:nrow(input_data_aa_calls_check)){
+      warning_message = paste0(warning_message, " ", input_data_aa_calls_check$gene_id[row], ":", input_data_aa_calls_check$aa_position[row], " aas: ", input_data_aa_calls_check$aas)
+    }
+    stop(warning_message)
+  }
 
   # Matching groups to create lists of loci
   match_group <- input_data %>%
     select(gene_id, aa_position) %>%
     mutate(identifier = paste(gene_id, aa_position, sep = ":"))
-
+  
   merged_data <- match_group %>%
     inner_join(loci_groups, by = c("gene_id", "aa_position"), relationship = "many-to-many")
 
@@ -981,10 +1025,10 @@ create_MultiLociBiallelicModel_input <- function(input_path, loci_group) {
     summarise(identifiers = list(unique(identifier)), .groups = "drop")
 
   result_list <- setNames(grouped_list$identifiers, grouped_list$group_id)
-
+  
   # Generate subtables
   result_tables <- lapply(names(result_list), function(group_name) {
-    columns <- c("specimen_id", result_list[[group_name]])
+    columns <- c("specimen_name", result_list[[group_name]])
     subtable <- MLBM_data %>% select(all_of(columns))
     return(subtable)
   })
@@ -1207,7 +1251,7 @@ summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
 # Read the aminoacid calls
 
 
-MLBM_object <- create_MultiLociBiallelicModel_input(arg$aa_calls, arg$loci_group)
+MLBM_object <- create_MultiLociBiallelicModel_input(arg$aa_calls, arg$loci_group, arg$aa_sample_occurence_cut_off)
 
 MLBM_res <- list()
 # Iterate over each table by groups of loci
