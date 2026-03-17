@@ -15,15 +15,22 @@ library(stringr)
 library(tibble)
 library(tidyr, warn.conflicts = FALSE)
 
-# install a specific version of variantstring package (this is in development so
-# may not always be backwards-compatible)
-variantstring_version <- "1.8.6"
-if (!requireNamespace("variantstring", quietly = TRUE) ||
-  packageVersion("variantstring") != variantstring_version) {
+# Ensure a compatible version of variantstring (any 1.*.*)
+if (!requireNamespace("variantstring", quietly = TRUE)) {
   stop(
-    "This script requires variantstring version ",
+    "This script requires the variantstring package (version 1.x.x), ",
+    "but it is not installed.",
+    call. = FALSE
+  )
+}
+
+variantstring_version <- as.character(packageVersion("variantstring"))
+if (utils::compareVersion(variantstring_version, "1.0.0") < 0 ||
+  utils::compareVersion(variantstring_version, "2.0.0") >= 0) {
+  stop(
+    "This script requires variantstring version 1.x.x, but version ",
     variantstring_version,
-    " and it is not installed",
+    " is installed.",
     call. = FALSE
   )
 }
