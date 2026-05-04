@@ -16,5 +16,6 @@ This tool provides a simple calculation of popgen stats. By locus, it calculates
 ## Script Usage 
 
 ```
-Rscript per_locus_tajima_d_summary_wrapper.R --allele_table <allele_table.tsv>
+Rscript scripts/per_locus_popgen_summary/per_locus_popgen_summary.R \
+    --allele_table <allele_table.tsv>
 ```
