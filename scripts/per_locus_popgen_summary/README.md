@@ -17,5 +17,6 @@ This tool provides a simple calculation of popgen stats. By locus, it calculates
 
 ```
 Rscript scripts/per_locus_popgen_summary/per_locus_popgen_summary.R \
-    --allele_table <allele_table.tsv>
+    --allele_table data/example2_allele_table.tsv \
+    --out popgen_summary.tsv
 ```
