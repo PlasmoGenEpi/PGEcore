@@ -174,7 +174,9 @@ calculate_popgen_stats <- function(allele_data, msa_method = "Muscle") {
   return(list(
     Nucleotide_Diversity = nucleotide_diversity,
     Segregating_Sites = segregating_sites,
-    Tajima_D = tajima_test$D
+    Tajima_D = tajima_test$D, 
+    Tajima_D_pval_normal = tajima_test$Pval.normal, 
+    Tajima_D_pval_beta = tajima_test$Pval.beta
   ))
 }
 
