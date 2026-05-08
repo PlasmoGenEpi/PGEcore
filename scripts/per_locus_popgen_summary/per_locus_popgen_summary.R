@@ -14,9 +14,31 @@ opts = list(
   make_option(
     "--allele_table",
     help = str_c(
-      "TSV containing allele present/absent per specimen, with the
-       columns: specimen_name, target_name, seq"
+      "TSV containing alleles, with columns identifying specimens, ", 
+      "target names, and target values. The names of these columns are given ", 
+      "by the --specimen_name_col, --target_name_col, and --target_value_col ", 
+      "arguments, respectively. Required."
     )
+  ), 
+  make_option(
+    "--specimen_name_col", 
+    default = "specimen_name", 
+    help = "String giving the name of the specimen ID column"
+  ), 
+  make_option(
+    "--target_name_col", 
+    default = "target_name", 
+    help = 
+      "String giving the name of the target name column (e.g., the locus name)"
+  ), 
+  make_option(
+    "--target_value_col", 
+    default = "seq", 
+    help = 
+      str_c(
+        "String giving the name of the target value column (e.g., the allele ", 
+        "call)"
+      )
   ), 
   make_option(
     "--out",
@@ -48,21 +70,20 @@ if (interactive()) {
 #' Reads an input file, validates its format, and creates a locus data frame
 #' containing sample IDs, target IDs, and allele sequences.
 #'
-#' @param input_path A string specifying the path to the input file. The file should be tab-separated
-#' and contain columns for `specimen_name`, `target_name`, and `seq`.
-#' @return A data frame with columns `sample_id`, `target_name`, and `allele`.
-#' @details This function reads the input data from a file, validates the format using
-#' predefined rules (ensuring all values are non-missing and of the correct type), and
-#' returns a cleaned data frame suitable for further analysis.
-#' @examples
-#' \dontrun{
-#'   locus_data <- create_locus_data("path/to/input_file.tsv")
-#' }
-#' @importFrom dplyr select rename filter
-#' @importFrom validate validator confront summary
-#' @importFrom stringr str_c
-#' @export
-create_locus_data <- function(input_path) {
+#' @param input_path A string specifying the path to the input file.
+#' @param specimen_name_col String giving the name of the specimen ID 
+#'   column.
+#' @param target_name_col String giving the name of the target name column.
+#' @param target_value_col String giving the name of the column 
+#'   containing target values (i.e., the genotypes).
+#'
+#' @return A tibble containing columns for specimen_name, target_name, and 
+#'   target_value.
+create_locus_data <- function(
+                              input_path, 
+                              specimen_name_col = "specimen_name", 
+                              target_name_col = "target_name", 
+                              target_value_col = "seq") {
 
   input_data <- read_tsv(
       input_path, 
@@ -72,20 +93,24 @@ create_locus_data <- function(input_path) {
       ), 
       progress = FALSE
     )
-  locus_data <- input_data |>
-    dplyr::select(specimen_name, target_name, seq) |> 
-    dplyr::rename(sample_id = specimen_name, allele = seq)
+  locus_data <- input_data %>%
+    select(all_of(c(specimen_name_col, target_name_col, target_value_col))) %>%
+    # Standardize names
+    rename_with(
+      ~ c("specimen_name", "target_name", "target_value"),
+      .cols = all_of(c(specimen_name_col, target_name_col, target_value_col))
+    )
   
   rules <- validate::validator(
     # Data columns
-    is.character(sample_id),
+    is.character(specimen_name),
     is.character(target_name),
-    is.character(allele),
+    is.character(target_value),
   
     # Non-missing values
-    !is.na(sample_id),
+    !is.na(specimen_name),
     !is.na(target_name),
-    !is.na(allele)
+    !is.na(target_value)
   )
   
   # Confront the analysis_object with validation rules
@@ -186,7 +211,7 @@ calculate_popgen_stats <- function(allele_data, msa_method = "Muscle") {
 #' Groups allele data by `target_name` and calculates population genetic statistics
 #' (nucleotide diversity, number of segregating sites, and Tajima's D) for each group.
 #'
-#' @param locus_data A data frame containing columns `sample_id`, `target_name`, and `allele`.
+#' @param locus_data A data frame containing columns `specimen_name`, `target_name`, and `target_value`.
 #' @param msa_method the method used to create the multiple sequence alignment 
 #' @return a table of results.
 #' Each row corresponds to a `target_name`, and columns include:
@@ -210,7 +235,7 @@ calculate_stats_by_target_name <- function(locus_data, msa_method = "Muscle") {
   results <- locus_data %>%
     dplyr::group_by(target_name) %>%
     dplyr::summarise(
-      stats = list(calculate_popgen_stats(allele, msa_method))
+      stats = list(calculate_popgen_stats(target_value, msa_method))
     ) %>%
     tidyr::unnest_wider(stats)
   return(results)
@@ -221,9 +246,15 @@ if(!(arg$msa_method %in% c('ClustalW', 'ClustalOmega', 'Muscle'))){
   stop(paste0("--msa_method must be 'ClustalW', 'ClustalOmega', or 'Muscle', not ", arg$msa_method))
 }
 
-locus_data = create_locus_data(arg$allele_table)
+locus_data = create_locus_data(
+  arg$allele_table, 
+  specimen_name_col = arg$specimen_name_col, 
+  target_name_col = arg$target_name_col, 
+  target_value_col = arg$target_value_col
+)
 
 # Calculate nuc gens
 res = calculate_stats_by_target_name(locus_data)
 colnames(res) = tolower(colnames(res))
-readr::write_tsv(res, arg$out)
+res %>%
+  readr::write_tsv(arg$out)
