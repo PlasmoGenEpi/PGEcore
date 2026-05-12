@@ -184,6 +184,7 @@ if (interactive()) {
   arg$coi_output <- "../../coi.tsv"
   arg$slaf_output <- "../../slaf.tsv"
   arg$threads <- 5
+  arg$Kmax <- 5
 }
 
 #' Read allele table into a tibble
