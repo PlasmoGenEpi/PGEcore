@@ -148,31 +148,6 @@ opts <- list(
     help = str_c(
       "Path of RDS file to contain the MALECOT results object. Required."
     )
-  ), 
-  make_option(
-    "--admix_coeff_output", 
-    help = str_c(
-      "Path of TSV file to contain admixture coefficients for each sample for ", 
-      "the best supported K, with a column with name matching ", 
-      "--specimen_name_col and cluster_id and frac_membership columns. ",
-      "Required."
-    )
-  ), 
-  make_option(
-    "--coi_output", 
-    help = str_c(
-      "Path of TSV file to contain COI estimates from the best supported K, ", 
-      "with a column with name matching --specimen_name_col and a coi column. ", 
-      "Required."
-    )
-  ), 
-  make_option(
-    "--slaf_output", 
-    help = str_c(
-      "Path of TSV file to contain single locus allele frequencies for the ", 
-      "best supported K, with columns with names matching --target_name_col ", 
-      "and --target_value_col, and cluster_id and freq columns. Required."
-    )
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
@@ -180,9 +155,6 @@ arg <- parse_args(OptionParser(option_list = opts))
 if (interactive()) {
   arg$allele_table <- "../../data/example2_allele_table.tsv"
   arg$model_results_output <- "../../MALECOT_res.rds"
-  arg$admix_coeff_output <- "../../admix_coeff.tsv"
-  arg$coi_output <- "../../coi.tsv"
-  arg$slaf_output <- "../../slaf.tsv"
   arg$threads <- 5
   arg$Kmax <- 5
 }
@@ -359,3 +331,7 @@ malecot_res <- run_malecot(
   GTI_pow = arg$GTI_pow, 
   coupling_on = arg$coupling_on
 )
+
+# Save results ---------------------------------------------------------
+malecot_res %>%
+  write_rds(arg$model_results_output)
