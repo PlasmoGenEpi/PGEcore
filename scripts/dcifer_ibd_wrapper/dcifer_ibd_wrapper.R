@@ -3,20 +3,22 @@
 # Estimate IBD-based relatedness with Dcifer
 
 # Load required libraries ----------------------------------------------
-library(dcifer)
+library(dcifer, warn.conflicts = F)
 # These will be referenced without the `package::` construct, and thus 
 # are loaded second to avoid masking
-library(doParallel)
-library(dplyr)
-library(magrittr)
-library(optparse)
-library(parallel)
-library(parallelly)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
+library(parallel, warn.conflicts = F)
+library(foreach, warn.conflicts = F)
+library(iterators, warn.conflicts = F)
+library(doParallel, warn.conflicts = F)
+library(dplyr, warn.conflicts = F)
+library(magrittr, warn.conflicts = F)
+library(optparse, warn.conflicts = F)
+library(parallelly, warn.conflicts = F)
+library(purrr, warn.conflicts = F)
+library(readr, warn.conflicts = F)
+library(stringr, warn.conflicts = F)
+library(tibble, warn.conflicts = F)
+library(tidyr, warn.conflicts = F)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
