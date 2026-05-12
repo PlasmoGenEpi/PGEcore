@@ -9,9 +9,11 @@ Contents:
 
 This tool provides a simple calculation of popgen stats. By locus, it calculates:
 
-* Number of Segregating Sites.
-* Nucleotide Diversity.
-* Tajima's D.
+* Nucleotide diversity (`nucleotide_diversity`)
+* Number of segregating sites (`segregating_sites`)
+* Tajima's D (`tajima_d`), with *p*-values calculated according to both a normal 
+  distribution (`tajima_d_pval_normal`) and a beta distribution 
+  (`tajima_d_pval_beta`). See `pegas::tajima.test()` for details.
 
 ## Script Usage 
 
