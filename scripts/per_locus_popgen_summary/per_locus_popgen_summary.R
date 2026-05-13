@@ -1,17 +1,44 @@
 #!/usr/bin/env Rscript
 
-library("optparse")
-library("stringr")
-library("pegas")
+library(dplyr)
+library(readr)
+library(optparse)
+library(stringr)
+
+library(ape)
+library(msa)
+library(pegas)
 
 # Parse arguments ------------------------------------------------------
 opts = list(
   make_option(
     "--allele_table",
     help = str_c(
-      "TSV containing allele present/absent per specimen, with the
-       columns: specimen_name, target_name, seq"
+      "TSV containing alleles, with columns identifying specimens, ", 
+      "target names, and target values. The names of these columns are given ", 
+      "by the --specimen_name_col, --target_name_col, and --target_value_col ", 
+      "arguments, respectively. Required."
     )
+  ), 
+  make_option(
+    "--specimen_name_col", 
+    default = "specimen_name", 
+    help = "String giving the name of the specimen ID column"
+  ), 
+  make_option(
+    "--target_name_col", 
+    default = "target_name", 
+    help = 
+      "String giving the name of the target name column (e.g., the locus name)"
+  ), 
+  make_option(
+    "--target_value_col", 
+    default = "seq", 
+    help = 
+      str_c(
+        "String giving the name of the target value column (e.g., the allele ", 
+        "call)"
+      )
   ), 
   make_option(
     "--out",
@@ -28,9 +55,12 @@ opts = list(
     )
   )
 )
-
-
-
+arg <- parse_args(OptionParser(option_list = opts))
+# Arguments used for development
+if (interactive()) {
+  arg$allele_table <- "../../data/example2_allele_table.tsv"
+  arg$out <- "../../popgen_summary.tsv"
+}
 
 # locus counting functions -----------------------------------------------------
 
@@ -40,43 +70,50 @@ opts = list(
 #' Reads an input file, validates its format, and creates a locus data frame
 #' containing sample IDs, target IDs, and allele sequences.
 #'
-#' @param input_path A string specifying the path to the input file. The file should be tab-separated
-#' and contain columns for `specimen_name`, `target_name`, and `seq`.
-#' @return A data frame with columns `sample_id`, `target_name`, and `allele`.
-#' @details This function reads the input data from a file, validates the format using
-#' predefined rules (ensuring all values are non-missing and of the correct type), and
-#' returns a cleaned data frame suitable for further analysis.
-#' @examples
-#' \dontrun{
-#'   locus_data <- create_locus_data("path/to/input_file.tsv")
-#' }
-#' @importFrom dplyr select rename filter
-#' @importFrom validate validator confront summary
-#' @importFrom stringr str_c
-#' @export
-create_locus_data <- function(input_path) {
+#' @param input_path A string specifying the path to the input file.
+#' @param specimen_name_col String giving the name of the specimen ID 
+#'   column.
+#' @param target_name_col String giving the name of the target name column.
+#' @param target_value_col String giving the name of the column 
+#'   containing target values (i.e., the genotypes).
+#'
+#' @return A tibble containing columns for specimen_name, target_name, and 
+#'   target_value.
+create_locus_data <- function(
+                              input_path, 
+                              specimen_name_col = "specimen_name", 
+                              target_name_col = "target_name", 
+                              target_value_col = "seq") {
 
-  print("Reading input data")
-  input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
-  locus_data <- input_data |>
-    dplyr::select(specimen_name, target_name, seq) |> 
-    dplyr::rename(sample_id = specimen_name, allele = seq)
+  input_data <- read_tsv(
+      input_path, 
+      col_types = cols(
+        .default = col_character(), 
+        reads = col_double()
+      ), 
+      progress = FALSE
+    )
+  locus_data <- input_data %>%
+    select(all_of(c(specimen_name_col, target_name_col, target_value_col))) %>%
+    # Standardize names
+    rename_with(
+      ~ c("specimen_name", "target_name", "target_value"),
+      .cols = all_of(c(specimen_name_col, target_name_col, target_value_col))
+    )
   
-  print("Validating input format")
   rules <- validate::validator(
     # Data columns
-    is.character(sample_id),
+    is.character(specimen_name),
     is.character(target_name),
-    is.character(allele),
+    is.character(target_value),
   
     # Non-missing values
-    !is.na(sample_id),
+    !is.na(specimen_name),
     !is.na(target_name),
-    !is.na(allele)
+    !is.na(target_value)
   )
   
   # Confront the analysis_object with validation rules
-  print("Confronting input data with validation rules")
   fails <- validate::confront(locus_data, rules, raise = "all") %>%
     validate::summary() %>%
     dplyr::filter(fails > 0)
@@ -90,7 +127,6 @@ create_locus_data <- function(input_path) {
     )
   }
   
-  print("Returning Locus data")
   return(locus_data)
 }
 
@@ -118,24 +154,54 @@ create_locus_data <- function(input_path) {
 #' }
 #' @importFrom pegas nuc.div seg.sites tajima.test
 #' @export
-
 calculate_popgen_stats <- function(allele_data, msa_method = "Muscle") {
-  alignment <- msa::msa(allele_data, method = msa_method, type = "dna")
-  aligned_sequences <- msa::msaConvert(alignment, type = "ape::DNAbin")
-  
-  nucleotide_diversity <- nuc.div(aligned_sequences)
-  segregating_sites <- length(seg.sites(aligned_sequences))
-  if(segregating_sites == 0){
-    tajima_test = list(D = 0)
-  } else {
-    tajima_test <- tajima.test(aligned_sequences)
+
+  # Get indices of unique sequences
+  unique_seqs <- ! duplicated(allele_data)
+  unique_ids <- which(unique_seqs)
+  # Extract only unique sequences for alignment
+  allele_data_unique <- allele_data[unique_ids]
+  # Add names to allow msa() to preserve order
+  names(allele_data_unique) <- 1:length(allele_data_unique)
+  # Create a mapping from original to unique
+  orig2unique_mapping <- match(allele_data, allele_data_unique)
+
+  # Return early if all sequences identical
+  if (length(allele_data_unique) == 1) {
+    return(list(
+      Nucleotide_Diversity = 0, 
+      Segregating_Sites = 0, 
+      Tajima_D = 0
+    ))
   }
+  
+  # Align unique sequences
+  aligned_unique <- msa::msa(
+      allele_data_unique, 
+      method = msa_method, 
+      type = "dna", 
+      order = "input"
+    ) %>%
+    msa::msaConvert(type = "ape::DNAbin")
+  # Check order
+  if (! identical(names(allele_data_unique), labels(aligned_unique))) {
+    stop("Order does not match between alignment input and output")
+  }
+  # Index aligned sequences with mapping to restore duplicates
+  aligned_all <- aligned_unique[orig2unique_mapping, ]
+  
+  # Compute pop. gen. stats
+  nucleotide_diversity <- nuc.div(aligned_all)
+  segregating_sites <- length(seg.sites(aligned_all))
+  tajima_test <- tajima.test(aligned_all)
  
   # Return the results as a list
   return(list(
     Nucleotide_Diversity = nucleotide_diversity,
     Segregating_Sites = segregating_sites,
-    Tajima_D = tajima_test$D
+    Tajima_D = tajima_test$D, 
+    Tajima_D_pval_normal = tajima_test$Pval.normal, 
+    Tajima_D_pval_beta = tajima_test$Pval.beta
   ))
 }
 
@@ -145,7 +211,7 @@ calculate_popgen_stats <- function(allele_data, msa_method = "Muscle") {
 #' Groups allele data by `target_name` and calculates population genetic statistics
 #' (nucleotide diversity, number of segregating sites, and Tajima's D) for each group.
 #'
-#' @param locus_data A data frame containing columns `sample_id`, `target_name`, and `allele`.
+#' @param locus_data A data frame containing columns `specimen_name`, `target_name`, and `target_value`.
 #' @param msa_method the method used to create the multiple sequence alignment 
 #' @return a table of results.
 #' Each row corresponds to a `target_name`, and columns include:
@@ -169,25 +235,26 @@ calculate_stats_by_target_name <- function(locus_data, msa_method = "Muscle") {
   results <- locus_data %>%
     dplyr::group_by(target_name) %>%
     dplyr::summarise(
-      stats = list(calculate_popgen_stats(allele, msa_method))
+      stats = list(calculate_popgen_stats(target_value, msa_method))
     ) %>%
     tidyr::unnest_wider(stats)
   return(results)
 }
 
-# Main function ------------------------------------------------------
-# Load allele table/locus data
-#arg$allele_table = "/Users/jar4142/Desktop/PGEcore/data/example2_allele_table.tsv"
-arg <- parse_args(OptionParser(option_list = opts))
 
 if(!(arg$msa_method %in% c('ClustalW', 'ClustalOmega', 'Muscle'))){
   stop(paste0("--msa_method must be 'ClustalW', 'ClustalOmega', or 'Muscle', not ", arg$msa_method))
 }
 
-locus_data = create_locus_data(arg$allele_table)
+locus_data = create_locus_data(
+  arg$allele_table, 
+  specimen_name_col = arg$specimen_name_col, 
+  target_name_col = arg$target_name_col, 
+  target_value_col = arg$target_value_col
+)
 
 # Calculate nuc gens
 res = calculate_stats_by_target_name(locus_data)
 colnames(res) = tolower(colnames(res))
-readr::write_tsv(res, arg$out)
-
+res %>%
+  readr::write_tsv(arg$out)
