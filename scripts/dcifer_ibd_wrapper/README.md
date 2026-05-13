@@ -33,16 +33,40 @@ A tutorial and information about this tool, including installation instructions,
 To run the wrapper with a user-specified COI table and using two threads:
 
 ```{r}
-Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R --allele_table \
-    data/example_allele_table.tsv --coi_table data/example_coi_table.tsv \
-    --threads 2 --btwn_host_rel_output btwn_host_rel.tsv
+Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R \
+    --allele_table data/example_allele_table.tsv \
+    --coi_table data/example_coi_table.tsv \
+    --threads 2 \
+    --btwn_host_rel_output btwn_host_rel.tsv
 ```
 
 To run the wrapper with a user-specified allele frequency table and built-in COI 
 estimation:
 
 ```{r}
-Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R --allele_table \
-    data/example2_allele_table.tsv --allele_freq_table \
-    data/example_slaf_mhap.tsv --btwn_host_rel_output btwn_host_rel.tsv
+Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R \
+    --allele_table data/example2_allele_table.tsv \
+    --allele_freq_table data/example2_slaf_mhap.tsv \
+    --btwn_host_rel_output btwn_host_rel.tsv
+```
+
+To run the wrapper with built-in COI and allele frequency estimation and 
+`ibdEstM`:
+
+```{r}
+Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R \
+    --allele_table data/example2_allele_table.tsv \
+    --use_estm \
+    --btwn_host_rel_output btwn_host_rel.tsv
+```
+
+To run the wrapper with multiple populations, by averaging the allele 
+frequencies in each source population for pairs from different populations 
+(**EXPERIMENTAL: Do not use if populations are highly diverged**):
+
+```{r}
+Rscript scripts/dcifer_ibd_wrapper/dcifer_ibd_wrapper.R \
+    --allele_table data/example2_allele_table.tsv \
+    --specimen_metadata data/example2_specimen_metadata.tsv \
+    --btwn_host_rel_output btwn_host_rel.tsv
 ```
