@@ -296,6 +296,7 @@ run_malecot <- function(
     MALECOT::run_mcmc(
       K = 1:Kmax, 
       cluster = cl, 
+      store_raw = FALSE, 
       ...
     )
   if (threads > 1) {
