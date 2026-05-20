@@ -274,10 +274,12 @@ run_malecot <- function(
                         ...) {
 
   # Set up project
+  n_samps <- n_distinct(allele_data$sample_ID)
   malproj <- MALECOT::malecot_project() %>%
     MALECOT::bind_data_multiallelic(df = allele_data) %>%
     MALECOT::new_set(
       name = "MALECOT results", 
+      COI_manual = rep(1, n_samps), 
       COI_model = COI_model, 
       COI_max = COI_max, 
       estimate_COI_mean = estimate_COI_mean, 
