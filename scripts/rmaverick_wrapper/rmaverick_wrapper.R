@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 
-# Estimate COI, allele frequencies, and genetic clustering with MALECOT
+# Estimate genetic clusters with rmaverick
 
 # Load required libraries ----------------------------------------------
-library(MALECOT)
+library(rmaverick)
 # These will be referenced without the `package::` construct, and thus 
 # are loaded second to avoid masking
 library(dplyr, warn.conflicts = FALSE)
@@ -91,47 +91,6 @@ opts <- list(
     )
   ), 
   make_option(
-    "--COI_model", 
-    default = "nb", 
-    help = str_c(
-      'the type of prior on COI. Must be one of "uniform", "poisson", or ', 
-      '"nb" (negative binomial). Optional.'
-    )
-  ), 
-  make_option(
-    "--COI_max", 
-    default = 20, 
-    type = "integer", 
-    help = "The maximum COI allowed for any given sample. Optional."
-  ), 
-  make_option(
-    "--use_provided_mean_COI", 
-    action = "store_true", 
-    default = FALSE, 
-    help = str_c(
-      "Whether to use mean COI provided or have MALECOT estimate it. Optional."
-    )
-  ), 
-  make_option(
-    "--COI_mean", 
-    default = 3, 
-    type = "double", 
-    help = str_c(
-      "Single scalar value specifying the mean COI for all subpopulations. ", 
-      "Optional."
-    )
-  ), 
-  make_option(
-    "--COI_dispersion", 
-    default = 2, 
-    type = "double", 
-    help = str_c(
-      "The ratio of the variance to the mean of the prior on COI. Only ", 
-      "applies under the negative binomial model. Must be >1, as a ratio of 1 ", 
-      "can be achieved by using the Poisson distribution. Optional."
-    )
-  ), 
-  make_option(
     "--threads", 
     default = 1, 
     type = "integer", 
@@ -146,15 +105,15 @@ opts <- list(
   make_option(
     "--model_results_output", 
     help = str_c(
-      "Path of RDS file to contain the MALECOT results object. Required."
+      "Path of RDS file to contain the rmaverick results object. Required."
     )
   )
 )
 arg <- parse_args(OptionParser(option_list = opts))
 # Arguments used for development
 if (interactive()) {
-  arg$allele_table <- "../../data/example2_allele_table.tsv"
-  arg$model_results_output <- "../../MALECOT_res.rds"
+  arg$allele_table <- "../../data/example2_allele_table_monos_only.tsv"
+  arg$model_results_output <- "../../rmaverick_res.rds"
   arg$threads <- 5
   arg$Kmax <- 5
 }
@@ -188,17 +147,17 @@ create_allele_table_input <- function(
     select(all_of(c(specimen_name_col, target_name_col, target_value_col))) %>%
     # Standardize names
     rename(
-      sample_ID = all_of(specimen_name_col), 
+      specimen_name = all_of(specimen_name_col), 
       target_name = all_of(target_name_col), 
       target_value = all_of(target_value_col)
     )
 
   # Validate fields
   rules <- validate::validator(
-    is.character(sample_ID), 
+    is.character(specimen_name), 
     is.character(target_name), 
     is.character(target_value), 
-    ! is.na(sample_ID), 
+    ! is.na(specimen_name), 
     ! is.na(target_name), 
     ! is.na(target_value)
   )
@@ -218,72 +177,75 @@ create_allele_table_input <- function(
     group_by(target_name) %>%
     filter(n_distinct(target_value) > 1)
 
-  # Recode locus and haplotype as arbitrary integers
+  # Recode microhaplotypes as arbitrary integers
   allele_table <- allele_table %>%
-    mutate(locus = as.integer(factor(target_name))) %>%
-    group_by(locus) %>%
+    group_by(target_name) %>%
     mutate(haplotype = as.integer(factor(target_value))) %>%
     ungroup()
-  # Store maps for recovery later
-  target_name_map <- allele_table %>%
-    distinct(target_name, locus)
+  # Store map for recovery later
   target_value_map <- allele_table %>%
     distinct(target_name, target_value, haplotype)
   allele_table <- allele_table %>%
-    select(-target_name, -target_value)
+    select(-target_value)
 
   # Make implicit missing data explicit and code as -9
   allele_table <- allele_table %>%
-    complete(sample_ID, locus, fill = list(haplotype = -9))
+    complete(specimen_name, target_name, fill = list(haplotype = -9))
+
+  # Pivot to wide format
+  allele_table <- allele_table %>%
+    pivot_wider(
+      names_from = target_name, 
+      values_from = haplotype
+    ) %>%
+    # Add arbitary population and ploidy columns
+    mutate(population = 1, ploidy = 1) %>%
+    relocate(population, ploidy, .after = 1) %>%
+    # Necessary to avoid cryptic bugs from rmaverick
+    as.data.frame()
 
   return(
     list(
       allele_table = allele_table, 
-      target_name_map = target_name_map, 
       target_value_map = target_value_map
     )
   )
 
 }
 
-#' Create MALECOT project and run MCMC
+#' Create rmaverick project and run MCMC
 #'
 #' This function takes an allele table of the format expected by 
-#' `MALECOT::bind_data_multiallelic()`, creates a MALECOT project with 
-#' this data, runs the MCMC to fit the model, and returns the MALECOT 
+#' `rmaverick::bind_data()`, creates an rmaverick project with 
+#' this data, runs the MCMC to fit the model, and returns the rmaverick 
 #' project object.
 #'
 #' @param allele_data An allele table of the format expected by 
-#'   `MALECOT::bind_data_multiallelic()`.
-#' @inheritParams MALECOT::new_set
+#'   `rmaverick::bind_data()`.
 #' @param Kmax Numeric specifying the largest K to evaluate.
 #' @param threads Number of threads to use when fitting models for 
 #'   multiple K values.
-#' @param ... Arguments passed on to `MALECOT::run_mcmc()`.
+#' @param ... Arguments passed on to `rmaverick::run_mcmc()`.
 #'
-#' @return A `MALECOT::malecot_project()` containing the results.
-run_malecot <- function(
-                        allele_data, 
-                        COI_model = "nb", 
-                        COI_max = 20, 
-                        estimate_COI_mean = TRUE, 
-                        COI_mean = 3, 
-                        COI_dispersion = 2, 
-                        Kmax = 5, 
-                        threads = Kmax, 
-                        ...) {
+#' @return An `rmaverick::mavproject()` containing the results.
+run_rmaverick <- function(
+                          allele_data, 
+                          Kmax = 5, 
+                          threads = Kmax, 
+                          ...) {
 
   # Set up project
-  malproj <- MALECOT::malecot_project() %>%
-    MALECOT::bind_data_multiallelic(df = allele_data) %>%
-    MALECOT::new_set(
-      name = "MALECOT results", 
-      COI_model = COI_model, 
-      COI_max = COI_max, 
-      estimate_COI_mean = estimate_COI_mean, 
-      COI_mean = COI_mean, 
-      COI_dispersion = COI_dispersion, 
-      estimate_error = TRUE
+  n_samp <- nrow(allele_data)
+  mavproj <- rmaverick::mavproject() %>%
+    rmaverick::bind_data(
+      df = allele_data, 
+      ID_col = 1, 
+      pop_col = 2, 
+      ploidy_col = 3
+    ) %>%
+    rmaverick::new_set(
+      name = "rmaverick results", 
+      admix_on = TRUE
     )
 
   # Run MCMC, with one K value per thread
@@ -292,8 +254,8 @@ run_malecot <- function(
   } else {
     cl <- NULL
   }
-  malproj <- malproj %>%
-    MALECOT::run_mcmc(
+  mavproj <- mavproj %>%
+    rmaverick::run_mcmc(
       K = 1:Kmax, 
       cluster = cl, 
       ...
@@ -302,7 +264,7 @@ run_malecot <- function(
     stopCluster(cl)
   }
 
-  malproj
+  mavproj
 }
 
 set.seed(arg$seed)
@@ -315,14 +277,9 @@ alleles_and_maps <- create_allele_table_input(
   target_value_col = arg$target_value_col
 )
 
-# Run MALECOT ----------------------------------------------------------
-malecot_res <- run_malecot(
+# Run rmaverick --------------------------------------------------------
+rmaverick_res <- run_rmaverick(
   alleles_and_maps$allele_table, 
-  COI_model = arg$COI_model, 
-  COI_max = arg$COI_max, 
-  estimate_COI_mean = ! arg$use_provided_mean_COI, 
-  COI_mean = arg$COI_mean, 
-  COI_dispersion = arg$COI_dispersion, 
   Kmax = arg$Kmax, 
   threads = arg$threads, 
   burnin = arg$burnin, 
@@ -333,5 +290,5 @@ malecot_res <- run_malecot(
 )
 
 # Save results ---------------------------------------------------------
-malecot_res %>%
+rmaverick_res %>%
   write_rds(arg$model_results_output)
