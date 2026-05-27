@@ -92,7 +92,7 @@ opts <- list(
   ), 
   make_option(
     "--COI_model", 
-    default = "nb", 
+    default = "poisson", 
     help = str_c(
       'the type of prior on COI. Must be one of "uniform", "poisson", or ', 
       '"nb" (negative binomial). Optional.'
