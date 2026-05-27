@@ -358,7 +358,7 @@ create_loci_group_input <- function(
       group_by(target_name) %>%
       filter(n_distinct(target_value) > 2) %$%
       unique(target_name)
-    if (length(non_biallelic_trgs > 0)) {
+    if (length(non_biallelic_trgs) > 0) {
       warning(
         "The target(s) ", 
         str_c(non_biallelic_trgs, collapse = ", "), 
@@ -387,7 +387,7 @@ create_loci_group_input <- function(
 #' groups, calculates the allele frequencies for each group, and 
 #' formats the output into a tibble suitable for writing to disk.
 #'
-#' @param snp_slice_res A snp.slicer results object produced by 
+#' @param snpslice_res A snp.slicer results object produced by 
 #'   `snp.slicer::snp_slice()`.
 #' @param loci_groups A list containing named character vectors 
 #'   defining loci groups.
@@ -397,7 +397,7 @@ create_loci_group_input <- function(
 #' @return A tibble with group_id, variant, freq, allele_total, and 
 #'   sample_total columns.
 prepare_af_output <- function(
-                              snp_slice_res, 
+                              snpslice_res, 
                               loci_groups, 
                               use_mcmc) {
 
@@ -481,7 +481,7 @@ prepare_af_output <- function(
 #' this object, and formats the output into a tibble suitable for 
 #' writing to disk.
 #'
-#' @param snp_slice_res A snp.slicer results object produced by 
+#' @param snpslice_res A snp.slicer results object produced by 
 #'   `snp.slicer::snp_slice()`.
 #' @inheritParams create_allele_table_input
 #' @inheritParams prepare_af_output
@@ -489,16 +489,16 @@ prepare_af_output <- function(
 #' @return A tibble with a coi column and a specimen ID column with name 
 #'   matching specimen_name_col.
 prepare_coi_output <- function(
-                              snp_slice_res, 
-                              specimen_name_col, 
-                              use_mcmc) {
-  coi_tib <- snp_slice_res %>%
+                               snpslice_res, 
+                               specimen_name_col, 
+                               use_mcmc) {
+  coi_tib <- snpslice_res %>%
     snp.slicer::calculate_individual_coi(
-      use_map = ! arg$use_mcmc_for_af_and_coi
+      use_map = ! use_mcmc
     ) %>%
     select(-host_index) %>%
-    rename(!! arg$specimen_name_col := host_id, coi = coi_estimate)
-  if (! arg$use_mcmc_for_af_and_coi) {
+    rename(!! specimen_name_col := host_id, coi = coi_estimate)
+  if (! use_mcmc) {
     coi_tib <- coi_tib %>%
       select(-coi_sd, -coi_lower, -coi_upper)
   }
