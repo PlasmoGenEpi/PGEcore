@@ -60,7 +60,7 @@ get_missing_cols <- function(tib, columns) {
 #'
 process_input_mhaps_slaf <- function(mhaps_slaf_fnp){
   mhaps_slaf = readr::read_tsv(mhaps_slaf_fnp)
-  required_mhaps_columns = c("target_id", "seq", "freq", "sample_total")
+  required_mhaps_columns = c("target_name", "seq", "freq", "sample_total")
   input = readr::read_tsv(mhaps_slaf_fnp)
   missing_cols = get_missing_cols(input, required_mhaps_columns)
   if(length(missing_cols) > 0){
@@ -68,11 +68,11 @@ process_input_mhaps_slaf <- function(mhaps_slaf_fnp){
   }
   # validate columns mhaps_slaf_fnp
   mhaps_slaf_rules <- validate::validator(
-    is.character(target_id), 
+    is.character(target_name), 
     is.character(seq),
     is.numeric(freq),
     is.numeric(sample_total), 
-    ! is.na(target_id), 
+    ! is.na(target_name), 
     ! is.na(seq), 
     ! is.na(freq), 
     ! is.na(sample_total)
@@ -100,7 +100,7 @@ process_input_mhaps_slaf <- function(mhaps_slaf_fnp){
 #'
 process_input_loci_of_interest_per_microhaps <- function(loci_of_interest_per_microhaps_fnp){
   loci_of_interest_per_microhaps = readr::read_tsv(loci_of_interest_per_microhaps_fnp)
-  required_mhaps_columns = c("target_id", "gene_id", "aa_position", "seq", "aa")
+  required_mhaps_columns = c("target_name", "gene_id", "aa_position", "seq", "aa")
   input = readr::read_tsv(loci_of_interest_per_microhaps_fnp)
   missing_cols = get_missing_cols(input, required_mhaps_columns)
   if(length(missing_cols) > 0){
@@ -108,12 +108,12 @@ process_input_loci_of_interest_per_microhaps <- function(loci_of_interest_per_mi
   }
   # validate columns loci_of_interest_per_microhaps_fnp
   loci_of_interest_per_microhaps_rules <- validate::validator(
-    is.character(target_id), 
+    is.character(target_name), 
     is.character(gene_id),
     is.numeric(aa_position),
     is.character(seq), 
     is.character(aa),
-    ! is.na(target_id), 
+    ! is.na(target_name), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
     ! is.na(seq), 
@@ -137,13 +137,13 @@ opts <- list(
   make_option(
     "--mhaps_slaf_fnp", 
     help = str_c(
-      "TSV containing the columns: target_id, seq, freq, sample_total. The target_id and seq columns should match up with the columns in loci_of_interest_per_microhaps_fnp"
+      "TSV containing the columns: target_name, seq, freq, sample_total. The target_name and seq columns should match up with the columns in loci_of_interest_per_microhaps_fnp"
     )
   ),
   make_option(
     "--loci_of_interest_per_microhaps_fnp", 
     help = str_c(
-      "TSV containing the columns: target_id, seq, gene_id, aa_position, aa. The target_id and seq columns should match up with the columns in mhaps_slaf_fnp"
+      "TSV containing the columns: target_name, seq, gene_id, aa_position, aa. The target_name and seq columns should match up with the columns in mhaps_slaf_fnp"
     )
   ), 
   make_option(
@@ -181,13 +181,13 @@ translated_mhaps = process_input_loci_of_interest_per_microhaps(args$loci_of_int
 # the translated mhaps may come from a full population and therefore there might be translated seqs that are missing from 
 # the population frequencies and there might be hap frequencies that haven't been translated so will do inner join 
 combined_tables = mhaps_slaf  %>% 
-  inner_join(translated_mhaps, by = c("target_id", "seq"))
+  inner_join(translated_mhaps, by = c("target_name", "seq"))
 
 # calculate per target, renormalize freq in case input's freqs do not add up to 1 
 translated_mhaps_slaf_per_target = combined_tables %>% 
-  group_by(target_id, gene_id, aa_position, sample_total, aa) %>% 
+  group_by(target_name, gene_id, aa_position, sample_total, aa) %>% 
   summarise(freq = sum(freq)) %>% 
-  group_by(target_id, gene_id, aa_position, sample_total) %>% 
+  group_by(target_name, gene_id, aa_position, sample_total) %>% 
   mutate(total_freq = sum(freq)) %>% 
   mutate(freq = freq/total_freq) %>% 
   select(-total_freq) %>% 

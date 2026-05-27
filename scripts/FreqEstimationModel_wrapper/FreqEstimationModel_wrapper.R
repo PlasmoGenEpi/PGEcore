@@ -20,14 +20,14 @@ opts <- list(
   make_option(
     "--aa_calls", 
     help = str_c(
-      "TSV containing amino acid calls, with the columns: specimen_id, ", 
-      "target_id, gene_id, aa_position, ref_aa, aa. Required."
+      "TSV containing amino acid calls, with the columns: specimen_name, ", 
+      "target_name, gene_id, aa_position, ref_aa, aa. Required."
     )
   ), 
   make_option(
     "--coi", 
     help = str_c(
-      "TSV containing COI for each specimen, with the columns: specimen_id, ", 
+      "TSV containing COI for each specimen, with the columns: specimen_name, ", 
       "coi, or numeric input of COI. Required."
     )
   ), 
@@ -70,7 +70,7 @@ if(interactive()){
 #' or returns the COI value if given directly.
 #'
 #' @param coi_path Path of TSV file with COI for each specimen. It should 
-#' have two columns, "specimen_id" and "coi." Alternatively, you can provide
+#' have two columns, "specimen_name" and "coi." Alternatively, you can provide
 #' the numeric value of the average COI. Parsing of which option is done 
 #' automatically.
 #' 
@@ -82,10 +82,10 @@ calculate_avg_COI <- function(coi_path){
   }
   else{ #if NA with casting the string to numeric, we were given a path
     COI_table <- read_tsv(coi_path, col_types=list(
-      "specimen_id"=col_character(),
+      "specimen_name"=col_character(),
       "coi"=col_number()))
     rules <- validate::validator(
-      ! is.na(specimen_id), 
+      ! is.na(specimen_name), 
       ! is.na(coi)
     )
     fails <- validate::confront(COI_table, rules, raise = "all") %>%
@@ -127,8 +127,8 @@ read_groups <- function(groups_path){
 #' Takes a dataframe in the long-data format and returns only the targets that
 #' are biallelic in the population
 #'
-#' @param input_data dataframe object containing the columns specimen_id, target_id,
-#' read_count, gene_id, aa_position, ref_aa, aa
+#' @param input_data dataframe object containing the columns specimen_name, target_name,
+#' reads, gene_id, aa_position, ref_aa, aa
 #' 
 #' @return that same dataframe object but with only bi or mono-allelic targets
 check_biallelic <- function(input_data){
@@ -158,28 +158,28 @@ check_biallelic <- function(input_data){
 #' tibble.
 #'
 #' @param input_path TSV containing amino acid calls. It should 
-#'   have character columns for specimen_id, target_id, gene_id, 
+#'   have character columns for specimen_name, target_name, gene_id, 
 #'   ref_aa, and aa. It should have an integer aa_position column. 
 #'   There should be no explicit missing data.
 #'
 #' @return Tibble containing the amino acid calls
 read_aa_calls <- function(input_path) {
-  input_data <- read_tsv(input_path, col_types=list("specimen_id"=col_character(),
+  input_data <- read_tsv(input_path, col_types=list("specimen_name"=col_character(),
                                                     "aa_position" = col_integer(),
-                                                    "target_id"=col_character(),
+                                                    "target_name"=col_character(),
                                                     "gene_id"=col_character(),
                                                     "ref_aa"=col_character(),
                                                     "aa"=col_character()))
   # Validate input format
   rules <- validate::validator(
-    is.character(specimen_id), 
-    is.character(target_id), 
+    is.character(specimen_name), 
+    is.character(target_name), 
     is.character(gene_id), 
     is.integer(aa_position), 
     is.character(ref_aa), 
     is.character(aa), 
-    ! is.na(specimen_id), 
-    ! is.na(target_id), 
+    ! is.na(specimen_name), 
+    ! is.na(target_name), 
     ! is.na(gene_id), 
     ! is.na(aa_position), 
     ! is.na(ref_aa), 
@@ -205,7 +205,7 @@ read_aa_calls <- function(input_path) {
 #' the form needed by FEM.
 #'
 #' @param input_data Tibble containing amino acid calls. It should 
-#'   have character columns for specimen_id, target_id, gene_id, 
+#'   have character columns for specimen_name, target_name, gene_id, 
 #'   ref_aa, and aa. It should have an integer aa_position column. 
 #'   There should be no explicit missing data.
 #' @param groups output of read_groups
@@ -226,7 +226,7 @@ create_FEM_input <- function(input_data, groups, group_id) {
   monos <- data_list[[3]]
 
   unique_targets <- unique(input_data$unique_targets)
-  unique_sample_ids <- unique(input_data$specimen_id)
+  unique_sample_ids <- unique(input_data$specimen_name)
   
   sample_matrix <- matrix(99,  nrow=length(unique_sample_ids), ncol=length(unique_targets))
   #99 is the "no data" identifier
@@ -234,8 +234,8 @@ create_FEM_input <- function(input_data, groups, group_id) {
   rownames(sample_matrix) <- unique_sample_ids
  
   # populate the input matrix with 0 (only reference), 0.5 (het cal), or 1 (only non-reference)
-  for(sample in input_data$specimen_id){
-    cut_df <- input_data[input_data$specimen_id==sample,]
+  for(sample in input_data$specimen_name){
+    cut_df <- input_data[input_data$specimen_name==sample,]
     for(unique_target in unique_targets){
       cut_cut_df <- cut_df[cut_df$unique_targets==unique_target,]
       nvals <- 99
@@ -506,10 +506,10 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
     loci_name
   # Filter to calls at these loci
   group_calls <- aa_calls %>%
-    distinct(specimen_id, gene_id, aa_position, aa) %>%
+    distinct(specimen_name, gene_id, aa_position, aa) %>%
     unite(loci_name, gene_id, aa_position, sep = ":", remove = FALSE) %>%
     filter(loci_name %in% group_loci)
-  num_group <- n_distinct(group_calls$specimen_id)
+  num_group <- n_distinct(group_calls$specimen_name)
   # Make sure all of these loci ARE invariant
   n_alleles_per_locus <- group_calls %>%
     group_by(gene_id, aa_position) %>%

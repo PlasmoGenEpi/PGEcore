@@ -13,14 +13,14 @@ opts <- list(
     "--input_path",
     type = "character",
     help = str_c(
-      "Path to a TSV file containing allele calls, with the columns: specimen_id, ", 
-      "target_id, read_count, seq"
+      "Path to a TSV file containing allele calls, with the columns: specimen_name, ", 
+      "target_name, reads, seq"
     )
   ), 
   make_option(
     "--output_path",
     type = "character",
-    help = "Path to write a TSV file containing results, with the columns: specimen_id, coi"
+    help = "Path to write a TSV file containing results, with the columns: specimen_name, coi"
   ), 
   make_option(
     "--method",
@@ -72,7 +72,7 @@ opts <- list(
 #' of naturally accounting for the number of loci.
 #'
 #' @param input_path Path to a TSV file with allele calls. It should 
-#'   have columns for specimen_id, target_id, read_count, seq.
+#'   have columns for specimen_name, target_name, reads, seq.
 #' @param method Which method to use. One of `integer_method` or `quantile_method`.
 #' @param integer_threshold Which sorted value to use as the COI estimate. Only
 #'   used if `method = integer_method`.
@@ -98,18 +98,18 @@ run_estimate_coi_naive <- function(input_path,
   # Read allele calls from file
   df_alleles <- read_tsv(
     input_path, 
-    col_types = cols(.default = col_character(), read_count = col_integer()), 
+    col_types = cols(.default = col_character(), reads = col_integer()), 
     progress = FALSE
   )
   
   # Validate input format
-  rules <- validate::validator(is.character(specimen_id),
-                               is.character(target_id),
-                               is.numeric(read_count) & read_count == as.integer(read_count) & read_count > 0,
+  rules <- validate::validator(is.character(specimen_name),
+                               is.character(target_name),
+                               is.numeric(reads) & reads == as.integer(reads) & reads > 0,
                                is.character(seq),
-                               ! is.na(specimen_id),
-                               ! is.na(target_id),
-                               ! is.na(read_count),
+                               ! is.na(specimen_name),
+                               ! is.na(target_name),
+                               ! is.na(reads),
                                ! is.na(seq)
                                )
   df_fails <- validate::confront(df_alleles, rules, raise = "all") |>
@@ -125,13 +125,13 @@ run_estimate_coi_naive <- function(input_path,
   
   # Count number of alleles at each locus
   df_n_alleles <- df_alleles |>
-    dplyr::group_by(specimen_id, target_id) |>
+    dplyr::group_by(specimen_name, target_name) |>
     dplyr::summarise(n_alleles = n_distinct(seq), .groups = "drop")
   
   # Get number of loci per sample, and work out the integer corresponding to the
   # desired quantile (may or may not be used)
   df_loci <- df_alleles |>
-    dplyr::group_by(specimen_id) |>
+    dplyr::group_by(specimen_name) |>
     dplyr::summarise(loci = n()) |>
     dplyr::mutate(n_limit = floor((loci - 1)*quantile_threshold) + 1)
   
@@ -143,19 +143,19 @@ run_estimate_coi_naive <- function(input_path,
   if (method == "integer_method") {
     
     df_coi <- df_n_alleles |>
-      dplyr::group_by(specimen_id) |>
+      dplyr::group_by(specimen_name) |>
       dplyr::summarise(coi = sort(n_alleles, decreasing = TRUE)[integer_threshold])
     
   } else if (method == "quantile_method") {
     
     df_coi <- df_n_alleles |>
-      dplyr::group_by(specimen_id) |>
+      dplyr::group_by(specimen_name) |>
       dplyr::arrange(desc(n_alleles)) |>
       dplyr::mutate(row_number = row_number()) |>
-      dplyr::left_join(df_loci, by = join_by(specimen_id)) |>
+      dplyr::left_join(df_loci, by = join_by(specimen_name)) |>
       dplyr::filter(row_number == n_limit) |>
       dplyr::rename(coi = n_alleles) |>
-      dplyr::select(specimen_id, coi)
+      dplyr::select(specimen_name, coi)
   }
   
   return(df_coi)
@@ -166,9 +166,9 @@ run_estimate_coi_naive <- function(input_path,
 check_coi_format <- function(df_coi) {
   stopifnot(is.data.frame(df_coi))
   stopifnot(ncol(df_coi) == 2)
-  stopifnot(all(colnames(df_coi) == c("specimen_id", "coi")))
-  stopifnot(!any(is.na(df_coi$specimen_id)))
-  stopifnot(all(is.character(df_coi$specimen_id)))
+  stopifnot(all(colnames(df_coi) == c("specimen_name", "coi")))
+  stopifnot(!any(is.na(df_coi$specimen_name)))
+  stopifnot(all(is.character(df_coi$specimen_name)))
   stopifnot(!any(is.na(df_coi$coi)))
   stopifnot(all(is.numeric(df_coi$coi)))
   stopifnot(all(df_coi$coi == as.integer(df_coi$coi)))
@@ -182,7 +182,7 @@ check_coi_format <- function(df_coi) {
 #' Takes a data.frame of COI estimates and writes to TSV.
 #'
 #' @param df_coi a data.frame of estimated COI values. Must contain the columns
-#'   `specimen_id` and `coi`.
+#'   `specimen_name` and `coi`.
 #' @param output_path file path to write output.
 #' 
 #' @return data.frame of COI estimates for each sample.

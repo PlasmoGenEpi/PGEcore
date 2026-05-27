@@ -4,8 +4,8 @@ library(optparse)
 library(stringr)
 
 # Definitions:
-# By target_id
-# Total Allele Count: The total number of alleles per target_id (length(alleles)).
+# By target_name
+# Total Allele Count: The total number of alleles per target_name (length(alleles)).
 # Unique Allele Count: The count of unique alleles (length(unique(alleles))).
 #	Allele Singlets: The number of alleles that appear only once sum(table(seq) == 1)
 
@@ -15,7 +15,7 @@ opts = list(
     "--allele_table",
     help = str_c(
       "TSV containing allele present/absent per specimen, with the
-       columns: specimen_id, target_id, seq"
+       columns: specimen_name, target_name, seq"
     )
   )
 )
@@ -30,23 +30,23 @@ arg <- parse_args(OptionParser(option_list = opts))
 #'
 #' @param input_path A string specifying the file path to the input data. The file should be a tab-separated CSV containing the columns:
 #' \describe{
-#'   \item{\code{specimen_id}}{Identifier for each specimen.}
-#'   \item{\code{target_id}}{Identifier for each genetic target.}
+#'   \item{\code{specimen_name}}{Identifier for each specimen.}
+#'   \item{\code{target_name}}{Identifier for each genetic target.}
 #'   \item{\code{seq}}{Sequence data representing alleles.}
 #' }
 #'
 #' @return A data frame with the following columns:
 #' \describe{
-#'   \item{\code{sample_id}}{Renamed from \code{specimen_id}, representing the specimen identifier.}
-#'   \item{\code{target_id}}{The genetic target identifier.}
+#'   \item{\code{sample_id}}{Renamed from \code{specimen_name}, representing the specimen identifier.}
+#'   \item{\code{target_name}}{The genetic target identifier.}
 #'   \item{\code{allele}}{Renamed from \code{seq}, representing allele sequence data.}
 #' }
 #'
 #' @details
 #' The function performs the following steps:
 #' \enumerate{
-#'   \item Reads the input data file and selects the relevant columns (\code{specimen_id}, \code{target_id}, and \code{seq}).
-#'   \item Renames the columns to \code{sample_id}, \code{target_id}, and \code{allele} for consistency.
+#'   \item Reads the input data file and selects the relevant columns (\code{specimen_name}, \code{target_name}, and \code{seq}).
+#'   \item Renames the columns to \code{sample_id}, \code{target_name}, and \code{allele} for consistency.
 #'   \item Validates the data format to ensure all columns are of type character and contain no missing values.
 #'   \item Raises an error if any of the validation checks fail, providing details on the failed expressions.
 #' }
@@ -68,19 +68,19 @@ create_locus_data <- function(input_path) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
   locus_data <- input_data |>
-    dplyr::select(specimen_id, target_id, seq) |> 
-    dplyr::rename(sample_id = specimen_id, allele = seq)
+    dplyr::select(specimen_name, target_name, seq) |> 
+    dplyr::rename(sample_id = specimen_name, allele = seq)
   
   print("Validating input format")
   rules <- validate::validator(
     # Data columns
     is.character(sample_id),
-    is.character(target_id),
+    is.character(target_name),
     is.character(allele),
   
     # Non-missing values
     !is.na(sample_id),
-    !is.na(target_id),
+    !is.na(target_name),
     !is.na(allele)
   )
   
@@ -103,14 +103,14 @@ create_locus_data <- function(input_path) {
   return(locus_data)
 }
 
-# Calculate allele metrics for each target_id --------------------------------
-#' Summarize Allele Metrics by Target ID
+# Calculate allele metrics for each target_name --------------------------------
+#' Summarize Allele Metrics by Target Name
 #'
-#' This function calculates summary metrics for alleles grouped by `target_id` and writes the results to a TSV file.
+#' This function calculates summary metrics for alleles grouped by `target_name` and writes the results to a TSV file.
 #'
 #' @param locus_data A data frame containing locus data with at least the following columns:
 #' \describe{
-#'   \item{\code{target_id}}{The genetic target identifier.}
+#'   \item{\code{target_name}}{The genetic target identifier.}
 #'   \item{\code{allele}}{The sequence data representing alleles.}
 #' }
 #'
@@ -119,8 +119,8 @@ create_locus_data <- function(input_path) {
 #' @details
 #' The function performs the following steps:
 #' \enumerate{
-#'   \item Groups the data by \code{target_id}.
-#'   \item Calculates the following metrics for each \code{target_id}:
+#'   \item Groups the data by \code{target_name}.
+#'   \item Calculates the following metrics for each \code{target_name}:
 #'     \itemize{
 #'       \item \code{total_allele_count}: The total number of alleles (\code{length(allele)}).
 #'       \item \code{unique_allele_count}: The number of unique alleles (\code{length(unique(allele))}).
@@ -131,7 +131,7 @@ create_locus_data <- function(input_path) {
 #'
 #' The output table includes the following columns:
 #' \describe{
-#'   \item{\code{target_id}}{The genetic target identifier.}
+#'   \item{\code{target_name}}{The genetic target identifier.}
 #'   \item{\code{total_allele_count}}{The total number of alleles for the target.}
 #'   \item{\code{unique_allele_count}}{The number of unique alleles for the target.}
 #'   \item{\code{allele_singlets}}{The number of alleles that appear only once for the target.}
@@ -148,9 +148,9 @@ create_locus_data <- function(input_path) {
 #' @export
 
 summarize_allele_table <- function(locus_data) {
-  # Split sequences into individual alleles and calculate metrics per target_id
+  # Split sequences into individual alleles and calculate metrics per target_name
   allele_summary_by_target <- locus_data %>%
-    group_by(target_id) %>%
+    group_by(target_name) %>%
     summarize(
       total_allele_count = length(allele),                    # Total allele count
       unique_allele_count = length(unique(allele)), # Unique allele count

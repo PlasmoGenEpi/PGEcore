@@ -45,7 +45,7 @@ opts <- list(
     "--allele_table",
     help = str_c(
        "TSV containing allele present/absent per specimen, with the
-       columns: specimen_id, target_id, seq"
+       columns: specimen_name, target_name, seq"
     )
   ),
   make_option(
@@ -333,7 +333,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
   
   # check for require columns 
-  miss_cols = get_missing_columns(input_data, c("specimen_id", "target_id", "seq"))
+  miss_cols = get_missing_columns(input_data, c("specimen_name", "target_name", "seq"))
   if(length(miss_cols) > 0){
     stop(paste0(c("missing the following columns from ", input_path, " : ",
                 paste0(miss_cols, collpase = ","),
@@ -344,13 +344,13 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   print("Validating input format")
   rules <- validate::validator(
     # Data columns
-    is.character(specimen_id),
-    is.character(target_id),
+    is.character(specimen_name),
+    is.character(target_name),
     is.character(seq),
     
     # Non-missing values
-    !is.na(specimen_id),
-    !is.na(target_id),
+    !is.na(specimen_name),
+    !is.na(target_name),
     !is.na(seq)
   )
   # Confront the analysis_object with validation rules
@@ -368,8 +368,8 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
     )
   }
   moire_data <- input_data |>
-    dplyr::select(specimen_id, target_id, seq) |>
-    dplyr::rename(sample_id = specimen_id, locus = target_id, allele = seq)
+    dplyr::select(specimen_name, target_name, seq) |>
+    dplyr::rename(sample_id = specimen_name, locus = target_name, allele = seq)
 
   print("Creating Moire object")
   # Create a list containing selected data and parameters
@@ -528,37 +528,37 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
 
   # Summarize statistics
   coi_summary <- moire::summarize_coi(mcmc_results) %>%
-    rename(specimen_id = sample_id,
+    rename(specimen_name = sample_id,
            coi = post_coi_mean)
   he_summary <- moire::summarize_he(mcmc_results) %>%
-    rename(target_id = locus,
+    rename(target_name = locus,
            he = post_stat_mean)
   allele_freq_summary <- moire::summarize_allele_freqs(mcmc_results) %>%
-    rename(target_id = locus,
+    rename(target_name = locus,
            freq = post_allele_freqs_mean,
            seq = allele)
   relatedness_summary <- moire::summarize_relatedness(mcmc_results) %>%
-    rename(specimen_id = sample_id,
+    rename(specimen_name = sample_id,
            within_host_rel = post_relatedness_mean)
   effective_coi_summary <- moire::summarize_effective_coi(mcmc_results) %>%
-    rename(specimen_id = sample_id,
+    rename(specimen_name = sample_id,
            ecoi = post_effective_coi_mean)
 
   # Moire removes loci with only 1 allele.
   # Add removed loci to allele_freq_summary. Add freq 1 by default.
-  missing_target_ids <- unique(moire_object$moire_data$locus[
-    !moire_object$moire_data$locus %in% allele_freq_summary$target_id])
-  present_target_ids <- unique(moire_object$moire_data$locus[
-    moire_object$moire_data$locus %in% allele_freq_summary$target_id])
+  missing_target_names <- unique(moire_object$moire_data$locus[
+    !moire_object$moire_data$locus %in% allele_freq_summary$target_name])
+  present_target_names <- unique(moire_object$moire_data$locus[
+    moire_object$moire_data$locus %in% allele_freq_summary$target_name])
 
   assert(length(unique(moire_object$moire_data$locus)) ==
-           length(missing_target_ids) + length(present_target_ids))
-  assert(all(sort(present_target_ids) == sort(unique(allele_freq_summary$target_id))))
+           length(missing_target_names) + length(present_target_names))
+  assert(all(sort(present_target_names) == sort(unique(allele_freq_summary$target_name))))
 
   one_allele_loci <- moire_object$moire_data[
-    moire_object$moire_data$locus %in% missing_target_ids,] %>%
+    moire_object$moire_data$locus %in% missing_target_names,] %>%
     select(-sample_id) %>%            # Remove the `sample_id` column
-    rename(target_id = locus,
+    rename(target_name = locus,
            seq = allele) %>%
     distinct() %>%                    # Remove duplicated rows
     mutate(
@@ -578,14 +578,14 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
   allele_freq_summary <- rbind(allele_freq_summary, one_allele_loci)
 
   # Add removed loci to he_summary
-  target_id_count <- moire_object$moire_data %>%
+  target_name_count <- moire_object$moire_data %>%
     select(!sample_id) %>%
     group_by(locus) %>%         # Group by 'locus' and 'allele'
     summarise(sample_total = n(), .groups = 'drop') %>% # Count the occurrences and drop grouping
-    rename(target_id = locus)
+    rename(target_name = locus)
 
-  he_summary <- target_id_count %>%
-    full_join(he_summary, by = "target_id")
+  he_summary <- target_name_count %>%
+    full_join(he_summary, by = "target_name")
 
   # Write summaries to files
   readr::write_tsv(coi_summary, coi_summary_o)

@@ -15,15 +15,22 @@ library(stringr)
 library(tibble)
 library(tidyr, warn.conflicts = FALSE)
 
-# install a specific version of variantstring package (this is in development so
-# may not always be backwards-compatible)
-variantstring_version <- "1.8.0"
-if (!requireNamespace("variantstring", quietly = TRUE) ||
-  packageVersion("variantstring") != variantstring_version) {
+# Ensure a compatible version of variantstring (any 1.*.*)
+if (!requireNamespace("variantstring", quietly = TRUE)) {
   stop(
-    "This script requires variantstring version ",
+    "This script requires the variantstring package (version 1.x.x), ",
+    "but it is not installed.",
+    call. = FALSE
+  )
+}
+
+variantstring_version <- as.character(packageVersion("variantstring"))
+if (utils::compareVersion(variantstring_version, "1.0.0") < 0 ||
+  utils::compareVersion(variantstring_version, "2.0.0") >= 0) {
+  stop(
+    "This script requires variantstring version 1.x.x, but version ",
     variantstring_version,
-    " and it is not installed",
+    " is installed.",
     call. = FALSE
   )
 }
@@ -36,22 +43,22 @@ opts <- list(
     help = str_c(
       "TSV containing alleles, with columns identifying specimens, ", 
       "target names, target values, and target counts. The names of these ", 
-      "columns are given by the --specimen_id_col, --target_id_col, ", 
+      "columns are given by the --specimen_name_col, --target_name_col, ", 
       "--target_value_col, and --target_count_col arguments, respectively. ", 
       "Required."
     )
   ), 
   make_option(
-    "--specimen_id_col", 
-    default = "specimen_id", 
+    "--specimen_name_col", 
+    default = "specimen_name", 
     help = "String giving the name of the specimen ID column. Optional."
   ), 
   make_option(
-    "--target_id_col", 
+    "--target_name_col", 
     default = "aa_locus", 
     help = 
       str_c(
-        "String giving the name of the target ID column (e.g., the locus ", 
+        "String giving the name of the target name column (e.g., the locus ", 
         "name). Optional."
       )
   ), 
@@ -66,7 +73,7 @@ opts <- list(
   ), 
   make_option(
     "--target_count_col", 
-    default = "read_count", 
+    default = "reads", 
     help = 
       str_c(
         "String giving the name of the target count column (e.g., the read ", 
@@ -78,7 +85,7 @@ opts <- list(
     type = "character",
     help = str_c(
       "Path to a TSV file containing loci group definitions, with a group_id ", 
-      "column and a column with name matching --target_id_col. Required."
+      "column and a column with name matching --target_name_col. Required."
     )
   ), 
   make_option(
@@ -171,7 +178,7 @@ opts <- list(
   make_option(
     "--coi_output", 
     help = str_c(
-      "Path of TSV file to contain COI estimates, with a specimen_id column ", 
+      "Path of TSV file to contain COI estimates, with a specimen_name column ", 
       "and a coi column. Required."
     )
   )
@@ -182,9 +189,9 @@ arg <- parse_args(parser)
 if (interactive()) {
   arg$allele_table <- "../../data/example2_amino_acid_calls.tsv"
   arg$loci_groups_input <- "../../data/example_loci_groups.tsv"
-  arg$target_id_col <- "aa_locus"
+  arg$target_name_col <- "aa_locus"
   arg$target_value_col <- "aa"
-  arg$target_count_col <- "read_count"
+  arg$target_count_col <- "reads"
   arg$loci_limit <- 20
   arg$n_mcmc <- 100
   arg$verbose <- TRUE
@@ -215,22 +222,22 @@ checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
 #'
 #' @param allele_table_path Path to the TSV file containing the allele 
 #'   table.
-#' @param specimen_id_col String giving the name of the specimen ID 
+#' @param specimen_name_col String giving the name of the specimen ID 
 #'   column.
-#' @param target_id_col String giving the name of the target ID column.
+#' @param target_name_col String giving the name of the target name column.
 #' @param target_value_col String giving the name of the column 
 #'   containing target values (i.e., the genotypes).
 #' @param target_count_col String giving the name of the column 
 #'   containing target counts.
 #'
-#' @return A tibble containing columns for specimen_id, target_id, 
+#' @return A tibble containing columns for specimen_name, target_name, 
 #'   target_value, and target_count.
 create_allele_table_input <- function(
                                       allele_table_path, 
-                                      specimen_id_col = "specimen_id", 
-                                      target_id_col = "aa_locus", 
+                                      specimen_name_col = "specimen_name", 
+                                      target_name_col = "target_name", 
                                       target_value_col = "aa", 
-                                      target_count_col = "read_count") {
+                                      target_count_col = "reads") {
 
   # Read in table
   allele_table <- read_tsv(
@@ -243,25 +250,25 @@ create_allele_table_input <- function(
     ) %>%
     select(
       all_of(
-        c(specimen_id_col, target_id_col, target_value_col, target_count_col)
+        c(specimen_name_col, target_name_col, target_value_col, target_count_col)
       )
     ) %>%
     # Standardize names
     rename(
-      specimen_id = all_of(specimen_id_col), 
-      target_id = all_of(target_id_col), 
+      specimen_name = all_of(specimen_name_col), 
+      target_name = all_of(target_name_col), 
       target_value = all_of(target_value_col), 
       target_count = all_of(target_count_col)
     )
 
   # Validate fields
   rules <- validate::validator(
-    is.character(specimen_id), 
-    is.character(target_id), 
+    is.character(specimen_name), 
+    is.character(target_name), 
     is.character(target_value), 
     is.double(target_count), 
-    ! is.na(specimen_id), 
-    ! is.na(target_id), 
+    ! is.na(specimen_name), 
+    ! is.na(target_name), 
     ! is.na(target_value), 
     ! is.na(target_count)
   )
@@ -287,7 +294,7 @@ create_allele_table_input <- function(
 #' into a tibble.
 #'
 #' @param loci_groups_path Path to loci groups TSV. It should have 
-#'   a column for group_id and a column matching target_id_col.
+#'   a column for group_id and a column matching target_name_col.
 #' @param allele_table A tibble produced by 
 #'   `create_allele_table_input()`.
 #' @inheritParams create_allele_table_input
@@ -295,11 +302,11 @@ create_allele_table_input <- function(
 #' @import dplyr
 #'
 #' @return Tibble of loci groups, with columns for group_id and 
-#'   target_id.
+#'   target_name.
 create_loci_group_input <- function(
                                     loci_groups_path, 
                                     allele_table, 
-                                    target_id_col = "target_id") {
+                                    target_name_col = "target_name") {
 
   # Check input arguments
   stopifnot(is.character(loci_groups_path))
@@ -310,14 +317,14 @@ create_loci_group_input <- function(
       col_types = cols(.default = col_character(), aa_position = col_integer()), 
       progress = FALSE
     ) %>%
-    select(group_id, all_of(target_id_col)) %>%
+    select(group_id, all_of(target_name_col)) %>%
     # Standardize names
-    rename(target_id = all_of(target_id_col))
+    rename(target_name = all_of(target_name_col))
   rules <- validate::validator(
     is.character(group_id), 
-    is.character(target_id), 
+    is.character(target_name), 
     ! is.na(group_id), 
-    ! is.na(target_id)
+    ! is.na(target_name)
   )
   fails <- validate::confront(loci_groups, rules, raise = "all") %>%
     validate::summary() %>%
@@ -331,11 +338,11 @@ create_loci_group_input <- function(
   }
 
   # Convert to list format
-  loci_groups <- split(loci_groups$target_id, loci_groups$group_id)
+  loci_groups <- split(loci_groups$target_name, loci_groups$group_id)
 
   # Check for missing and non-biallelic loci
   for (lg in names(loci_groups)) {
-    missing_trgs <- setdiff(loci_groups[[lg]], allele_table$target_id)
+    missing_trgs <- setdiff(loci_groups[[lg]], allele_table$target_name)
     if (length(missing_trgs) > 0) {
       warning(
         "The target(s) ", 
@@ -347,10 +354,10 @@ create_loci_group_input <- function(
       )
     }
     non_biallelic_trgs <- allele_table %>%
-      filter(target_id %in% loci_groups[[lg]]) %>%
-      group_by(target_id) %>%
+      filter(target_name %in% loci_groups[[lg]]) %>%
+      group_by(target_name) %>%
       filter(n_distinct(target_value) > 2) %$%
-      unique(target_id)
+      unique(target_name)
     if (length(non_biallelic_trgs > 0)) {
       warning(
         "The target(s) ", 
@@ -480,17 +487,17 @@ prepare_af_output <- function(
 #' @inheritParams prepare_af_output
 #'
 #' @return A tibble with a coi column and a specimen ID column with name 
-#'   matching specimen_id_col.
+#'   matching specimen_name_col.
 prepare_coi_output <- function(
                               snp_slice_res, 
-                              specimen_id_col, 
+                              specimen_name_col, 
                               use_mcmc) {
   coi_tib <- snp_slice_res %>%
     snp.slicer::calculate_individual_coi(
       use_map = ! arg$use_mcmc_for_af_and_coi
     ) %>%
     select(-host_index) %>%
-    rename(!! arg$specimen_id_col := host_id, coi = coi_estimate)
+    rename(!! arg$specimen_name_col := host_id, coi = coi_estimate)
   if (! arg$use_mcmc_for_af_and_coi) {
     coi_tib <- coi_tib %>%
       select(-coi_sd, -coi_lower, -coi_upper)
@@ -511,31 +518,31 @@ checkOptparseRequiredArgsThrow(parser, arg, required_arguments)
 # Read inputs ----------------------------------------------------------
 allele_table <- create_allele_table_input(
   arg$allele_table, 
-  specimen_id_col = arg$specimen_id_col, 
-  target_id_col = arg$target_id_col, 
+  specimen_name_col = arg$specimen_name_col, 
+  target_name_col = arg$target_name_col, 
   target_value_col = arg$target_value_col, 
   target_count_col = arg$target_count_col
 )
 loci_groups <- create_loci_group_input(
   arg$loci_groups_input, 
   allele_table, 
-  target_id_col = arg$target_id_col
+  target_name_col = arg$target_name_col
 )
 
 # Subset loci if loci_limit provided -----------------------------------
 if (! is.null(arg$loci_limit)) {
-  if (n_distinct(allele_table$target_id) > arg$loci_limit) {
+  if (n_distinct(allele_table$target_name) > arg$loci_limit) {
     # Loci in loci groups that must be included
     loci_oi <- unique(unlist(loci_groups))
     # Randomly sample additional loci to reach limit
     n_loci_select <- arg$loci_limit - length(loci_oi)
     loci_random <- sample(
-      setdiff(allele_table$target_id, loci_oi), 
+      setdiff(allele_table$target_name, loci_oi), 
       n_loci_select
     )
     loci_selected <- c(loci_oi, loci_random)
     allele_table <- allele_table %>%
-      filter(target_id %in% loci_selected)
+      filter(target_name %in% loci_selected)
   }
 }
 
@@ -551,8 +558,8 @@ snpslice_res <- snp.slicer::snp_slice(
   gap = arg$gap, 
   store_mcmc = TRUE, 
   verbose = arg$v, 
-  specimen_id_col = "specimen_id", 
-  target_id_col = "target_id", 
+  specimen_id_col = "specimen_name", 
+  target_id_col = "target_name", 
   target_value_col = "target_value", 
   target_count_col = "target_count"
 )
@@ -564,5 +571,5 @@ snpslice_res %>%
 
 # Calculate and write COI ----------------------------------------------
 snpslice_res %>%
-  prepare_coi_output(arg$specimen_id_col, arg$use_mcmc_for_af_and_coi) %>%
+  prepare_coi_output(arg$specimen_name_col, arg$use_mcmc_for_af_and_coi) %>%
   write_tsv(arg$coi_output)

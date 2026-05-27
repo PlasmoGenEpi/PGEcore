@@ -77,13 +77,13 @@ gen_warns_on_validate_ref_bed_cols <- function(ref_bed){
     is.character(`#chrom`), 
     is.numeric(start),
     is.numeric(end),
-    is.character(target_id), 
+    is.character(target_name), 
     is.numeric(length), 
     is.character(strand), 
     ! is.na(`#chrom`), 
     ! is.na(start), 
     ! is.na(end), 
-    ! is.na(target_id), 
+    ! is.na(target_name), 
     ! is.na(length), 
     ! is.na(strand)
   )
@@ -106,7 +106,7 @@ opts <- list(
   make_option(
     "--ref_bed", 
     help = str_c(
-      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_id, length, strand"
+      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_name, length, strand"
     )
   ), 
   make_option(
@@ -149,7 +149,7 @@ run_add_ref_seqs_with_genome_to_ref_bed <-function(){
   # read in the panel reference information 
   ref_bed = readr::read_tsv(arg$ref_bed, col_names = T)
   
-  warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_id", "length", "strand"), arg$ref_bed))
+  warnings = c(warnings, genWarningsMissCols(ref_bed, c("#chrom", "start", "end", "target_name", "length", "strand"), arg$ref_bed))
   
   # check output options 
   if(file.exists(arg$out) & !arg$overwrite){
@@ -163,13 +163,13 @@ run_add_ref_seqs_with_genome_to_ref_bed <-function(){
   # check columns types 
   warnings = c(warnings, gen_warns_on_validate_ref_bed_cols(ref_bed))
   
-  # check if multiple target_id loaded 
+  # check if multiple target_name loaded 
   ref_bed_name_sum_multi = ref_bed |> 
-    group_by(target_id) |> 
+    group_by(target_name) |> 
     count() |> 
     filter(n > 1)
   if(nrow(ref_bed_name_sum_multi) > 0){
-    warnings = c(warnings, paste0("found multi names for target_id in ", arg$ref_bed, " found the following multiple times: ", paste0(ref_bed_name_sum_multi$target_id, collapse = ",")) ) 
+    warnings = c(warnings, paste0("found multi names for target_name in ", arg$ref_bed, " found the following multiple times: ", paste0(ref_bed_name_sum_multi$target_name, collapse = ",")) ) 
   }
   
   if(length(warnings) > 0){
