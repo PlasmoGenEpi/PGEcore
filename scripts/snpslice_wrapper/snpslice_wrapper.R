@@ -535,7 +535,13 @@ if (! is.null(arg$loci_limit)) {
     # Loci in loci groups that must be included
     loci_oi <- unique(unlist(loci_groups))
     # Randomly sample additional loci to reach limit
-    n_loci_select <- arg$loci_limit - length(loci_oi)
+    n_loci_select <- max(0L, arg$loci_limit - length(loci_oi))
+    if (n_loci_select == 0L) {
+      message(
+        "Note: loci_limit (", arg$loci_limit, ") is <= the number of group loci (",
+        length(loci_oi), "); no extra loci will be sampled."
+      )
+    }
     loci_random <- sample(
       setdiff(allele_table$target_name, loci_oi), 
       n_loci_select
