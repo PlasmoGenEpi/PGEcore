@@ -127,8 +127,8 @@ opts <- list(
   ), 
   make_option(
     "--rho", 
-    type = "double", 
-    default = 0.5, 
+    type = "character", 
+    default = "0.5", 
     help = "Dictionary sparsity parameter. Optional."
   ), 
   make_option(
