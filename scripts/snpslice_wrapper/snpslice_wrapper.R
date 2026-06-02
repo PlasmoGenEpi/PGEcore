@@ -407,12 +407,6 @@ prepare_af_output <- function(
     prep_variantstring_input <- function(allele, loci_names) {
       aa <- str_split_1(allele, "\\|")
       tibble(gene_pos = loci_names, aa = aa) %>%
-        # SNP-Slice outputs frequencies for some haplotypes that 
-        # include ?s to indicate unknown alleles at that position. 
-        # There is no clear way to format these as a variant string, so 
-        # instead these positions are omitted and the smaller, 
-        # unambiguous haplotype is reported.
-        filter(aa != "?") %>%
         separate_wider_delim(gene_pos, ":", names = c("gene", "pos")) %>%
         mutate(pos = as.integer(pos)) %>%
         mutate(n_aa = 1, het = FALSE, phased = TRUE, read_count = NA) %>%
@@ -432,10 +426,6 @@ prepare_af_output <- function(
           loci_groups[[group_id]]
         )
       ) %>%
-      # After the filtering in prep_variantstring_input(), it is 
-      # possible allele will be an empty string if all of the positions 
-      # were unknown (i.e., a "?")
-      filter(map_lgl(allele, ~nrow(.x) > 0)) %>%
       mutate(allele = variantstring::long_to_variant(allele))
   }
 
