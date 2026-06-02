@@ -552,6 +552,13 @@ if (! is.null(arg$loci_limit)) {
   }
 }
 
+# Parse rho argument ---------------------------------------------------
+if (arg$rho == "MAF") {
+  rho <- arg$rho
+} else {
+  rho <- as.numeric(arg$rho)
+}
+
 # Run SNP-Slice --------------------------------------------------------
 snpslice_res <- snp.slicer::snp_slice(
   allele_table, 
@@ -559,7 +566,7 @@ snpslice_res <- snp.slicer::snp_slice(
   n_mcmc = arg$n_mcmc, 
   burnin = arg$burnin, 
   alpha = arg$alpha, 
-  rho = arg$rho, 
+  rho = rho, 
   threshold = arg$threshold, 
   gap = arg$gap, 
   store_mcmc = TRUE, 
