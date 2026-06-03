@@ -127,8 +127,8 @@ opts <- list(
   ), 
   make_option(
     "--rho", 
-    type = "character", 
-    default = "0.5", 
+    type = "double", 
+    default = 0.5, 
     help = "Dictionary sparsity parameter. Optional."
   ), 
   make_option(
@@ -542,13 +542,6 @@ if (! is.null(arg$loci_limit)) {
   }
 }
 
-# Parse rho argument ---------------------------------------------------
-if (arg$rho == "MAF") {
-  rho <- arg$rho
-} else {
-  rho <- as.numeric(arg$rho)
-}
-
 # Run SNP-Slice --------------------------------------------------------
 snpslice_res <- snp.slicer::snp_slice(
   allele_table, 
@@ -556,7 +549,7 @@ snpslice_res <- snp.slicer::snp_slice(
   n_mcmc = arg$n_mcmc, 
   burnin = arg$burnin, 
   alpha = arg$alpha, 
-  rho = rho, 
+  rho = arg$rho, 
   threshold = arg$threshold, 
   gap = arg$gap, 
   store_mcmc = TRUE, 
