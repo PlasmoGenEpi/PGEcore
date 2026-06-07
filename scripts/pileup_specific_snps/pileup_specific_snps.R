@@ -345,7 +345,8 @@ extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_inte
               chrom = snps_of_interest_for_target$`#chrom`[snps_of_interest_for_target_row], 
               pos = snps_of_interest_for_target$start[snps_of_interest_for_target_row],
               snp_name = snps_of_interest_for_target$name[snps_of_interest_for_target_row],
-              ref_base = as.character(ref_base), 
+              strand = snps_of_interest_for_target$strand[snps_of_interest_for_target_row],
+              ref_base = as.character(ref_base),
               seq_base = as.character(seq_base)
             )
           )
@@ -373,9 +374,9 @@ extract_snps_of_interest <-function(allele_table_unique_haps_tab, microhaps_inte
 #' 
 collapse_allele_table <- function(allele_table_to_collpase, collapse_calls_by_summing = F){
   if(collapse_calls_by_summing){
-    allele_table_out_collapsed = allele_table_to_collpase |> 
-      group_by(specimen_name, chrom, pos, snp_name, ref_base, seq_base) |> 
-      summarise(reads = sum(reads), 
+    allele_table_out_collapsed = allele_table_to_collpase |>
+      group_by(specimen_name, chrom, pos, snp_name, strand, ref_base, seq_base) |>
+      summarise(reads = sum(reads),
                 target_name = paste0(sort(target_name), collapse = ","))
   } else { 
     allele_table_out_winnerTarget = allele_table_to_collpase |> 
@@ -397,8 +398,8 @@ collapse_allele_table <- function(allele_table_to_collpase, collapse_calls_by_su
       filter(target_name == best_target_name) |> 
       select(-seq)
     
-    allele_table_out_collapsed = allele_table_out_collapsed |> 
-      group_by(specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, best_target_name, covered_by_target_names) |> 
+    allele_table_out_collapsed = allele_table_out_collapsed |>
+      group_by(specimen_name, target_name, chrom, pos, snp_name, strand, ref_base, seq_base, best_target_name, covered_by_target_names) |>
       summarise(reads = sum(reads))
   }
   
