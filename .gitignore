@@ -2,3 +2,5 @@
 .DS_Store
 *.Rproj
 *.Rhistory
+.claude/*
+CLAUDE.md

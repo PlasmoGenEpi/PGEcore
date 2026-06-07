@@ -89,6 +89,17 @@ opts <- list(
     )
   ), 
   make_option(
+    "--loci_limit", 
+    type = "integer", 
+    help = str_c(
+      "To prevent SNP-Slice from running for a long time on large datasets, ", 
+      "the input loci can be subsetted to contain the loci of interest in ", 
+      "loci_groups_input and additional random loci, up to the limit ", 
+      "specified here. Using more loci will improve COI estimation, but ", 
+      "increase computation time. If not provided, all loci will be used."
+    )
+  ), 
+  make_option(
     "--model", 
     default = "negative_binomial", 
     help = str_c(
@@ -181,11 +192,15 @@ if (interactive()) {
   arg$target_name_col <- "aa_locus"
   arg$target_value_col <- "aa"
   arg$target_count_col <- "reads"
+  arg$loci_limit <- 20
   arg$n_mcmc <- 100
-  arg$use_mcmc_for_af_and_coi <- FALSE
+  arg$verbose <- TRUE
+  arg$use_mcmc_for_af_and_coi <- TRUE
   arg$mlaf_output <- "../../mlaf.tsv"
   arg$coi_output <- "../../coi.tsv"
 }
+
+set.seed(arg$seed)
 
 #' Check for required arguments, and report which are missing 
 #'
@@ -203,7 +218,6 @@ checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
   }
 }
 
-#'
 #' Read the allele table TSV into a tibble
 #'
 #' @param allele_table_path Path to the TSV file containing the allele 
@@ -326,25 +340,41 @@ create_loci_group_input <- function(
   # Convert to list format
   loci_groups <- split(loci_groups$target_name, loci_groups$group_id)
 
-  # Check for non-biallelic loci
-  loci_groups_copy <- loci_groups
-  for (lg in names(loci_groups_copy)) {
+  # Check for missing and non-biallelic loci
+  for (lg in names(loci_groups)) {
+    missing_trgs <- setdiff(loci_groups[[lg]], allele_table$target_name)
+    if (length(missing_trgs) > 0) {
+      warning(
+        "The target(s) ", 
+        str_c(missing_trgs, collapse = ", "), 
+        " in the group ", 
+        lg, 
+        " are missing and will be excluded.", 
+        call. = FALSE
+      )
+    }
     non_biallelic_trgs <- allele_table %>%
-      filter(target_name %in% loci_groups_copy[[lg]]) %>%
+      filter(target_name %in% loci_groups[[lg]]) %>%
       group_by(target_name) %>%
       filter(n_distinct(target_value) > 2) %$%
       unique(target_name)
-    if (length(non_biallelic_trgs > 0)) {
+    if (length(non_biallelic_trgs) > 0) {
       warning(
-        "The targets ", 
+        "The target(s) ", 
         str_c(non_biallelic_trgs, collapse = ", "), 
         " in the group ", 
         lg, 
-        " have more than two alleles and this group will be excluded.", 
+        " have more than two alleles and will be excluded.", 
         call. = FALSE
       )
-      loci_groups[[lg]] <- NULL
     }
+    loci_groups[[lg]] <- setdiff(
+      loci_groups[[lg]], 
+      c(missing_trgs, non_biallelic_trgs)
+    )
+  }
+  if (length(unlist(loci_groups)) == 0) {
+    stop("The data is missing all loci in loci groups", call. = FALSE)
   }
 
   return(loci_groups)
@@ -357,7 +387,7 @@ create_loci_group_input <- function(
 #' groups, calculates the allele frequencies for each group, and 
 #' formats the output into a tibble suitable for writing to disk.
 #'
-#' @param snp_slice_res A snp.slicer results object produced by 
+#' @param snpslice_res A snp.slicer results object produced by 
 #'   `snp.slicer::snp_slice()`.
 #' @param loci_groups A list containing named character vectors 
 #'   defining loci groups.
@@ -367,7 +397,7 @@ create_loci_group_input <- function(
 #' @return A tibble with group_id, variant, freq, allele_total, and 
 #'   sample_total columns.
 prepare_af_output <- function(
-                              snp_slice_res, 
+                              snpslice_res, 
                               loci_groups, 
                               use_mcmc) {
 
@@ -441,7 +471,7 @@ prepare_af_output <- function(
 #' this object, and formats the output into a tibble suitable for 
 #' writing to disk.
 #'
-#' @param snp_slice_res A snp.slicer results object produced by 
+#' @param snpslice_res A snp.slicer results object produced by 
 #'   `snp.slicer::snp_slice()`.
 #' @inheritParams create_allele_table_input
 #' @inheritParams prepare_af_output
@@ -449,16 +479,16 @@ prepare_af_output <- function(
 #' @return A tibble with a coi column and a specimen ID column with name 
 #'   matching specimen_name_col.
 prepare_coi_output <- function(
-                              snp_slice_res, 
-                              specimen_name_col, 
-                              use_mcmc) {
-  coi_tib <- snp_slice_res %>%
+                               snpslice_res, 
+                               specimen_name_col, 
+                               use_mcmc) {
+  coi_tib <- snpslice_res %>%
     snp.slicer::calculate_individual_coi(
-      use_map = ! arg$use_mcmc_for_af_and_coi
+      use_map = ! use_mcmc
     ) %>%
     select(-host_index) %>%
-    rename(!! arg$specimen_name_col := host_id, coi = coi_estimate)
-  if (! arg$use_mcmc_for_af_and_coi) {
+    rename(!! specimen_name_col := host_id, coi = coi_estimate)
+  if (! use_mcmc) {
     coi_tib <- coi_tib %>%
       select(-coi_sd, -coi_lower, -coi_upper)
   }
@@ -488,6 +518,29 @@ loci_groups <- create_loci_group_input(
   allele_table, 
   target_name_col = arg$target_name_col
 )
+
+# Subset loci if loci_limit provided -----------------------------------
+if (! is.null(arg$loci_limit)) {
+  if (n_distinct(allele_table$target_name) > arg$loci_limit) {
+    # Loci in loci groups that must be included
+    loci_oi <- unique(unlist(loci_groups))
+    # Randomly sample additional loci to reach limit
+    n_loci_select <- max(0L, arg$loci_limit - length(loci_oi))
+    if (n_loci_select == 0L) {
+      message(
+        "Note: loci_limit (", arg$loci_limit, ") is <= the number of group loci (",
+        length(loci_oi), "); no extra loci will be sampled."
+      )
+    }
+    loci_random <- sample(
+      setdiff(allele_table$target_name, loci_oi), 
+      n_loci_select
+    )
+    loci_selected <- c(loci_oi, loci_random)
+    allele_table <- allele_table %>%
+      filter(target_name %in% loci_selected)
+  }
+}
 
 # Run SNP-Slice --------------------------------------------------------
 snpslice_res <- snp.slicer::snp_slice(

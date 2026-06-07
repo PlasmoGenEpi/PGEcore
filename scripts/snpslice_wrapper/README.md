@@ -62,4 +62,12 @@ scripts/snpslice_wrapper/snpslice_wrapper.R \
     --mlaf_output mlaf.tsv \
     --coi_output coi.tsv \
     --use_mcmc_for_af_and_coi
+
+# Run with categorical model. Beware - this is slow.
+scripts/snpslice_wrapper/snpslice_wrapper.R \
+    --allele_table data/example_amino_acid_calls.tsv \
+    --loci_groups_input data/example_loci_groups.tsv \
+    --model categorical \
+    --mlaf_output mlaf.tsv \
+    --coi_output coi.tsv
 ```
