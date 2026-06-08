@@ -87,7 +87,7 @@ if (needs_conversion) {
 }
 # ---- Calculate Fws -----------------------------------------------------------
 gds <- seqOpen(opt$gds)
-fws_result <- if (isTRUE(opt$verbose)) getFws(gds) else suppressMessages(getFws(gds))
+fws_result <- if (isTRUE(opt$verbose)) moimix::getFws(gds) else suppressMessages(moimix::getFws(gds))
 seqClose(gds)
 fws_result_df <- tibble(
   specimen_name = names(fws_result),
