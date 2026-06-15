@@ -381,7 +381,64 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
     
     # get target names
     target_names <- colnames(matrix)
-    
+
+    # malaria.em::malaria.em() errors with "incorrect number of dimensions" when
+    # there is only a single possible haplotype. Internally it builds its design
+    # matrix with mat.or.vec(nset, nhaplo); when nhaplo == 1 this returns a plain
+    # vector rather than a matrix, and the subsequent 2-D index xmat[i, hIndex]
+    # then fails. nhaplo == 1 occurs precisely when every locus is monomorphic
+    # across the (sub)population (only one microhaplotype observed at each locus).
+    # In that case phasing is trivial: every sample is the single possible
+    # haplotype, so we build the output directly and skip malaria.em.
+    locus_allele_counts <- apply(matrix, 2, function(col){
+      alleles <- unlist(strsplit(col, "\\s+"))
+      alleles <- alleles[!is.na(alleles) & nzchar(alleles)]
+      length(unique(alleles))
+    })
+
+    if (all(locus_allele_counts == 1)) {
+      message(
+        "All loci", if (!is.null(label)) paste0(" [", label, "]"),
+        " have only a single microhaplotype across the population; there is ",
+        "only one possible haplotype. Skipping malaria.em and phasing every ",
+        "sample as the only possible haplotype."
+      )
+
+      # the single allele present at each locus
+      single_alleles <- vapply(target_names, function(tn){
+        alleles <- unlist(strsplit(matrix[, tn], "\\s+"))
+        alleles <- alleles[!is.na(alleles) & nzchar(alleles)]
+        unique(alleles)[1]
+      }, character(1))
+
+      single_hap <- tibble::tibble(
+        target_name = target_names,
+        seq = unname(single_alleles)
+      )
+
+      gt_freq_summary <- single_hap |>
+        mutate(gt_id = 1L, freq = 1, freq_se = 0) |>
+        select(gt_id, target_name, seq, freq, freq_se)
+
+      gt_phase_summary <- sample_name |>
+        select(specimen_name) |>
+        tidyr::crossing(single_hap) |>
+        mutate(gt_id = 1L, posterior_est = 1, phase_id = 1L) |>
+        select(specimen_name, target_name, seq, gt_id, posterior_est, phase_id)
+
+      if (!is.null(label)) {
+        gt_freq_summary <- gt_freq_summary |> mutate(group_id = label)
+        gt_phase_summary <- gt_phase_summary |> mutate(group_id = label)
+      }
+
+      return(list(
+        output = NULL,
+        gt_freq_summary = gt_freq_summary,
+        gt_phase_summary = gt_phase_summary,
+        group_id = label
+      ))
+    }
+
     message("Running malaria.em", if (!is.null(label)) paste0(" [", label, "]"), "...")
     output <- malaria.em::malaria.em(matrix, sizes = coi_range, locus.label = target_names)
     
