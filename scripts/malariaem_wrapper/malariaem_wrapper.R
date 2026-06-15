@@ -454,7 +454,9 @@ run_malariaem <- function(matrix, test_size, max_size, subset_targets = FALSE, t
              target_name = hap_id, 
              seq, 
              freq = hap.prob, 
-             freq_se = hap.prob.std)
+             freq_se = hap.prob.std)  |>
+      mutate(freq = as.numeric(freq), 
+             freq_se = as.numeric(freq_se))
     
     if (!is.null(label)) {
       gt_freq_summary <- gt_freq_summary |> mutate(group_id = label)
