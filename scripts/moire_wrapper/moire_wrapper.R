@@ -330,7 +330,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
                                pt_chains, pt_grad_lower,
                                pt_num_threads, adapt_temp, max_runtime) {
   print("Reading input data")
-  input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
+  input_data <- read.csv(input_path, na.strings = "NA", sep = "\t", colClasses = c(specimen_name = "character"))
   
   # check for require columns 
   miss_cols = get_missing_columns(input_data, c("specimen_name", "target_name", "seq"))

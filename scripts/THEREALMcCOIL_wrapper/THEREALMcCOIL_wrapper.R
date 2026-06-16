@@ -2315,7 +2315,10 @@ validate_data <- function(data, required_cols, data_name) {
 read_and_preprocess_snp_call <- function(snp_calls_input) {
   # read indepdent snp call table
   required_cols <- c("specimen_name", "snp_name", "reads", "seq_base")
-  df_snp_call <- read_tsv(snp_calls_input)
+  df_snp_call <- read_tsv(
+    snp_calls_input,
+    col_types = readr::cols(specimen_name = readr::col_character())
+  )
   validate_data(df_snp_call, required_cols, "SNP data")
   df_snp_call <- df_snp_call |>
     dplyr::select(all_of(required_cols))
@@ -2487,7 +2490,11 @@ call_mccoil <- function(df, args) {
 #'     \item{slaf}{A data frame with allele frequency estimates for each locus.}
 #'   }
 format_output <- function() {
-  df_mccoil <- read.table("./McCOIL_out.txt_summary.txt", sep = "\t", header = TRUE)
+  df_mccoil <- read.table(
+    "./McCOIL_out.txt_summary.txt",
+    sep = "\t", header = TRUE,
+    colClasses = c(name = "character")
+  )
 
   df_slaf <- df_mccoil %>%
     filter(CorP == "P") %>%

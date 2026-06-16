@@ -165,9 +165,9 @@ check_subselecting_args <- function(parsed_args){
   select_specimen_names = c()
   if("select_specimen_names" %in% names(parsed_args)){
     if(file.exists(parsed_args$select_specimen_names)){
-      select_specimen_names = readr::read_tsv(parsed_args$select_specimen_names, col_names = F)$X1
-    } else { 
-      select_specimen_names = unlist(strsplit(parsed_args$select_specimen_names, split = ","))
+      select_specimen_names = as.character(readr::read_tsv(parsed_args$select_specimen_names, col_names = F)$X1)
+    } else {
+      select_specimen_names = as.character(unlist(strsplit(parsed_args$select_specimen_names, split = ",")))
     }
   }
   list(select_target_names = select_target_names, 
@@ -487,7 +487,7 @@ validate_columns_types <-function(ref_bed, loci_of_interest, allele_table){
   
   # validate columns allele_table
   allele_table_rules <- validate::validator(
-    is.character(specimen_name) | is.numeric(specimen_name),
+    is.character(specimen_name),
     is.numeric(reads),
     is.character(target_name), 
     is.character(seq),
@@ -606,8 +606,8 @@ run_translate_loci_of_interest <-function(){
   loci_of_interest = readr::read_tsv(arg$loci_of_interest, col_names = T)
   warnings = c(warnings, genWarningsMissCols(loci_of_interest, c("#chrom", "start", "end", "name", "length", "strand", "gene", "gene_id", "aa_position"), arg$loci_of_interest))
   
-  # read in allele table for the microhaplotype data 
-  allele_table = readr::read_tsv(arg$allele_table)
+  # read in allele table for the microhaplotype data
+  allele_table = readr::read_tsv(arg$allele_table, col_types = readr::cols(specimen_name = readr::col_character()))
   warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_name","target_name","reads","seq"), arg$allele_table))
   warnings = c(warnings, check_warnings_for_subselecting_allele_table(allele_table, optional_sub_selections, arg$allele_table))
   

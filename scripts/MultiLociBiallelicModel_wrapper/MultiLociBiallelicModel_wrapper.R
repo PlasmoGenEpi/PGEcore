@@ -895,7 +895,7 @@ if (interactive()) {
 create_MultiLociBiallelicModel_input <- function(input_path, loci_group, aa_sample_occurence_cut_off = 0) {
   # Read the allele table
   print("Reading input data")
-  original_input_data <- read_tsv(input_path)
+  original_input_data <- read_tsv(input_path, col_types = readr::cols(specimen_name = readr::col_character()))
   
   # filter data 
   if(aa_sample_occurence_cut_off > 0){

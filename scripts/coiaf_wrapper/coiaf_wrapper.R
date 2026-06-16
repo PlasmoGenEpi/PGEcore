@@ -256,7 +256,7 @@ main <- function() {
   tryCatch({
     # Read SNP data
     cat("Reading SNP data...\n")
-    snp_data <- readr::read_tsv(opt$snp_data, show_col_types = FALSE)
+    snp_data <- readr::read_tsv(opt$snp_data, show_col_types = FALSE, col_types = readr::cols(specimen_name = readr::col_character()))
     validate_data(snp_data, c("specimen_name", "snp_name", "reads", "seq_base"), "SNP data")
     
     # Read PLMAF data if provided

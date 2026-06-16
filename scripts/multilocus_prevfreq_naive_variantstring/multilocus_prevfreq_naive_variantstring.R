@@ -70,10 +70,10 @@ create_aa_table_input <- function(aa_table) {
   stopifnot(is.character(aa_table))
   
   # read in amino acid calls and validate columns
-  df_aa <- read.table(aa_table, header = TRUE)
+  df_aa <- read.table(aa_table, header = TRUE, colClasses = c(specimen_name = "character"))
   rules <- validate::validator(
-    is.character(specimen_name), 
-    is.character(gene_id), 
+    is.character(specimen_name),
+    is.character(gene_id),
     is.integer(aa_position), 
     is.integer(reads), 
     is.character(aa), 

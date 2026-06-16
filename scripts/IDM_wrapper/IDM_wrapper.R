@@ -53,10 +53,10 @@ DatImp <- function(path) {
     dat <- openxlsx::read.xlsx(path, 1)
   } else {
     if (substring(path, nchar(path) - 3, nchar(path)) == ".txt") {
-      dat <- read.table(path, header = TRUE, sep = "\t")
+      dat <- read.table(path, header = TRUE, sep = "\t", colClasses = c(specimen_name = "character"))
     } else {
       if (substring(path, nchar(path) - 3, nchar(path)) == ".csv") {
-        dat <- read.csv(path, header = TRUE, sep = ";")
+        dat <- read.csv(path, header = TRUE, sep = ";", colClasses = c(specimen_name = "character"))
       }
     }
   }
@@ -807,6 +807,7 @@ prepare_input_4_allele_table <- function(allele_table_input) {
     allele_table_input,
     col_types = cols(
       .default = col_character(),
+      specimen_name = col_character(),
       reads = col_integer()
     )
   )
@@ -855,6 +856,7 @@ prepare_input_4_aa_calls <- function(aa_calls_input) {
     aa_calls_input,
     col_types = cols(
       .default = col_character(),
+      specimen_name = col_character(),
       aa_position = col_integer()
     )
   )
