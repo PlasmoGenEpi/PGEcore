@@ -487,7 +487,7 @@ validate_columns_types <-function(ref_bed, loci_of_interest, allele_table){
   
   # validate columns allele_table
   allele_table_rules <- validate::validator(
-    is.character(specimen_name),
+    is.character(specimen_name) | is.numeric(specimen_name),
     is.numeric(reads),
     is.character(target_name), 
     is.character(seq),
