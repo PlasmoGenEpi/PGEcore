@@ -121,10 +121,18 @@ create_allele_table_input <- function(
                                       target_name_col = "target_name", 
                                       target_value_col = "seq") {
 
-  # Read in table
+  # Read in table. Force the specimen name column to character so that
+  # all-numeric specimen names are not inferred as numeric (which would
+  # drop leading zeros and break downstream string operations).
   allele_table <- read_tsv(
-      allele_table_path, 
-      col_types = cols(.default = col_character()), 
+      allele_table_path,
+      col_types = do.call(
+        cols,
+        c(
+          setNames(list(col_character()), specimen_name_col),
+          list(.default = col_character())
+        )
+      ),
       progress = FALSE
     ) %>%
     select(all_of(c(specimen_name_col, target_name_col, target_value_col))) %>%
@@ -176,10 +184,17 @@ create_coi_input <- function(
                              allele_list, 
                              specimen_name_col = "specimen_name") {
 
-  # Read input table
+  # Read input table. Force the specimen name column to character so that
+  # all-numeric specimen names are not inferred as numeric.
   coi <- read_tsv(
-      coi_path, 
-      col_types = cols(.default = col_character(), coi = col_integer()), 
+      coi_path,
+      col_types = do.call(
+        cols,
+        c(
+          setNames(list(col_character()), specimen_name_col),
+          list(.default = col_character(), coi = col_integer())
+        )
+      ),
       progress = FALSE
     ) %>%
     select(all_of(specimen_name_col), coi) %>%

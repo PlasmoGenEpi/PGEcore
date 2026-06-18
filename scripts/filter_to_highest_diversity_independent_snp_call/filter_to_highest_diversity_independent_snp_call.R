@@ -70,9 +70,9 @@ check_subselecting_args <- function(parsed_args){
   select_specimen_names = c()
   if("select_specimen_names" %in% names(parsed_args)){
     if(file.exists(parsed_args$select_specimen_names)){
-      select_specimen_names = readr::read_tsv(parsed_args$select_specimen_names, col_names = F)$X1
+      select_specimen_names = as.character(readr::read_tsv(parsed_args$select_specimen_names, col_names = F)$X1)
     } else { 
-      select_specimen_names = unlist(strsplit(parsed_args$select_specimen_names, split = ","))
+      select_specimen_names = as.character(unlist(strsplit(parsed_args$select_specimen_names, split = ",")))
     }
   }
   list(select_target_names = select_target_names, 
@@ -337,7 +337,7 @@ optional_sub_selections = check_subselecting_args(arg)
 warnings = c()
 
 # read in snp table for the microhaplotype data 
-snp_table_in = readr::read_tsv(arg$snp_table_in)
+snp_table_in = readr::read_tsv(arg$snp_table_in, col_types = readr::cols(specimen_name = readr::col_character()))
 
 # sanity check the input
 warnings = c(warnings, genWarningsMissCols(snp_table_in, c("specimen_name", "target_name", "chrom", "pos", "snp_name", "ref_base", "seq_base", "reads", "is_biallelic"), arg$snp_table_in))

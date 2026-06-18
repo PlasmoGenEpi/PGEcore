@@ -98,7 +98,7 @@ run_estimate_coi_naive <- function(input_path,
   # Read allele calls from file
   df_alleles <- read_tsv(
     input_path, 
-    col_types = cols(.default = col_character(), reads = col_integer()), 
+    col_types = cols(specimen_name = col_character(), .default = col_character(), reads = col_integer()),
     progress = FALSE
   )
   

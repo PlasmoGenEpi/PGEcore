@@ -164,9 +164,9 @@ check_subselecting_args <- function(parsed_args){
   select_specimen_names = c()
   if("select_specimen_names" %in% names(parsed_args)){
     if(file.exists(parsed_args$select_specimen_names)){
-      select_specimen_names = readr::read_tsv(parsed_args$select_specimen_names, col_names = F)$X1
-    } else { 
-      select_specimen_names = unlist(strsplit(parsed_args$select_specimen_names, split = ","))
+      select_specimen_names = as.character(readr::read_tsv(parsed_args$select_specimen_names, col_names = F)$X1)
+    } else {
+      select_specimen_names = as.character(unlist(strsplit(parsed_args$select_specimen_names, split = ",")))
     }
   }
   list(select_target_names = select_target_names, 
@@ -578,8 +578,8 @@ run_pileup_specific_snps <-function(){
   snps_of_interest = readr::read_tsv(arg$snps_of_interest, col_names = T)
   warnings = c(warnings, genWarningsMissCols(snps_of_interest, c("#chrom", "start", "end", "name", "length", "strand"), arg$snps_of_interest))
   
-  # read in allele table for the microhaplotype data 
-  allele_table = readr::read_tsv(arg$allele_table)
+  # read in allele table for the microhaplotype data
+  allele_table = readr::read_tsv(arg$allele_table, col_types = readr::cols(specimen_name = readr::col_character()))
   warnings = c(warnings, genWarningsMissCols(allele_table, c("specimen_name","target_name","reads","seq"), arg$allele_table))
   if(length(warnings) > 0){
     stop(paste0("\n", paste0(warnings, collapse = "\n")) )

@@ -66,7 +66,7 @@ arg <- parse_args(OptionParser(option_list = opts))
 create_locus_data <- function(input_path) {
 
   print("Reading input data")
-  input_data <- read.csv(input_path, na.strings = "NA", sep = "\t")
+  input_data <- read.csv(input_path, na.strings = "NA", sep = "\t", colClasses = c(specimen_name = "character"))
   locus_data <- input_data |>
     dplyr::select(specimen_name, target_name, seq) |> 
     dplyr::rename(sample_id = specimen_name, allele = seq)

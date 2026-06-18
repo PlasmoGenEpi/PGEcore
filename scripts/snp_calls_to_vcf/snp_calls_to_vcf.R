@@ -112,7 +112,7 @@ run_snp_calls_to_vcf <- function(){
     stop(paste0(arg$vcf_output, " already exists, use --overwrite to overwrite"))
   }
 
-  calls <- readr::read_tsv(arg$snp_calls)
+  calls <- readr::read_tsv(arg$snp_calls, col_types = readr::cols(specimen_name = readr::col_character()))
   needed <- c("specimen_name", "chrom", "pos", "snp_name", "strand", "ref_base", "seq_base", "reads")
   miss <- returnMissingColumns(calls, needed)
   if(length(miss) > 0){

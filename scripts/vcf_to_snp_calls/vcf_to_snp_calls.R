@@ -93,7 +93,7 @@ run_vcf_to_snp_calls <- function(){
   if(length(header) < 10){
     stop("VCF has no sample columns; nothing to emit (need FORMAT + at least one sample)")
   }
-  samples <- header[10:length(header)]
+  samples <- as.character(header[10:length(header)])
 
   data_lines <- lines[(header_idx[1] + 1):length(lines)]
   data_lines <- data_lines[nzchar(data_lines)]
