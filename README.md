@@ -5,6 +5,7 @@ Welcome to PGEcore, a central repository for scripts that integrate and wrap com
 Contents: 
 * [Purpose of the Repository](#purpose-of-the-repository)
 * [Repository Structure](#repository-structure)
+* [Using PGEcore Scripts](#using-pgecore-scripts)
 * [How to Contribute](#how-to-contribute)
 * [Script Requirements](#script-requirements)
 
@@ -24,6 +25,14 @@ PGEcore/
 ├── data/           # Example datasets
 ├── docs/           # Additional documentation or references
 └── .gitignore      # Ignore unnecessary files
+```
+
+## Using PGEcore Scripts 
+
+In the `scripts/` folder, you will find several sub folders. Each of these contains a script for a specific functionality and a README describing how to use the script. Example data to test out the scripts can be found under `data/`. You can get more information on running any of the scripts by running `Rscript <script_name.R> --help`. For example: 
+
+```
+ Rscript allele_per_locus_summary.R --help 
 ```
 
 ## How to Contribute 

@@ -45,7 +45,7 @@ An example BED file for `--ref_bed` can be found [here](../../data/example_panel
 You can test the script with the example data using the following command from within this folder.
 
 ```
-./add_ref_seqs_with_targeted_ref_fasta.R --ref_bed ../../data/example_panel_info.bed --target_fasta ../../data/example_PMO_insert_locs_of_panel_refseqs.fasta --out example_panel_info_with_ref.bed
+Rscript add_ref_seqs_with_targeted_ref_fasta.R --ref_bed ../../data/example_panel_info.bed --target_fasta ../../data/example_PMO_insert_locs_of_panel_refseqs.fasta --out example_panel_info_with_ref.bed
 ```
 
 # add\_ref\_seqs\_with\_genome.R 
@@ -84,7 +84,7 @@ An example BED file for `--ref_bed` can be found [here](../../data/example_panel
 After you have downloaded an example full genome reference you can test the script by running a command similar to the below from within this folder.
 
 ```
-./add_ref_seqs_with_full_genome_ref_fasta.R --ref_bed  ../../data/example_panel_info.bed --genome_fasta Pf3D7.fasta --out example_panel_info_with_ref.bed
+Rscript add_ref_seqs_with_full_genome_ref_fasta.R --ref_bed  ../../data/example_panel_info.bed --genome_fasta Pf3D7.fasta --out example_panel_info_with_ref.bed
 
 ```
 
