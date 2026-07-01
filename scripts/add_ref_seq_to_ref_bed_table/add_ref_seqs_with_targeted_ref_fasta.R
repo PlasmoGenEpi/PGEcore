@@ -161,7 +161,7 @@ opts <- list(
       "overwrite the output if it already exists"
     ), 
     action="store_true", 
-    default=FALSE,
+    default=TRUE,
     type = "logical"
   )
 )
