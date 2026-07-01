@@ -106,7 +106,7 @@ opts <- list(
   make_option(
     "--ref_bed", 
     help = str_c(
-      "a bed file containing the reference location of the ref_seq, no column names but the first 6 columns should be chrom, start, end, target_name, length, strand"
+      "a bed file containing the reference location of the ref_seq, columns should be #chrom, start, end, target_name, length, strand"
     )
   ), 
   make_option(
@@ -127,7 +127,7 @@ opts <- list(
       "overwrite the output if it already exists"
     ), 
     action="store_true", 
-    default=FALSE,
+    default=TRUE,
     type = "logical"
   )
 )
