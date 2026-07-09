@@ -7,6 +7,7 @@ library(rmaverick)
 # These will be referenced without the `package::` construct, and thus 
 # are loaded second to avoid masking
 library(dplyr, warn.conflicts = FALSE)
+library(jsonlite)
 library(magrittr)
 library(optparse)
 library(parallel)
@@ -103,9 +104,19 @@ opts <- list(
     help = "Seed for random number generation. Optional."
   ), 
   make_option(
-    "--model_results_output", 
+    "--model_results_output",
     help = str_c(
       "Path of RDS file to contain the rmaverick results object. Required."
+    )
+  ),
+  make_option(
+    "--beta_ladders",
+    default = NULL,
+    help = str_c(
+      "JSON file of manually-specified temperature ladders for each K. The ", 
+      "keys should be K2 through KKmax. When supplied, each K >= 2 is fit ", 
+      "with its tuned ladder via beta_manual project; --rungs and --GTI_pow ", 
+      "are then ignored. Optional."
     )
   )
 )
@@ -213,11 +224,28 @@ create_allele_table_input <- function(
 
 }
 
+#' Read manual temperature ladders from JSON
+#'
+#' Reads a JSON file of `beta_manual` ladders into a named list.
+#'
+#' @param ladder_json_path Path to the JSON file (keys `K2`..`KKmax`, each a
+#'   numeric array).
+#'
+#' @return A named list of numeric beta vectors, keyed `K2`..`KKmax`.
+load_manual_ladders <- function(ladder_json_path) {
+
+  if (!file.exists(ladder_json_path)) {
+    stop("--beta_ladders file not found: ", ladder_json_path, call. = FALSE)
+  }
+
+  jsonlite::fromJSON(ladder_json_path)
+}
+
 #' Create rmaverick project and run MCMC
 #'
-#' This function takes an allele table of the format expected by 
-#' `rmaverick::bind_data()`, creates an rmaverick project with 
-#' this data, runs the MCMC to fit the model, and returns the rmaverick 
+#' This function takes an allele table of the format expected by
+#' `rmaverick::bind_data()`, creates an rmaverick project with
+#' this data, runs the MCMC to fit the model, and returns the rmaverick
 #' project object.
 #'
 #' @param allele_data An allele table of the format expected by 
@@ -225,30 +253,36 @@ create_allele_table_input <- function(
 #' @param Kmax Numeric specifying the largest K to evaluate.
 #' @param threads Number of threads to use when fitting models for 
 #'   multiple K values.
+#' @param beta_ladders Optional named list of `beta_manual` ladders (keyed
+#'   `K2`..`KKmax`, each a numeric vector), passed straight to
+#'   `rmaverick::run_mcmc()` which fits each K with its own ladder. When `NULL`
+#'   the default temperature ladder (`rungs` / `GTI_pow`) is used.
 #' @param ... Arguments passed on to `rmaverick::run_mcmc()`.
 #'
 #' @return An `rmaverick::mavproject()` containing the results.
 run_rmaverick <- function(
-                          allele_data, 
-                          Kmax = 5, 
-                          threads = Kmax, 
+                          allele_data,
+                          Kmax = 5,
+                          threads = Kmax,
+                          beta_ladders = NULL,
                           ...) {
 
   # Set up project
   n_samp <- nrow(allele_data)
   mavproj <- rmaverick::mavproject() %>%
     rmaverick::bind_data(
-      df = allele_data, 
-      ID_col = 1, 
-      pop_col = 2, 
+      df = allele_data,
+      ID_col = 1,
+      pop_col = 2,
       ploidy_col = 3
     ) %>%
     rmaverick::new_set(
-      name = "rmaverick results", 
+      name = "rmaverick results",
       admix_on = TRUE
     )
 
-  # Run MCMC, with one K value per thread
+  # Run MCMC, with one K value per thread. Per-K manual ladders (if any) are
+  # handled inside run_mcmc() via beta_manual.
   if (threads > 1) {
     cl <- makeCluster(threads)
   } else {
@@ -256,8 +290,9 @@ run_rmaverick <- function(
   }
   mavproj <- mavproj %>%
     rmaverick::run_mcmc(
-      K = 1:Kmax, 
-      cluster = cl, 
+      K = 1:Kmax,
+      beta_manual = beta_ladders,
+      cluster = cl,
       ...
     )
   if (threads > 1) {
@@ -277,15 +312,23 @@ alleles_and_maps <- create_allele_table_input(
   target_value_col = arg$target_value_col
 )
 
+# Read manual temperature ladders, if provided ------------------------
+beta_ladders <- if (is.null(arg$beta_ladders)) {
+  NULL
+} else {
+  load_manual_ladders(arg$beta_ladders)
+}
+
 # Run rmaverick --------------------------------------------------------
 rmaverick_res <- run_rmaverick(
-  alleles_and_maps$allele_table, 
-  Kmax = arg$Kmax, 
-  threads = arg$threads, 
-  burnin = arg$burnin, 
-  samples = arg$samples, 
-  rungs = arg$rungs, 
-  GTI_pow = arg$GTI_pow, 
+  alleles_and_maps$allele_table,
+  Kmax = arg$Kmax,
+  threads = arg$threads,
+  beta_ladders = beta_ladders,
+  burnin = arg$burnin,
+  samples = arg$samples,
+  rungs = arg$rungs,
+  GTI_pow = arg$GTI_pow,
   coupling_on = arg$coupling_on
 )
 
