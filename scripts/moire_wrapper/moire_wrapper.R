@@ -86,7 +86,7 @@ opts <- list(
   ),
   make_option(
     "--eps_pos_alpha",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Alpha parameter for the positive error rate prior.",
@@ -95,7 +95,7 @@ opts <- list(
   ),
   make_option(
     "--eps_pos_beta",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Beta parameter for the positive error rate prior.",
@@ -104,7 +104,7 @@ opts <- list(
   ),
   make_option(
     "--eps_neg_alpha",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Alpha parameter for the negative error rate prior.",
@@ -113,7 +113,7 @@ opts <- list(
   ),
   make_option(
     "--eps_neg_beta",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Beta parameter for the negative error rate prior.",
@@ -122,7 +122,7 @@ opts <- list(
   ),
   make_option(
     "--r_alpha",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Alpha parameter for the relatedness prior.",
@@ -131,7 +131,7 @@ opts <- list(
   ),
   make_option(
     "--r_beta",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Beta parameter for the relatedness prior.",
@@ -149,7 +149,7 @@ opts <- list(
   ),
   make_option(
     "--mean_coi_scale",
-    type = "integer",
+    type = "double",
     default = 10,
     help = str_c(
       "Scale parameter for the mean complexity of infection prior.",
@@ -158,7 +158,7 @@ opts <- list(
   ),
   make_option(
     "--max_eps_pos",
-    type = "integer",
+    type = "double",
     default = 2,
     help = str_c(
       "Maximum value for the positive error rate.",
@@ -167,7 +167,7 @@ opts <- list(
   ),
   make_option(
     "--max_eps_neg",
-    type = "integer",
+    type = "double",
     default = 2,
     help = str_c(
       "Maximum value for the negative error rate.",
