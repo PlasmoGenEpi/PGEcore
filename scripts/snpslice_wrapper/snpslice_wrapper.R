@@ -126,11 +126,14 @@ opts <- list(
     help = "IBP concentration parameter. Optional."
   ), 
   make_option(
-    "--rho", 
-    type = "double", 
-    default = 0.5, 
-    help = "Dictionary sparsity parameter. Optional."
-  ), 
+    "--rho",
+    type = "double",
+    help = paste(
+      "Dictionary sparsity parameter. Optional. If unset, snp_slice() uses its",
+      "model-specific default: 0.5 for the categorical model and the global",
+      "minor allele frequency for count models."
+    )
+  ),
   make_option(
     "--threshold", 
     type = "double", 
@@ -543,22 +546,30 @@ if (! is.null(arg$loci_limit)) {
 }
 
 # Run SNP-Slice --------------------------------------------------------
-snpslice_res <- snp.slicer::snp_slice(
-  allele_table, 
-  model = arg$model, 
-  n_mcmc = arg$n_mcmc, 
-  burnin = arg$burnin, 
-  alpha = arg$alpha, 
-  rho = arg$rho, 
-  threshold = arg$threshold, 
-  gap = arg$gap, 
-  store_mcmc = TRUE, 
-  verbose = arg$v, 
-  specimen_id_col = "specimen_name", 
-  target_id_col = "target_name", 
-  target_value_col = "target_value", 
+snpslice_args <- list(
+  allele_table,
+  model = arg$model,
+  n_mcmc = arg$n_mcmc,
+  burnin = arg$burnin,
+  alpha = arg$alpha,
+  threshold = arg$threshold,
+  gap = arg$gap,
+  store_mcmc = TRUE,
+  verbose = arg$v,
+  specimen_id_col = "specimen_name",
+  target_id_col = "target_name",
+  target_value_col = "target_value",
   target_count_col = "target_count"
 )
+# rho is passed only when the user supplied --rho. Passing rho = NULL
+# explicitly would bypass snp_slice()'s model-specific default
+# (0.5 for categorical, minor allele frequency for count models) and force
+# the minor-allele-frequency path for every model, which is wrong for
+# categorical data.
+if (!is.null(arg$rho)) {
+  snpslice_args$rho <- arg$rho
+}
+snpslice_res <- do.call(snp.slicer::snp_slice, snpslice_args)
 
 # Calculate and write allele frequencies -------------------------------
 snpslice_res %>%
