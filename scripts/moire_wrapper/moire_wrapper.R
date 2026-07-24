@@ -193,12 +193,12 @@ opts <- list(
     )
   ),
   make_option(
-    "--pt_grad_lower",
+    "--pt_grad",
     type = "double",
-    default = 0,
+    default = 1,
     help = str_c(
-      "Lower bound for the gradient step size in the parallel tempering process.",
-      "Default set to 0."
+      "Power applied to the parallel-tempering temperature ladder. 1 gives evenly spaced ",
+      "temperatures. Only used when --pt_chains > 1. Default set to 1."
     )
   ),
   make_option(
@@ -302,7 +302,7 @@ opts <- list(
 #' @param max_eps_neg Numeric. Maximum allowable negative error rate.
 #' @param record_latent_genotypes Logical. Whether to record latent genotypes during the analysis.
 #' @param pt_chains Numeric. Number of chains for parallel tempering.
-#' @param pt_grad_lower Numeric. Lower bound for the gradient step size in the parallel tempering process.
+#' @param pt_grad Numeric. Power applied to the parallel-tempering temperature ladder; only used when pt_chains > 1.
 #' @param pt_num_threads Numeric. Number of threads for parallel tempering computations.
 #' @param adapt_temp Logical. Whether to adapt the temperature during parallel tempering.
 #' @param max_runtime Numeric. Maximum runtime allowed for the MCMC algorithm (in seconds).
@@ -316,7 +316,7 @@ opts <- list(
 #'   eps_pos_beta = 5, eps_neg_alpha = 2, eps_neg_beta = 5, r_alpha = 1,
 #'   r_beta = 1, mean_coi_shape = 2, mean_coi_scale = 0.5, max_eps_pos = 0.1,
 #'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, pt_chains = 40,
-#'   pt_grad_lower = 0.5, pt_num_threads = 20,
+#'   pt_grad = 1, pt_num_threads = 20,
 #'   adapt_temp = TRUE, max_runtime = 3600
 #' )
 #' }
@@ -327,7 +327,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
                                eps_pos_beta, eps_neg_alpha, eps_neg_beta,
                                r_alpha, r_beta, mean_coi_shape, mean_coi_scale,
                                max_eps_pos, max_eps_neg, record_latent_genotypes,
-                               pt_chains, pt_grad_lower,
+                               pt_chains, pt_grad,
                                pt_num_threads, adapt_temp, max_runtime) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t", colClasses = c(specimen_name = "character"))
@@ -372,16 +372,6 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
     dplyr::rename(sample_id = specimen_name, locus = target_name, allele = seq)
 
   print("Creating Moire object")
-  # Create a list containing selected data and parameters
-
-  if (pt_chains > 1) {
-    pt_chains <- seq(
-      from = pt_grad_lower, to = 1, length.out = pt_chains
-    )
-  } else {
-    pt_chains <- 1
-  }
-
   moire_object <- list(
     moire_data = moire_data,
     moire_parameters = list(
@@ -401,6 +391,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
       max_eps_neg = max_eps_neg,
       record_latent_genotypes = record_latent_genotypes,
       pt_chains = pt_chains,
+      pt_grad = pt_grad,
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
       max_runtime = max_runtime
@@ -423,6 +414,8 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   assert_numeric(moire_object$moire_parameters$max_eps_pos, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_eps_neg, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$record_latent_genotypes, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$pt_chains, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$pt_grad, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
@@ -473,6 +466,7 @@ run_moire <- function(moire_object) {
       max_eps_neg = moire_parameters$max_eps_neg,
       record_latent_genotypes = moire_parameters$record_latent_genotypes,
       pt_chains = moire_parameters$pt_chains,
+      pt_grad = moire_parameters$pt_grad,
       pt_num_threads = moire_parameters$pt_num_threads,
       adapt_temp = moire_parameters$adapt_temp,
       max_runtime = moire_parameters$max_runtime
@@ -631,7 +625,7 @@ moire_object <- create_moire_input(arg$allele_table,
   arg$max_eps_neg,
   arg$record_latent_genotypes,
   arg$pt_chains,
-  arg$pt_grad_lower,
+  arg$pt_grad,
   arg$pt_num_threads,
   arg$adapt_temp,
   arg$max_runtime
