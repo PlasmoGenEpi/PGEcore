@@ -96,6 +96,15 @@ opts <- list(
     )
   ),
   make_option(
+    "--thin",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Thinning interval for the MCMC sampler; only every thin-th sample is",
+      "retained. Default is set to 1 (no thinning)."
+    )
+  ),
+  make_option(
     "--verbose",
     type = "logical",
     default = FALSE,
@@ -320,6 +329,7 @@ opts <- list(
 #' @param allow_relatedness Logical. Whether to allow relatedness in the analysis.
 #' @param burnin Numeric. Number of burn-in iterations for the MCMC algorithm.
 #' @param samples_per_chain Numeric. Number of samples per chain in the MCMC algorithm.
+#' @param thin Numeric. Thinning interval for the MCMC sampler; only every thin-th sample is retained.
 #' @param verbose Logical. Whether to display detailed messages during execution.
 #' @param eps_pos_alpha Numeric. Alpha parameter for the positive error rate prior.
 #' @param eps_pos_beta Numeric. Beta parameter for the positive error rate prior.
@@ -344,7 +354,7 @@ opts <- list(
 #' \dontrun{
 #' moire_input <- create_moire_input(
 #'   input_path = "data.csv", allow_relatedness = TRUE, burnin = 1000,
-#'   samples_per_chain = 5000, verbose = TRUE, eps_pos_alpha = 2,
+#'   samples_per_chain = 5000, thin = 1, verbose = TRUE, eps_pos_alpha = 2,
 #'   eps_pos_beta = 5, eps_neg_alpha = 2, eps_neg_beta = 5, r_alpha = 1,
 #'   r_beta = 1, mean_coi_shape = 2, mean_coi_scale = 0.5, max_eps_pos = 0.1,
 #'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, pt_chains = 40,
@@ -355,7 +365,7 @@ opts <- list(
 #' @export
 
 create_moire_input <- function(input_path, allow_relatedness, burnin,
-                               samples_per_chain, verbose, eps_pos_alpha,
+                               samples_per_chain, thin, verbose, eps_pos_alpha,
                                eps_pos_beta, eps_neg_alpha, eps_neg_beta,
                                r_alpha, r_beta, mean_coi_shape, mean_coi_scale,
                                max_eps_pos, max_eps_neg, record_latent_genotypes,
@@ -419,6 +429,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
       allow_relatedness = allow_relatedness,
       burnin = burnin,
       samples_per_chain = samples_per_chain,
+      thin = thin,
       verbose = verbose,
       eps_pos_alpha = eps_pos_alpha,
       eps_pos_beta = eps_pos_beta,
@@ -443,6 +454,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   assert_logical(moire_object$moire_parameters$allow_relatedness, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$burnin, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$samples_per_chain, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$thin, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$verbose, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$eps_pos_alpha, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$eps_pos_beta, any.missing = FALSE, len = 1)
@@ -495,6 +507,7 @@ run_moire <- function(moire_object) {
       allow_relatedness = moire_parameters$allow_relatedness,
       burnin = moire_parameters$burnin,
       samples_per_chain = moire_parameters$samples_per_chain,
+      thin = moire_parameters$thin,
       verbose = moire_parameters$verbose,
       eps_pos_alpha = moire_parameters$eps_pos_alpha,
       eps_pos_beta = moire_parameters$eps_pos_beta,
@@ -661,6 +674,7 @@ moire_object <- create_moire_input(arg$allele_table,
   arg$allow_relatedness,
   arg$burnin,
   arg$samples_per_chain,
+  arg$thin,
   arg$verbose,
   arg$eps_pos_alpha,
   arg$eps_pos_beta,
