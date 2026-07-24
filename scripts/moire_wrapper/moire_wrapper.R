@@ -38,6 +38,26 @@ get_missing_columns <-function(tib, columns){
 }
 
 
+#' Read a manual parallel-tempering temperature ladder from JSON
+#'
+#' Reads a JSON file containing a numeric array of temperatures to be passed
+#' directly to moire as the parallel-tempering ladder. The ladder must
+#' contain at least two temperatures (a length-1 vector would be interpreted as
+#' a chain count instead).
+#'
+#' @param ladder_json_path Path to the JSON file (a numeric array).
+#'
+#' @return A numeric vector of temperatures.
+load_manual_pt_ladder <- function(ladder_json_path) {
+  if (!file.exists(ladder_json_path)) {
+    stop("--pt_chains_manual file not found: ", ladder_json_path, call. = FALSE)
+  }
+  ladder <- jsonlite::fromJSON(ladder_json_path)
+  assert_numeric(ladder, any.missing = FALSE, min.len = 2, finite = TRUE)
+  ladder
+}
+
+
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -198,7 +218,18 @@ opts <- list(
     default = 1,
     help = str_c(
       "Power applied to the parallel-tempering temperature ladder. 1 gives evenly spaced ",
-      "temperatures. Only used when --pt_chains > 1. Default set to 1."
+      "temperatures. Only used when --pt_chains > 1 and --pt_chains_manual is not ",
+      "supplied. Default set to 1."
+    )
+  ),
+  make_option(
+    "--pt_chains_manual",
+    default = NULL,
+    help = str_c(
+      "JSON file containing a numeric array of parallel-tempering temperatures ",
+      "(e.g. [1, 0.5, 0.1, 0], with the cold chain at temperature 1). When ",
+      "supplied, this ladder is passed directly to moire and both --pt_chains and ",
+      "--pt_grad are ignored. Optional."
     )
   ),
   make_option(
@@ -302,10 +333,11 @@ opts <- list(
 #' @param max_eps_neg Numeric. Maximum allowable negative error rate.
 #' @param record_latent_genotypes Logical. Whether to record latent genotypes during the analysis.
 #' @param pt_chains Numeric. Number of chains for parallel tempering.
-#' @param pt_grad Numeric. Power applied to the parallel-tempering temperature ladder; only used when pt_chains > 1.
+#' @param pt_grad Numeric. Power applied to the parallel-tempering temperature ladder; only used when pt_chains > 1 and pt_chains_manual is NULL.
 #' @param pt_num_threads Numeric. Number of threads for parallel tempering computations.
 #' @param adapt_temp Logical. Whether to adapt the temperature during parallel tempering.
 #' @param max_runtime Numeric. Maximum runtime allowed for the MCMC algorithm (in seconds).
+#' @param pt_chains_manual Numeric vector or NULL. Explicit parallel-tempering temperature ladder. When supplied it overrides pt_chains and pt_grad is ignored by moire.
 #'
 #' @return A list containing the Moire data and parameters, ready for downstream analysis.
 #' @examples
@@ -328,7 +360,8 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
                                r_alpha, r_beta, mean_coi_shape, mean_coi_scale,
                                max_eps_pos, max_eps_neg, record_latent_genotypes,
                                pt_chains, pt_grad,
-                               pt_num_threads, adapt_temp, max_runtime) {
+                               pt_num_threads, adapt_temp, max_runtime,
+                               pt_chains_manual = NULL) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t", colClasses = c(specimen_name = "character"))
   
@@ -372,6 +405,14 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
     dplyr::rename(sample_id = specimen_name, locus = target_name, allele = seq)
 
   print("Creating Moire object")
+  # pt_chains is passed to moire either as an integer count (moire builds its
+  # own ladder seq(1, 0, length.out = pt_chains)^pt_grad) or, when a manual
+  # ladder is supplied, as the explicit temperature vector (moire then ignores
+  # pt_grad).
+  if (!is.null(pt_chains_manual)) {
+    pt_chains <- pt_chains_manual
+  }
+
   moire_object <- list(
     moire_data = moire_data,
     moire_parameters = list(
@@ -414,7 +455,8 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   assert_numeric(moire_object$moire_parameters$max_eps_pos, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_eps_neg, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$record_latent_genotypes, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$pt_chains, any.missing = FALSE, len = 1)
+  # pt_chains is an integer count (length 1) or a manual temperature ladder (length >= 2)
+  assert_numeric(moire_object$moire_parameters$pt_chains, any.missing = FALSE, min.len = 1)
   assert_numeric(moire_object$moire_parameters$pt_grad, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
@@ -604,8 +646,15 @@ if (interactive()) {
   arg$effective_coi_summary <- "effective_coi_summary.tsv"
 }
 
-# check for required allele_table input 
+# check for required allele_table input
 checkOptparseRequiredArgsThrow(parser, arg, c("allele_table"))
+
+# Optionally load a manual parallel-tempering temperature ladder
+pt_chains_manual <- if (!is.null(arg$pt_chains_manual)) {
+  load_manual_pt_ladder(arg$pt_chains_manual)
+} else {
+  NULL
+}
 
 # Create Moire object -------------------------------------------------
 moire_object <- create_moire_input(arg$allele_table,
@@ -628,7 +677,8 @@ moire_object <- create_moire_input(arg$allele_table,
   arg$pt_grad,
   arg$pt_num_threads,
   arg$adapt_temp,
-  arg$max_runtime
+  arg$max_runtime,
+  pt_chains_manual = pt_chains_manual
 )
 
 # Run Moire -------------------------------------------------------------------
