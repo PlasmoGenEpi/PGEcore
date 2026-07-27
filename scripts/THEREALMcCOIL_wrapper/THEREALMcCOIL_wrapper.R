@@ -2378,6 +2378,45 @@ prep_input_categorical <- function(df) {
 }
 
 
+#' Restricts SNP call data to biallelic loci for the proportional model.
+#'
+#' The proportional model represents each locus with exactly two alleles
+#' (`dataA1`/`dataA2`), so loci with any other number of alleles cannot be
+#' encoded correctly. This function keeps only loci with exactly two distinct
+#' `seq_base` values, dropping monomorphic and multiallelic loci with a warning.
+#'
+#' @param df A dataframe output from `read_and_preprocess_snp_call`, containing SNP call data.
+#' @return `df` filtered to biallelic loci only.
+filter_biallelic <- function(df) {
+  allele_counts <- df %>%
+    distinct(snp_name, seq_base) %>%
+    count(snp_name, name = "n_alleles")
+
+  n_mono <- sum(allele_counts$n_alleles < 2)
+  n_multi <- sum(allele_counts$n_alleles > 2)
+  if (n_mono > 0 || n_multi > 0) {
+    warning(
+      "Dropping non-biallelic loci for the proportional model: ",
+      n_mono, " monomorphic, ", n_multi, " multiallelic. ",
+      "The proportional model supports only biallelic loci.",
+      call. = FALSE
+    )
+  }
+
+  biallelic_loci <- allele_counts %>%
+    filter(n_alleles == 2) %>%
+    pull(snp_name)
+  if (length(biallelic_loci) == 0) {
+    stop(
+      "No biallelic loci remain after filtering; the proportional model ",
+      "cannot be run on this input.",
+      call. = FALSE
+    )
+  }
+
+  df %>% filter(snp_name %in% biallelic_loci)
+}
+
 #' Prepares SNP call data for input into the McCOIL proportional model.
 #'
 #' This function takes a dataframe produced by the `read_and_preprocess_snp_call` function
@@ -2387,11 +2426,16 @@ prep_input_categorical <- function(df) {
 #' @param df A dataframe output from `read_and_preprocess_snp_call`, containing SNP call data.
 #' @return A formatted dataframe suitable for use as input to the `McCOIL_proportional` function.
 prep_input_prop <- function(df) {
-  # assign two allele at each loci to index 1 or 2
+  df <- filter_biallelic(df)
+
+  # assign the two alleles at each locus to index 1 or 2, within each locus so
+  # that assignment cannot depend on the allele counts of other loci
   allele_map <- df %>%
-    arrange(snp_name, seq_base) %>%
     distinct(snp_name, seq_base) %>%
-    mutate(allele_idx = rep_len(c(1, 2), length.out = n()))
+    arrange(snp_name, seq_base) %>%
+    group_by(snp_name) %>%
+    mutate(allele_idx = row_number()) %>%
+    ungroup()
   df_with_allele_idx <- df %>% left_join(allele_map, by = c("snp_name", "seq_base"))
 
   # get signal matrix for alleles with index 1
