@@ -35,15 +35,19 @@ genotypes. A variety of optional inputs specify the column names in these tables
 and parameters for running SNP-Slice. For specifics on input formats, refer to 
 the argument documentation in the script.
 
-The MLAF output will be a TSV with group\_id, variant, and freq columns. If the 
-`--use_mcmc_for_af_and_coi` flag was not used, it will also have allele\_count 
-and allele\_total columns.
+The estimator used for MLAF and COI is set with `--estimator`. The choices are 
+`final_sample` (the final sample of the MCMC chain, matching the SNP-Slice 
+paper; the default), `map` (the maximum a posteriori state), and `posterior` 
+(the posterior mean over retained MCMC samples).
+
+The MLAF output will be a TSV with group\_id, variant, and freq columns. Under 
+the `final_sample` and `map` estimators, it will also have allele\_count and 
+allele\_total columns.
 
 The COI output will be a TSV with a column matching `--specimen_name_col` and a 
-coi column. If the `--use_mcmc_for_af_and_coi` flag was used, it will also have 
-coi\_sd, coi\_lower, and coi\_upper columns. The latter three are the standard 
-deviation and lower and upper bounds of the 95% credible interval of the COI 
-estimate.
+coi column. Under the `posterior` estimator, it will also have coi\_sd, 
+coi\_lower, and coi\_upper columns. The latter three are the standard deviation 
+and lower and upper bounds of the 95% credible interval of the COI estimate.
 
 ## Script Usage
 
@@ -55,13 +59,13 @@ scripts/snpslice_wrapper/snpslice_wrapper.R \
     --mlaf_output mlaf.tsv \
     --coi_output coi.tsv
 
-# Use MCMC results for estimating MLAF and COI
+# Use the posterior mean over MCMC samples for estimating MLAF and COI
 scripts/snpslice_wrapper/snpslice_wrapper.R \
     --allele_table data/example_amino_acid_calls.tsv \
     --loci_groups_input data/example_loci_groups.tsv \
     --mlaf_output mlaf.tsv \
     --coi_output coi.tsv \
-    --use_mcmc_for_af_and_coi
+    --estimator posterior
 
 # Run with categorical model. Beware - this is slow.
 scripts/snpslice_wrapper/snpslice_wrapper.R \

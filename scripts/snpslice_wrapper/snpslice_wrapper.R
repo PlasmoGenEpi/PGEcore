@@ -150,14 +150,17 @@ opts <- list(
     )
   ), 
   make_option(
-    "--use_mcmc_for_af_and_coi", 
-    action = "store_true", 
-    default = FALSE, 
+    "--estimator",
+    type = "character",
+    default = "final_sample",
     help = str_c(
-      "For calculating COI and allele frequencies, whether to sample from ", 
-      "MCMC (TRUE) or use MAP estimates (FALSE; default)."
+      "Estimator used for COI and allele frequencies. One of 'final_sample' ",
+      "(the final sample of the MCMC chain, matching the SNP-Slice paper; ",
+      "default), 'map' (the maximum a posteriori state), or 'posterior' ",
+      "(the posterior mean over retained MCMC samples, which also yields ",
+      "uncertainty columns). Optional."
     )
-  ), 
+  ),
   make_option(
     c("-v", "--verbose"), 
     action = "store_true", 
@@ -198,7 +201,7 @@ if (interactive()) {
   arg$loci_limit <- 20
   arg$n_mcmc <- 100
   arg$verbose <- TRUE
-  arg$use_mcmc_for_af_and_coi <- TRUE
+  arg$estimator <- "posterior"
   arg$mlaf_output <- "../../mlaf.tsv"
   arg$coi_output <- "../../coi.tsv"
 }
@@ -386,23 +389,24 @@ create_loci_group_input <- function(
 
 #' Calculate and format allele frequencies from SNP-Slice results
 #'
-#' This function takes a snp.slicer results object and a list of loci 
-#' groups, calculates the allele frequencies for each group, and 
+#' This function takes a snp.slicer results object and a list of loci
+#' groups, calculates the allele frequencies for each group, and
 #' formats the output into a tibble suitable for writing to disk.
 #'
-#' @param snpslice_res A snp.slicer results object produced by 
+#' @param snpslice_res A snp.slicer results object produced by
 #'   `snp.slicer::snp_slice()`.
-#' @param loci_groups A list containing named character vectors 
+#' @param loci_groups A list containing named character vectors
 #'   defining loci groups.
-#' @param use_mcmc Logical indicating whether to use the MCMC results 
-#'   for calculating allele frequencies.
+#' @param estimator Character; one of "final_sample", "map", or "posterior",
+#'   passed to snp.slicer as the `estimate` argument. See the `--estimator`
+#'   CLI argument.
 #'
-#' @return A tibble with group_id, variant, freq, allele_total, and 
+#' @return A tibble with group_id, variant, freq, allele_total, and
 #'   sample_total columns.
 prepare_af_output <- function(
-                              snpslice_res, 
-                              loci_groups, 
-                              use_mcmc) {
+                              snpslice_res,
+                              loci_groups,
+                              estimator) {
 
   # Reformat a tibble of allele frequencies to have variant string names
   format_af_table_w_variantstring <- function(af_table, group_id, loci_groups) {
@@ -419,8 +423,8 @@ prepare_af_output <- function(
     # Convert allele names to variant string format
     af_table %>%
       as_tibble() %>%
-      # All possible genotypes will be included, but many will have a 
-      # freq of 0 if use_mcmc = FALSE or some samples are missing loci
+      # All possible genotypes will be included, but many will have a
+      # freq of 0 for a point estimate or when some samples are missing loci
       filter(frequency > 0) %>%
       mutate(
         allele = map(
@@ -434,9 +438,9 @@ prepare_af_output <- function(
 
   # Calculate allele frequencies
   snp_slicer_af_by_group <- snp.slicer::calculate_allele_frequencies_by_sets(
-      snpslice_res, 
-      loci_groups, 
-      use_map = ! use_mcmc
+      snpslice_res,
+      loci_groups,
+      estimate = estimator
     )
   # Reformat
   af_tib <- tibble(
@@ -456,7 +460,7 @@ prepare_af_output <- function(
       variant = allele, 
       freq = frequency
     )
-  if (use_mcmc) {
+  if (estimator == "posterior") {
     af_tib <- af_tib %>%
       select(-mean_count, -n_samples)
   } else {
@@ -482,16 +486,16 @@ prepare_af_output <- function(
 #' @return A tibble with a coi column and a specimen ID column with name 
 #'   matching specimen_name_col.
 prepare_coi_output <- function(
-                               snpslice_res, 
-                               specimen_name_col, 
-                               use_mcmc) {
+                               snpslice_res,
+                               specimen_name_col,
+                               estimator) {
   coi_tib <- snpslice_res %>%
     snp.slicer::calculate_individual_coi(
-      use_map = ! use_mcmc
+      estimate = estimator
     ) %>%
     select(-host_index) %>%
     rename(!! specimen_name_col := host_id, coi = coi_estimate)
-  if (! use_mcmc) {
+  if (estimator != "posterior") {
     coi_tib <- coi_tib %>%
       select(-coi_sd, -coi_lower, -coi_upper)
   }
@@ -507,6 +511,16 @@ required_arguments = c(
   "coi_output"
 )
 checkOptparseRequiredArgsThrow(parser, arg, required_arguments)
+
+# Validate estimator choice --------------------------------------------
+valid_estimators <- c("final_sample", "map", "posterior")
+if (! arg$estimator %in% valid_estimators) {
+  stop(
+    "--estimator must be one of: ",
+    str_c(valid_estimators, collapse = ", "),
+    call. = FALSE
+  )
+}
 
 # Read inputs ----------------------------------------------------------
 allele_table <- create_allele_table_input(
@@ -554,7 +568,9 @@ snpslice_args <- list(
   alpha = arg$alpha,
   threshold = arg$threshold,
   gap = arg$gap,
-  store_mcmc = TRUE,
+  # Only the "posterior" estimator needs the retained samples; the
+  # final_sample and map point estimates are carried on the results object.
+  store_mcmc = arg$estimator == "posterior",
   verbose = arg$v,
   specimen_id_col = "specimen_name",
   target_id_col = "target_name",
@@ -573,10 +589,10 @@ snpslice_res <- do.call(snp.slicer::snp_slice, snpslice_args)
 
 # Calculate and write allele frequencies -------------------------------
 snpslice_res %>%
-  prepare_af_output(loci_groups, arg$use_mcmc_for_af_and_coi) %>%
+  prepare_af_output(loci_groups, arg$estimator) %>%
   write_tsv(arg$mlaf_output)
 
 # Calculate and write COI ----------------------------------------------
 snpslice_res %>%
-  prepare_coi_output(arg$specimen_name_col, arg$use_mcmc_for_af_and_coi) %>%
+  prepare_coi_output(arg$specimen_name_col, arg$estimator) %>%
   write_tsv(arg$coi_output)
