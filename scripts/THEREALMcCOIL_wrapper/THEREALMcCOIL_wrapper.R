@@ -2265,6 +2265,16 @@ get_optparse_args <- function() {
       )
     ),
     make_option(
+      "--seed",
+      type = "integer",
+      default = "123",
+      help = str_c(
+        "Random seed passed to set.seed() before running the MCMC. ",
+        "Can be used in both models. ",
+        "Default: %default"
+      )
+    ),
+    make_option(
       "--slaf_output",
       type = "character",
       help = str_c(
@@ -2484,6 +2494,9 @@ prep_input_prop <- function(df) {
 #'
 #' @return None. The function writes the results of the THEREALMcCOIL analysis to output files prefixed with "McCOIL_out.txt".
 call_mccoil <- function(df, args) {
+  seed <- get_value_of_optional_argument(args, "seed", 123)
+  set.seed(seed)
+
   model <- get_value_of_optional_argument(
     args, "model", "proportional",
     choices = c("categorical", "proportional")
