@@ -49,6 +49,16 @@ coi column. Under the `posterior` estimator, it will also have coi\_sd,
 coi\_lower, and coi\_upper columns. The latter three are the standard deviation 
 and lower and upper bounds of the 95% credible interval of the COI estimate.
 
+The convergence output (`--convergence_output`, default `convergence_diag.tsv`) 
+is a TSV of MCMC convergence diagnostics with one row per parameter — `logpost`, 
+`n_strains` (number of active strains), `kstar`, `ktrunc`, and `coi[i]` for each 
+specimen — and the columns `variable`, `mean`, `median`, `sd`, `q5`, `q95`, 
+`rhat`, `ess_bulk`, `ess_tail`. `rhat` is the rank-normalized split Gelman-Rubin 
+statistic (values near 1 indicate convergence) and `ess_bulk`/`ess_tail` are 
+effective sample sizes. The number of independent chains is set with 
+`--n_chains` (default 3, required for R-hat) and `--n_cores` runs them in 
+parallel.
+
 ## Script Usage
 
 ```{r}

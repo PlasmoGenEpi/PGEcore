@@ -108,17 +108,22 @@ opts <- list(
     )
   ), 
   make_option(
-    "--n_mcmc", 
-    type = "integer", 
-    default = 10000, 
-    help = "Number of MCMC iterations. Optional."
-  ), 
+    "--n_sample",
+    type = "integer",
+    default = 10000,
+    help = str_c(
+      "Number of post-burn-in MCMC iterations to retain per chain. Optional."
+    )
+  ),
   make_option(
-    "--burnin", 
-    type = "double", 
-    default = NULL, 
-    help = "Burn-in period. If NULL, defaults to n_mcmc/2. Optional."
-  ), 
+    "--n_burnin",
+    type = "double",
+    default = NULL,
+    help = str_c(
+      "Number of burn-in iterations per chain. ",
+      "If NULL, defaults to floor(n_sample / 2). Optional."
+    )
+  ),
   make_option(
     "--alpha", 
     type = "double", 
@@ -145,7 +150,7 @@ opts <- list(
     type = "integer", 
     default = NULL, 
     help = str_c(
-      "Early stopping threshold. If NULL, runs for full n_mcmc iterations. ", 
+      "Early stopping threshold. If NULL, runs for full n_sample iterations. ", 
       "Optional."
     )
   ), 
@@ -168,13 +173,31 @@ opts <- list(
     help = "Verbose output."
   ), 
   make_option(
-    "--seed", 
-    type = "integer", 
-    default = 1, 
+    "--seed",
+    type = "integer",
+    default = 1,
     help = "Random number seed. Optional."
-  ), 
+  ),
   make_option(
-    "--mlaf_output", 
+    "--n_chains",
+    type = "integer",
+    default = 3,
+    help = str_c(
+      "Number of independent MCMC chains to run. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Optional."
+    )
+  ),
+  make_option(
+    "--n_cores",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of cores used to run chains simultaneously (capped at n_chains). ",
+      "Optional."
+    )
+  ),
+  make_option(
+    "--mlaf_output",
     help = str_c(
       "Path of TSV file to contain multilocus allele frequencies, with a ", 
       "group_id column, a variant column using the variantstring format, ", 
@@ -182,10 +205,20 @@ opts <- list(
     )
   ), 
   make_option(
-    "--coi_output", 
+    "--coi_output",
     help = str_c(
-      "Path of TSV file to contain COI estimates, with a specimen_name column ", 
+      "Path of TSV file to contain COI estimates, with a specimen_name column ",
       "and a coi column. Required."
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = str_c(
+      "Path of TSV file to contain MCMC convergence diagnostics, with one row ",
+      "per parameter (logpost, n_strains, kstar, ktrunc, and coi per specimen) ",
+      "and the columns: variable, mean, median, sd, q5, q95, rhat, ess_bulk, ",
+      "ess_tail. Optional."
     )
   )
 )
@@ -199,7 +232,7 @@ if (interactive()) {
   arg$target_value_col <- "aa"
   arg$target_count_col <- "reads"
   arg$loci_limit <- 20
-  arg$n_mcmc <- 100
+  arg$n_sample <- 100
   arg$verbose <- TRUE
   arg$estimator <- "posterior"
   arg$mlaf_output <- "../../mlaf.tsv"
@@ -563,14 +596,17 @@ if (! is.null(arg$loci_limit)) {
 snpslice_args <- list(
   allele_table,
   model = arg$model,
-  n_mcmc = arg$n_mcmc,
-  burnin = arg$burnin,
+  n_sample = arg$n_sample,
+  n_burnin = arg$n_burnin,
   alpha = arg$alpha,
   threshold = arg$threshold,
   gap = arg$gap,
-  # Only the "posterior" estimator needs the retained samples; the
-  # final_sample and map point estimates are carried on the results object.
-  store_mcmc = arg$estimator == "posterior",
+  n_chains = arg$n_chains,
+  n_cores = arg$n_cores,
+  seed = arg$seed,
+  # store_mcmc is forced on because the convergence diagnostics (and the
+  # "posterior" estimator) require the retained per-iteration samples.
+  store_mcmc = TRUE,
   verbose = arg$v,
   specimen_id_col = "specimen_name",
   target_id_col = "target_name",
@@ -596,3 +632,10 @@ snpslice_res %>%
 snpslice_res %>%
   prepare_coi_output(arg$specimen_name_col, arg$estimator) %>%
   write_tsv(arg$coi_output)
+
+# Calculate and write MCMC convergence diagnostics ---------------------
+snpslice_res %>%
+  snp.slicer::convergence_diagnostics(
+    pars = c("logpost", "n_strains", "kstar", "ktrunc", "coi")
+  ) %>%
+  write_tsv(arg$convergence_output)
