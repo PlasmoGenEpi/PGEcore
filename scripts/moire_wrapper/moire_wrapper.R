@@ -1,5 +1,11 @@
 #!/usr/bin/env Rscript
 
+# Get the script dir and make path to utils.R
+cmd_args <- commandArgs(trailingOnly = FALSE)
+file_arg <- sub("--file=", "", cmd_args[grep("--file=", cmd_args)])
+script_dir <- if (length(file_arg) == 1) dirname(normalizePath(file_arg)) else getwd()
+utils_path <- file.path(script_dir, "..", "utils", "utils.R")
+
 library(tibble, warn.conflicts = F)
 library(dplyr, warn.conflicts = F)
 library(moire, warn.conflicts = F)
@@ -8,6 +14,8 @@ library(optparse, warn.conflicts = F)
 library(stringr, warn.conflicts = F)
 library(validate, warn.conflicts = F)
 library(checkmate, warn.conflicts = F)
+
+source(utils_path)
 
 # Set up options
 #' Check for required arguments, and report which are missing 
@@ -71,6 +79,26 @@ opts <- list(
     help = str_c(
       "Number of samples per chain for the MCMC sampler.",
       "Default is set to 1000 samples."
+    )
+  ),
+  make_option(
+    "--num_chains",
+    type = "integer",
+    default = 3,
+    help = str_c(
+      "Number of independent MCMC chains to run. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Note this is ",
+      "distinct from --pt_chains (parallel tempering rungs within a chain). ",
+      "Default set to 3."
+    )
+  ),
+  make_option(
+    "--chains_num_threads",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of threads used to run the independent chains in parallel ",
+      "(moire's num_cores). Default set to 1."
     )
   ),
   make_option(
@@ -280,6 +308,15 @@ opts <- list(
     help = str_c(
       "Optionally can export the full results of moire, which can be helpful for debugging or quality assurance (e.g. checking if MCMC properly converged)"
     )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = str_c(
+      "TSV file for MCMC convergence diagnostics, with one row per estimated ",
+      "parameter and the columns: variable, mean, median, sd, q5, q95, rhat, ",
+      "ess_bulk, ess_tail. Default set to convergence_diag.tsv."
+    )
   )
 )
 
@@ -336,7 +373,8 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
                                r_alpha, r_beta, mean_coi_shape, mean_coi_scale,
                                max_eps_pos, max_eps_neg, record_latent_genotypes,
                                pt_chains, pt_grad_lower,
-                               pt_num_threads, adapt_temp, max_runtime) {
+                               pt_num_threads, adapt_temp, max_runtime,
+                               num_chains, chains_num_threads) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t", colClasses = c(specimen_name = "character"))
   
@@ -415,7 +453,9 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
       pt_chains = pt_chains,
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
-      max_runtime = max_runtime
+      max_runtime = max_runtime,
+      num_chains = num_chains,
+      num_cores = chains_num_threads
     )
   )
 
@@ -436,10 +476,14 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   assert_numeric(moire_object$moire_parameters$max_eps_pos, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_eps_neg, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$record_latent_genotypes, any.missing = FALSE, len = 1)
-  assert_numeric(moire_object$moire_parameters$pt_grad_lower, any.missing = FALSE, len = 1)
+  # pt_grad_lower is only used to build the pt_chains ladder and is not stored in
+  # moire_parameters, so validate the incoming argument directly.
+  assert_numeric(pt_grad_lower, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$num_chains, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$num_cores, any.missing = FALSE, len = 1)
 
 
 
@@ -490,7 +534,9 @@ run_moire <- function(moire_object) {
       pt_chains = moire_parameters$pt_chains,
       pt_num_threads = moire_parameters$pt_num_threads,
       adapt_temp = moire_parameters$adapt_temp,
-      max_runtime = moire_parameters$max_runtime
+      max_runtime = moire_parameters$max_runtime,
+      num_chains = moire_parameters$num_chains,
+      num_cores = moire_parameters$num_cores
     )
   })
 
@@ -610,6 +656,70 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
   readr::write_tsv(effective_coi_summary, effective_coi_summary_o)
 }
 
+#' Assemble a named list of every estimated parameter's draws for one chain
+#'
+#' @param chain One element of `mcmc_results$chains`.
+#' @param sample_ids Character vector of specimen IDs; order matches the
+#'   per-sample draw lists (`chain$coi`, `chain$eps_pos`, etc.).
+#' @param loci Character vector of locus names; order matches
+#'   `chain$allele_freqs`.
+#'
+#' @return A named list of numeric draw vectors, each of length
+#'   samples_per_chain, named for the parameter it belongs to.
+extract_moire_chain_draws <- function(chain, sample_ids, loci) {
+  draws <- list()
+  for (s in seq_along(sample_ids)) {
+    sid <- sample_ids[s]
+    draws[[str_glue("coi[{sid}]")]] <- chain$coi[[s]]
+    draws[[str_glue("eps_pos[{sid}]")]] <- chain$eps_pos[[s]]
+    draws[[str_glue("eps_neg[{sid}]")]] <- chain$eps_neg[[s]]
+    # Raw (unmasked) relatedness trace so the mixing of the sampler's
+    # relatedness parameter is assessed. moire masks coi <= 1 only when
+    # reporting relatedness estimates, not for convergence.
+    draws[[str_glue("relatedness[{sid}]")]] <- chain$relatedness[[s]]
+  }
+  for (l in seq_along(loci)) {
+    locus <- chain$allele_freqs[[l]]
+    num_alleles <- length(locus[[1]])
+    allele_freq_matrix <- matrix(unlist(locus), nrow = num_alleles) # alleles x iters
+    for (a in seq_len(num_alleles)) {
+      draws[[str_glue("allele_freq[{loci[l]}.{a}]")]] <- allele_freq_matrix[a, ]
+    }
+  }
+  draws[["mean_coi"]] <- chain$mean_coi
+  draws
+}
+
+#' Compute MCMC convergence diagnostics across all chains
+#'
+#' Assembles a posterior draws array (iteration x chain x variable) covering
+#' every estimated parameter (per-sample COI, false-positive/false-negative
+#' error rates, within-host relatedness; per-locus/allele frequencies; and the
+#' population mean COI) and summarizes it with `summarize_convergence_draws()`.
+#'
+#' @param mcmc_results The list returned by `run_moire`.
+#'
+#' @return A data frame of convergence diagnostics, one row per parameter.
+prepare_convergence_output <- function(mcmc_results) {
+  sample_ids <- mcmc_results$args$data$sample_ids
+  loci <- mcmc_results$args$data$loci
+  per_chain <- lapply(
+    mcmc_results$chains, extract_moire_chain_draws, sample_ids, loci
+  )
+  var_names <- names(per_chain[[1]])
+  n_iter <- length(per_chain[[1]][[1]])
+  n_chains <- length(per_chain)
+  draws <- array(
+    NA_real_,
+    dim = c(n_iter, n_chains, length(var_names)),
+    dimnames = list(iteration = NULL, chain = NULL, variable = var_names)
+  )
+  for (i in seq_len(n_chains)) {
+    draws[, i, ] <- sapply(var_names, function(v) per_chain[[i]][[v]])
+  }
+  summarize_convergence_draws(posterior::as_draws_array(draws))
+}
+
 # Main-----------------------------------------------------------------
 
 # first parse options and check for required 
@@ -650,7 +760,9 @@ moire_object <- create_moire_input(arg$allele_table,
   arg$pt_grad_lower,
   arg$pt_num_threads,
   arg$adapt_temp,
-  arg$max_runtime
+  arg$max_runtime,
+  arg$num_chains,
+  arg$chains_num_threads
 )
 
 # Run Moire -------------------------------------------------------------------
@@ -660,8 +772,12 @@ moire_results <- run_moire(moire_object)
 # Generate summaries
 summarize_and_write_results(moire_object, moire_results, arg$coi_summary, arg$he_summary, arg$allele_freq_summary, arg$relatedness_summary, arg$effective_coi_summary)
 
+# Compute and write MCMC convergence diagnostics across chains
+convergence_diag <- prepare_convergence_output(moire_results)
+readr::write_tsv(convergence_diag, arg$convergence_output)
 
-# optionally write out mcmc results 
+
+# optionally write out mcmc results
 if(!is.null(arg$mcmc_results_output)){
   saveRDS(moire_results, arg$mcmc_results_output)
 }
