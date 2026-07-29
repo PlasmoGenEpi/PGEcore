@@ -317,6 +317,16 @@ opts <- list(
       "parameter and the columns: variable, mean, median, sd, q5, q95, rhat, ",
       "ess_bulk, ess_tail. Default set to convergence_diag.tsv."
     )
+  ),
+  make_option(
+    "--acceptance_rates_output",
+    default = NULL,
+    help = str_c(
+      "Optional TSV file for parallel tempering swap (exchange) acceptance ",
+      "rates, with one row per chain and temperature rung and the columns: ",
+      "chain, rung, temperature, swap_acceptance_rate. Only meaningful when ",
+      "parallel tempering is used (--pt_chains > 1)."
+    )
   )
 )
 
@@ -419,13 +429,16 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
 
   print("Creating Moire object")
 
-  # This wrapper does not currently support passing on the pt_grad 
-  # argument of MOIRE. Instead, a uniformly-spaced sequence of rungs is 
-  # generated starting from pt_grad_lower. This can be effective 
+  # This wrapper does not currently support passing on the pt_grad
+  # argument of MOIRE. Instead, a uniformly-spaced sequence of rungs is
+  # generated down to pt_grad_lower. This can be effective
   # because the highly-tempered distributions often don't swap well.
+  # The ladder must be descending (cold chain, temperature 1.0, first): MOIRE
+  # reports samples from rung 1 as the cold chain, so an ascending ladder makes
+  # it sample the pure-prior rung and corrupts the posterior summaries.
   if (pt_chains > 1) {
     pt_chains <- seq(
-      from = pt_grad_lower, to = 1, length.out = pt_chains
+      from = 1, to = pt_grad_lower, length.out = pt_chains
     )
   } else {
     pt_chains <- 1
@@ -720,6 +733,38 @@ prepare_convergence_output <- function(mcmc_results) {
   summarize_convergence_draws(posterior::as_draws_array(draws))
 }
 
+#' Compute parallel tempering swap acceptance rates
+#'
+#' For each independent chain and each temperature rung, computes the swap
+#' (exchange) acceptance rate with the adjacent hotter rung, following moire's
+#' own convention (see `moire::plot_chain_swaps()`):
+#'
+#' @param mcmc_results The list returned by `run_moire`.
+#'
+#' @details `swap_acceptances / (samples_per_chain / 2)`. Swap acceptances are recorded
+#' per adjacent rung pair, so the rate for rung `k` describes swaps between rung
+#' `k` and rung `k + 1`; the final rung has no partner above it and its rate is
+#' `NA`. `temperature` is moire's `temp_gradient` value for the rung (the
+#' power-posterior exponent in `[0, 1]`), read per chain as it may be adapted.
+#'
+#' @return A tibble with one row per chain-rung combination and the columns
+#'   `chain`, `rung`, `temperature`, and `swap_acceptance_rate`.
+prepare_acceptance_rates_output <- function(mcmc_results) {
+  swap_attempts <- mcmc_results$args$samples_per_chain / 2
+  chain_tables <- lapply(seq_along(mcmc_results$chains), function(chain_num) {
+    chain <- mcmc_results$chains[[chain_num]]
+    temps <- chain$temp_gradient
+    swap_rate <- c(chain$swap_acceptances / swap_attempts, NA_real_)
+    tibble::tibble(
+      chain = chain_num,
+      rung = seq_along(temps),
+      temperature = temps,
+      swap_acceptance_rate = swap_rate
+    )
+  })
+  dplyr::bind_rows(chain_tables)
+}
+
 # Main-----------------------------------------------------------------
 
 # first parse options and check for required 
@@ -775,6 +820,20 @@ summarize_and_write_results(moire_object, moire_results, arg$coi_summary, arg$he
 # Compute and write MCMC convergence diagnostics across chains
 convergence_diag <- prepare_convergence_output(moire_results)
 readr::write_tsv(convergence_diag, arg$convergence_output)
+
+# If requested, write parallel tempering swap acceptance rates
+if (!is.null(arg$acceptance_rates_output)) {
+  if (length(moire_results$chains[[1]]$temp_gradient) > 1) {
+    acceptance_rates <- prepare_acceptance_rates_output(moire_results)
+    readr::write_tsv(acceptance_rates, arg$acceptance_rates_output)
+  } else {
+    warning(
+      "--acceptance_rates_output was provided but parallel tempering was not ",
+      "used (--pt_chains must be > 1); no acceptance rates table written.",
+      call. = FALSE
+    )
+  }
+}
 
 
 # optionally write out mcmc results
