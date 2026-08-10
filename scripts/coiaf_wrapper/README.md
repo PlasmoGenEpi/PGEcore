@@ -2,6 +2,8 @@
 
 This script provides a command-line interface for estimating the Complexity of Infection (COI) using the COIAF R package. It processes SNP data and optionally population-level minor allele frequencies to estimate COI using both frequency and variant-based methods.
 
+TODO: add contents 
+
 ## Overview
 
 The COIAF (Complexity of Infection Analysis Framework) wrapper script allows users to:
