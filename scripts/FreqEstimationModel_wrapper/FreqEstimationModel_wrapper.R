@@ -1,3 +1,9 @@
+# Get the script dir and make path to utils.R
+cmd_args <- commandArgs(trailingOnly = FALSE)
+file_arg <- sub("--file=", "", cmd_args[grep("--file=", cmd_args)])
+script_dir <- if (length(file_arg) == 1) dirname(normalizePath(file_arg)) else getwd()
+utils_path <- file.path(script_dir, "..", "utils", "utils.R")
+
 library(tibble)
 library(dplyr)
 library(FreqEstimationModel)
@@ -14,6 +20,8 @@ library(readr)
 library(tidyr)
 library(purrr)
 library(variantstring)
+
+source(utils_path)
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -44,12 +52,30 @@ opts <- list(
     help = "Number of threads to use. Optional.", 
     default = 1
   ), 
-  make_option("--seed", type = "integer", help = "Random number seed. Optional.", default=1), 
+  make_option("--seed", type = "integer", help = "Random number seed. Optional.", default=1),
   make_option(
-    "--mlaf_output", 
+    "--num_chains",
+    type = "integer",
+    default = 3,
     help = str_c(
-      "Output TSV to contain multilocus allele frequencies, with the columns: ", 
+      "Number of MCMC chains to run per group. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Optional."
+    )
+  ),
+  make_option(
+    "--mlaf_output",
+    help = str_c(
+      "Output TSV to contain multilocus allele frequencies, with the columns: ",
       "variant, freq, median_freq, CI_2.5, CI_97.5, prev, sample_total. Required."
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = str_c(
+      "Output TSV to contain per-group MCMC convergence diagnostics, with the ",
+      "columns: group_id, variable, mean, median, sd, q5, q95, rhat, ess_bulk, ",
+      "ess_tail. Optional."
     )
   )
 )
@@ -278,13 +304,15 @@ create_FEM_input <- function(input_data, groups, group_id) {
 #'   monoallelic loci.
 #' @param coi output of calculate_avg_COI
 #' @param threads Number of threads to use
-#' 
-#' @return list of 4 elements: plsf_table, runtime information, target_mapping, and
-#' alternative alleles
+#' @param num_chains Number of MCMC chains to run (>= 2 to compute R-hat)
+#'
+#' @return list of elements: plsf_table, runtime information, target_mapping,
+#' alternative alleles, and a convergence diagnostics table
 run_FreqEstimationModel <- function(
-                                    sample_matrix_list, 
-                                    COI, 
-                                    threads) {
+                                    sample_matrix_list,
+                                    COI,
+                                    threads,
+                                    num_chains) {
     sample_matrix <- sample_matrix_list[[1]]
     alt_alleles <- sample_matrix_list[[2]]
     num_group <- sample_matrix_list[[3]]
@@ -294,7 +322,7 @@ run_FreqEstimationModel <- function(
     runtime <- system.time({
         thinning_interval <- 1 # Number of iterations per chain that are not saved
         no_traces_preburnin <- 10000 # For more traces but manageable pdf plots, don't exceed 10k and increase thinning interval instead
-        no_mcmc_chains <- 3 # Number of MCMC chains to run
+        no_mcmc_chains <- num_chains # Number of MCMC chains to run
         parallel <- FALSE # Set to true if running code in parallel (this option isn't active yet)
         NGS <- FALSE # Set to true if data are in NGS format (this option isn't active yet)
         log_like_zero <- FALSE # QC check: sets log(p(yi|ai)) to zero (only impacts NGS)
@@ -390,6 +418,13 @@ run_FreqEstimationModel <- function(
     sequence_column <- data.frame(sequence = rownames(pop_freq), stringsAsFactors = FALSE)
     pop_freq <- cbind(sequence_column, pop_freq)
     rownames(pop_freq) <- NULL
+
+    # Summarize convergence of the haplotype frequency chains (one variable per
+    # haplotype)
+    convergence_diag <- summarize_convergence_draws(
+        posterior::as_draws_array(mcmc_frequency_chains)
+    )
+
     return(
         list(
             plsf_table = pop_freq,
@@ -397,7 +432,8 @@ run_FreqEstimationModel <- function(
             names = processed_data_list[["markerID"]],
             alt_allele = alt_alleles,
             num_group = num_group,
-            monos = monos
+            monos = monos,
+            convergence_diag = convergence_diag
         )
     )
 }
@@ -558,22 +594,29 @@ groups <- read_groups(arg$groups)
 COI <- calculate_avg_COI(arg$coi)
 overall_output <- data.frame("sequence"=c(),	"freq"=c(),	"median_freq"=c(),
                              "CI_2.5"=c(),	"CI_97.5"=c())
+# Per-group MCMC convergence diagnostics are accumulated here. Invariant
+# groups skip MCMC and therefore contribute no diagnostic rows.
+convergence_output <- list()
 #run FEM separately for each group
 for(group in unique(groups$group_id)){
   #will be one output file
   fem_input <- create_FEM_input(aa_calls, groups, group)
-  # The FEM input matrix will be empty if all loci in this group are 
-  # invariant. In this case, all frequencies are set to zero and 
+  # The FEM input matrix will be empty if all loci in this group are
+  # invariant. In this case, all frequencies are set to zero and
   # estimation is skipped.
   if (sum(dim(fem_input[[1]])) == 0) {
     fem_plsf <- format_invariant_group_output(aa_calls, groups, group)
   } else {
     fem_results <- run_FreqEstimationModel(
-      fem_input, 
-      COI, 
-      arg$threads
+      fem_input,
+      COI,
+      arg$threads,
+      arg$num_chains
     )
     fem_plsf <- format_single_group_output(fem_results)
+    convergence_output[[group]] <- fem_results$convergence_diag %>%
+      mutate(group_id = group) %>%
+      relocate(group_id)
   }
   fem_plsf$group_id <- group
   overall_output <- rbind(overall_output, fem_plsf)
@@ -582,6 +625,10 @@ for(group in unique(groups$group_id)){
 overall_output <- apply(overall_output,2,as.character)
 overall_output_df <- data.frame(overall_output)
 write_tsv(overall_output_df, arg$mlaf_output)
+
+# Write per-group convergence diagnostics
+convergence_output_df <- bind_rows(convergence_output)
+write_tsv(convergence_output_df, arg$convergence_output)
 
 
 

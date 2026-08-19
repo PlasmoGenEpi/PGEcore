@@ -1,5 +1,11 @@
 #!/usr/bin/env Rscript
 
+# Get the script dir and make path to utils.R
+cmd_args <- commandArgs(trailingOnly = FALSE)
+file_arg <- sub("--file=", "", cmd_args[grep("--file=", cmd_args)])
+script_dir <- if (length(file_arg) == 1) dirname(normalizePath(file_arg)) else getwd()
+utils_path <- file.path(script_dir, "..", "utils", "utils.R")
+
 library(tibble, warn.conflicts = F)
 library(dplyr, warn.conflicts = F)
 library(moire, warn.conflicts = F)
@@ -8,6 +14,8 @@ library(optparse, warn.conflicts = F)
 library(stringr, warn.conflicts = F)
 library(validate, warn.conflicts = F)
 library(checkmate, warn.conflicts = F)
+
+source(utils_path)
 
 # Set up options
 #' Check for required arguments, and report which are missing 
@@ -36,8 +44,6 @@ checkOptparseRequiredArgsThrow <- function(parser, arg, required_args){
 get_missing_columns <-function(tib, columns){
   setdiff(columns, colnames(tib))
 }
-
-
 
 # Parse arguments ------------------------------------------------------
 opts <- list(
@@ -76,6 +82,35 @@ opts <- list(
     )
   ),
   make_option(
+    "--num_chains",
+    type = "integer",
+    default = 3,
+    help = str_c(
+      "Number of independent MCMC chains to run. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Note this is ",
+      "distinct from --pt_chains (parallel tempering rungs within a chain). ",
+      "Default set to 3."
+    )
+  ),
+  make_option(
+    "--chains_num_threads",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Number of threads used to run the independent chains in parallel ",
+      "(moire's num_cores). Default set to 1."
+    )
+  ),
+  make_option(
+    "--thin",
+    type = "integer",
+    default = 1,
+    help = str_c(
+      "Thinning interval for the MCMC sampler; only every thin-th sample is",
+      "retained. Default is set to 1 (no thinning)."
+    )
+  ),
+  make_option(
     "--verbose",
     type = "logical",
     default = FALSE,
@@ -86,7 +121,7 @@ opts <- list(
   ),
   make_option(
     "--eps_pos_alpha",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Alpha parameter for the positive error rate prior.",
@@ -95,7 +130,7 @@ opts <- list(
   ),
   make_option(
     "--eps_pos_beta",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Beta parameter for the positive error rate prior.",
@@ -104,7 +139,7 @@ opts <- list(
   ),
   make_option(
     "--eps_neg_alpha",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Alpha parameter for the negative error rate prior.",
@@ -113,7 +148,7 @@ opts <- list(
   ),
   make_option(
     "--eps_neg_beta",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Beta parameter for the negative error rate prior.",
@@ -122,7 +157,7 @@ opts <- list(
   ),
   make_option(
     "--r_alpha",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Alpha parameter for the relatedness prior.",
@@ -131,7 +166,7 @@ opts <- list(
   ),
   make_option(
     "--r_beta",
-    type = "integer",
+    type = "double",
     default = 1,
     help = str_c(
       "Beta parameter for the relatedness prior.",
@@ -149,7 +184,7 @@ opts <- list(
   ),
   make_option(
     "--mean_coi_scale",
-    type = "integer",
+    type = "double",
     default = 10,
     help = str_c(
       "Scale parameter for the mean complexity of infection prior.",
@@ -158,7 +193,7 @@ opts <- list(
   ),
   make_option(
     "--max_eps_pos",
-    type = "integer",
+    type = "double",
     default = 2,
     help = str_c(
       "Maximum value for the positive error rate.",
@@ -167,7 +202,7 @@ opts <- list(
   ),
   make_option(
     "--max_eps_neg",
-    type = "integer",
+    type = "double",
     default = 2,
     help = str_c(
       "Maximum value for the negative error rate.",
@@ -197,8 +232,8 @@ opts <- list(
     type = "double",
     default = 0,
     help = str_c(
-      "Lower bound for the gradient step size in the parallel tempering process.",
-      "Default set to 0."
+      "Lower bound for the gradient step size in the parallel tempering ", 
+      "process. Default set to 0."
     )
   ),
   make_option(
@@ -273,6 +308,25 @@ opts <- list(
     help = str_c(
       "Optionally can export the full results of moire, which can be helpful for debugging or quality assurance (e.g. checking if MCMC properly converged)"
     )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = str_c(
+      "TSV file for MCMC convergence diagnostics, with one row per estimated ",
+      "parameter and the columns: variable, mean, median, sd, q5, q95, rhat, ",
+      "ess_bulk, ess_tail. Default set to convergence_diag.tsv."
+    )
+  ),
+  make_option(
+    "--acceptance_rates_output",
+    default = NULL,
+    help = str_c(
+      "Optional TSV file for parallel tempering swap (exchange) acceptance ",
+      "rates, with one row per chain and temperature rung and the columns: ",
+      "chain, rung, temperature, swap_acceptance_rate. Only meaningful when ",
+      "parallel tempering is used (--pt_chains > 1)."
+    )
   )
 )
 
@@ -289,6 +343,7 @@ opts <- list(
 #' @param allow_relatedness Logical. Whether to allow relatedness in the analysis.
 #' @param burnin Numeric. Number of burn-in iterations for the MCMC algorithm.
 #' @param samples_per_chain Numeric. Number of samples per chain in the MCMC algorithm.
+#' @param thin Numeric. Thinning interval for the MCMC sampler; only every thin-th sample is retained.
 #' @param verbose Logical. Whether to display detailed messages during execution.
 #' @param eps_pos_alpha Numeric. Alpha parameter for the positive error rate prior.
 #' @param eps_pos_beta Numeric. Beta parameter for the positive error rate prior.
@@ -312,7 +367,7 @@ opts <- list(
 #' \dontrun{
 #' moire_input <- create_moire_input(
 #'   input_path = "data.csv", allow_relatedness = TRUE, burnin = 1000,
-#'   samples_per_chain = 5000, verbose = TRUE, eps_pos_alpha = 2,
+#'   samples_per_chain = 5000, thin = 1, verbose = TRUE, eps_pos_alpha = 2,
 #'   eps_pos_beta = 5, eps_neg_alpha = 2, eps_neg_beta = 5, r_alpha = 1,
 #'   r_beta = 1, mean_coi_shape = 2, mean_coi_scale = 0.5, max_eps_pos = 0.1,
 #'   max_eps_neg = 0.1, record_latent_genotypes = FALSE, pt_chains = 40,
@@ -323,12 +378,13 @@ opts <- list(
 #' @export
 
 create_moire_input <- function(input_path, allow_relatedness, burnin,
-                               samples_per_chain, verbose, eps_pos_alpha,
+                               samples_per_chain, thin, verbose, eps_pos_alpha,
                                eps_pos_beta, eps_neg_alpha, eps_neg_beta,
                                r_alpha, r_beta, mean_coi_shape, mean_coi_scale,
                                max_eps_pos, max_eps_neg, record_latent_genotypes,
                                pt_chains, pt_grad_lower,
-                               pt_num_threads, adapt_temp, max_runtime) {
+                               pt_num_threads, adapt_temp, max_runtime,
+                               num_chains, chains_num_threads) {
   print("Reading input data")
   input_data <- read.csv(input_path, na.strings = "NA", sep = "\t", colClasses = c(specimen_name = "character"))
   
@@ -372,11 +428,17 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
     dplyr::rename(sample_id = specimen_name, locus = target_name, allele = seq)
 
   print("Creating Moire object")
-  # Create a list containing selected data and parameters
 
+  # This wrapper does not currently support passing on the pt_grad
+  # argument of MOIRE. Instead, a uniformly-spaced sequence of rungs is
+  # generated down to pt_grad_lower. This can be effective
+  # because the highly-tempered distributions often don't swap well.
+  # The ladder must be descending (cold chain, temperature 1.0, first): MOIRE
+  # reports samples from rung 1 as the cold chain, so an ascending ladder makes
+  # it sample the pure-prior rung and corrupts the posterior summaries.
   if (pt_chains > 1) {
     pt_chains <- seq(
-      from = pt_grad_lower, to = 1, length.out = pt_chains
+      from = 1, to = pt_grad_lower, length.out = pt_chains
     )
   } else {
     pt_chains <- 1
@@ -388,6 +450,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
       allow_relatedness = allow_relatedness,
       burnin = burnin,
       samples_per_chain = samples_per_chain,
+      thin = thin,
       verbose = verbose,
       eps_pos_alpha = eps_pos_alpha,
       eps_pos_beta = eps_pos_beta,
@@ -403,7 +466,9 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
       pt_chains = pt_chains,
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
-      max_runtime = max_runtime
+      max_runtime = max_runtime,
+      num_chains = num_chains,
+      num_cores = chains_num_threads
     )
   )
 
@@ -411,6 +476,7 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   assert_logical(moire_object$moire_parameters$allow_relatedness, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$burnin, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$samples_per_chain, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$thin, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$verbose, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$eps_pos_alpha, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$eps_pos_beta, any.missing = FALSE, len = 1)
@@ -423,9 +489,14 @@ create_moire_input <- function(input_path, allow_relatedness, burnin,
   assert_numeric(moire_object$moire_parameters$max_eps_pos, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_eps_neg, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$record_latent_genotypes, any.missing = FALSE, len = 1)
+  # pt_grad_lower is only used to build the pt_chains ladder and is not stored in
+  # moire_parameters, so validate the incoming argument directly.
+  assert_numeric(pt_grad_lower, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$pt_num_threads, any.missing = FALSE, len = 1)
   assert_logical(moire_object$moire_parameters$adapt_temp, any.missing = FALSE, len = 1)
   assert_numeric(moire_object$moire_parameters$max_runtime, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$num_chains, any.missing = FALSE, len = 1)
+  assert_numeric(moire_object$moire_parameters$num_cores, any.missing = FALSE, len = 1)
 
 
 
@@ -460,6 +531,7 @@ run_moire <- function(moire_object) {
       allow_relatedness = moire_parameters$allow_relatedness,
       burnin = moire_parameters$burnin,
       samples_per_chain = moire_parameters$samples_per_chain,
+      thin = moire_parameters$thin,
       verbose = moire_parameters$verbose,
       eps_pos_alpha = moire_parameters$eps_pos_alpha,
       eps_pos_beta = moire_parameters$eps_pos_beta,
@@ -475,7 +547,9 @@ run_moire <- function(moire_object) {
       pt_chains = moire_parameters$pt_chains,
       pt_num_threads = moire_parameters$pt_num_threads,
       adapt_temp = moire_parameters$adapt_temp,
-      max_runtime = moire_parameters$max_runtime
+      max_runtime = moire_parameters$max_runtime,
+      num_chains = moire_parameters$num_chains,
+      num_cores = moire_parameters$num_cores
     )
   })
 
@@ -595,6 +669,102 @@ summarize_and_write_results <- function(moire_object, mcmc_results, coi_summary_
   readr::write_tsv(effective_coi_summary, effective_coi_summary_o)
 }
 
+#' Assemble a named list of every estimated parameter's draws for one chain
+#'
+#' @param chain One element of `mcmc_results$chains`.
+#' @param sample_ids Character vector of specimen IDs; order matches the
+#'   per-sample draw lists (`chain$coi`, `chain$eps_pos`, etc.).
+#' @param loci Character vector of locus names; order matches
+#'   `chain$allele_freqs`.
+#'
+#' @return A named list of numeric draw vectors, each of length
+#'   samples_per_chain, named for the parameter it belongs to.
+extract_moire_chain_draws <- function(chain, sample_ids, loci) {
+  draws <- list()
+  for (s in seq_along(sample_ids)) {
+    sid <- sample_ids[s]
+    draws[[str_glue("coi[{sid}]")]] <- chain$coi[[s]]
+    draws[[str_glue("eps_pos[{sid}]")]] <- chain$eps_pos[[s]]
+    draws[[str_glue("eps_neg[{sid}]")]] <- chain$eps_neg[[s]]
+    # Raw (unmasked) relatedness trace so the mixing of the sampler's
+    # relatedness parameter is assessed. moire masks coi <= 1 only when
+    # reporting relatedness estimates, not for convergence.
+    draws[[str_glue("relatedness[{sid}]")]] <- chain$relatedness[[s]]
+  }
+  for (l in seq_along(loci)) {
+    locus <- chain$allele_freqs[[l]]
+    num_alleles <- length(locus[[1]])
+    allele_freq_matrix <- matrix(unlist(locus), nrow = num_alleles) # alleles x iters
+    for (a in seq_len(num_alleles)) {
+      draws[[str_glue("allele_freq[{loci[l]}.{a}]")]] <- allele_freq_matrix[a, ]
+    }
+  }
+  draws[["mean_coi"]] <- chain$mean_coi
+  draws
+}
+
+#' Compute MCMC convergence diagnostics across all chains
+#'
+#' Assembles a posterior draws array (iteration x chain x variable) covering
+#' every estimated parameter (per-sample COI, false-positive/false-negative
+#' error rates, within-host relatedness; per-locus/allele frequencies; and the
+#' population mean COI) and summarizes it with `summarize_convergence_draws()`.
+#'
+#' @param mcmc_results The list returned by `run_moire`.
+#'
+#' @return A data frame of convergence diagnostics, one row per parameter.
+prepare_convergence_output <- function(mcmc_results) {
+  sample_ids <- mcmc_results$args$data$sample_ids
+  loci <- mcmc_results$args$data$loci
+  per_chain <- lapply(
+    mcmc_results$chains, extract_moire_chain_draws, sample_ids, loci
+  )
+  var_names <- names(per_chain[[1]])
+  n_iter <- length(per_chain[[1]][[1]])
+  n_chains <- length(per_chain)
+  draws <- array(
+    NA_real_,
+    dim = c(n_iter, n_chains, length(var_names)),
+    dimnames = list(iteration = NULL, chain = NULL, variable = var_names)
+  )
+  for (i in seq_len(n_chains)) {
+    draws[, i, ] <- sapply(var_names, function(v) per_chain[[i]][[v]])
+  }
+  summarize_convergence_draws(posterior::as_draws_array(draws))
+}
+
+#' Compute parallel tempering swap acceptance rates
+#'
+#' For each independent chain and each temperature rung, computes the swap
+#' (exchange) acceptance rate with the adjacent hotter rung, following moire's
+#' own convention (see `moire::plot_chain_swaps()`):
+#'
+#' @param mcmc_results The list returned by `run_moire`.
+#'
+#' @details `swap_acceptances / (samples_per_chain / 2)`. Swap acceptances are recorded
+#' per adjacent rung pair, so the rate for rung `k` describes swaps between rung
+#' `k` and rung `k + 1`; the final rung has no partner above it and its rate is
+#' `NA`. `temperature` is moire's `temp_gradient` value for the rung (the
+#' power-posterior exponent in `[0, 1]`), read per chain as it may be adapted.
+#'
+#' @return A tibble with one row per chain-rung combination and the columns
+#'   `chain`, `rung`, `temperature`, and `swap_acceptance_rate`.
+prepare_acceptance_rates_output <- function(mcmc_results) {
+  swap_attempts <- mcmc_results$args$samples_per_chain / 2
+  chain_tables <- lapply(seq_along(mcmc_results$chains), function(chain_num) {
+    chain <- mcmc_results$chains[[chain_num]]
+    temps <- chain$temp_gradient
+    swap_rate <- c(chain$swap_acceptances / swap_attempts, NA_real_)
+    tibble::tibble(
+      chain = chain_num,
+      rung = seq_along(temps),
+      temperature = temps,
+      swap_acceptance_rate = swap_rate
+    )
+  })
+  dplyr::bind_rows(chain_tables)
+}
+
 # Main-----------------------------------------------------------------
 
 # first parse options and check for required 
@@ -610,7 +780,7 @@ if (interactive()) {
   arg$effective_coi_summary <- "effective_coi_summary.tsv"
 }
 
-# check for required allele_table input 
+# check for required allele_table input
 checkOptparseRequiredArgsThrow(parser, arg, c("allele_table"))
 
 # Create Moire object -------------------------------------------------
@@ -618,6 +788,7 @@ moire_object <- create_moire_input(arg$allele_table,
   arg$allow_relatedness,
   arg$burnin,
   arg$samples_per_chain,
+  arg$thin,
   arg$verbose,
   arg$eps_pos_alpha,
   arg$eps_pos_beta,
@@ -634,7 +805,9 @@ moire_object <- create_moire_input(arg$allele_table,
   arg$pt_grad_lower,
   arg$pt_num_threads,
   arg$adapt_temp,
-  arg$max_runtime
+  arg$max_runtime,
+  arg$num_chains,
+  arg$chains_num_threads
 )
 
 # Run Moire -------------------------------------------------------------------
@@ -644,8 +817,26 @@ moire_results <- run_moire(moire_object)
 # Generate summaries
 summarize_and_write_results(moire_object, moire_results, arg$coi_summary, arg$he_summary, arg$allele_freq_summary, arg$relatedness_summary, arg$effective_coi_summary)
 
+# Compute and write MCMC convergence diagnostics across chains
+convergence_diag <- prepare_convergence_output(moire_results)
+readr::write_tsv(convergence_diag, arg$convergence_output)
 
-# optionally write out mcmc results 
+# If requested, write parallel tempering swap acceptance rates
+if (!is.null(arg$acceptance_rates_output)) {
+  if (length(moire_results$chains[[1]]$temp_gradient) > 1) {
+    acceptance_rates <- prepare_acceptance_rates_output(moire_results)
+    readr::write_tsv(acceptance_rates, arg$acceptance_rates_output)
+  } else {
+    warning(
+      "--acceptance_rates_output was provided but parallel tempering was not ",
+      "used (--pt_chains must be > 1); no acceptance rates table written.",
+      call. = FALSE
+    )
+  }
+}
+
+
+# optionally write out mcmc results
 if(!is.null(arg$mcmc_results_output)){
   saveRDS(moire_results, arg$mcmc_results_output)
 }

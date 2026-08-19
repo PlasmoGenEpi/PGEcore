@@ -29,7 +29,7 @@ convert_single_locus_table_to_stave <- function(df, additional_columns=NULL) {
   df %>%
     ungroup %>%
     mutate(variant = paste(gene_id, aa_position, aa, sep = ":")) %>%
-    { 
+    {
       if (is.null(additional_columns)) {
         select(., variant)
       } else {
@@ -37,4 +37,25 @@ convert_single_locus_table_to_stave <- function(df, additional_columns=NULL) {
       }
     }
 
+}
+
+#' Summarize MCMC convergence diagnostics from a posterior draws array
+#'
+#' Wraps `posterior::summarise_draws()` to produce the convergence diagnostics
+#' table used by the MCMC wrapper scripts. Parameters that never move across
+#' the retained samples yield `NaN` for `rhat`/`ess_bulk`/`ess_tail`; this means
+#' "did not move", not a failure, and is passed through unchanged.
+#'
+#' @param draws A `posterior::draws_array` (or any object accepted by
+#'   `posterior::summarise_draws()`) with one variable per estimated parameter.
+#'
+#' @return A data frame with one row per parameter and the columns: variable,
+#'   mean, median, sd, q5, q95, rhat, ess_bulk, ess_tail.
+summarize_convergence_draws <- function(draws) {
+  summary_tbl <- posterior::summarise_draws(draws)
+  keep <- c(
+    "variable", "mean", "median", "sd", "q5", "q95",
+    "rhat", "ess_bulk", "ess_tail"
+  )
+  as.data.frame(summary_tbl[, keep])
 }

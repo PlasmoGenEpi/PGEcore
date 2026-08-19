@@ -49,6 +49,11 @@ Rscript scripts/THEREALMcCOIL_wrapper/THEREALMcCOIL_wrapper.R \
     --coi_output test_data_output_coi.tsv
 ```
 
+The proportional model represents each locus with exactly two alleles, so it
+uses only biallelic loci: monomorphic and multiallelic loci are dropped (with a
+warning) before inference. The categorical model retains all loci, collapsing
+each to major vs. non-major allele.
+
 3. Print help message.
 
 ```sh
