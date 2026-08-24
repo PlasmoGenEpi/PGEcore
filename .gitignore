@@ -4,3 +4,6 @@
 *.Rhistory
 .claude/*
 CLAUDE.md
+.Rcheck/
+*.tar.gz
+inst/doc

@@ -1,0 +1,56 @@
+Package: PGEcore
+Title: Shared PlasmoGenEpi Bioinformatics Scripts and Tool Wrappers
+Version: 0.1.0
+Authors@R: c(
+    person("Kathryn", "Murie", role = c("aut", "cre"),
+           email = "kathryn.murie@ucsf.edu",
+           comment = c(ORCID = "0009-0008-9612-2016")),
+    person("Alfred", "Hubbard", role = "aut",
+           comment = c(ORCID = "0000-0003-4917-7272")),
+    person("Nicholas", "Hathaway", role = "aut",
+           comment = c(ORCID = "0000-0001-9639-2894")),
+    person("Shazia", "Ruybal Pesantez", role = "aut",
+           comment = c(ORCID = "0000-0002-0495-179X")),
+    person("Jorge Eduardo", "Amaya-Romero", role = "aut"),
+    person("Max", "Murphy", role = "aut",
+           comment = c(ORCID = "0000-0003-0332-4388")),
+    person("Robert", "Verity", role = "aut",
+           comment = c(ORCID = "0000-0002-3902-8567")),
+    person("Zoe", "Gotthold", role = "aut",
+           comment = c(ORCID = "0009-0002-7092-2775")),
+    person("Bing", "Guo", role = "aut",
+           comment = c(ORCID = "0000-0002-3998-5981")),
+    person("Alfred", "Simkin", role = "aut",
+           comment = c(ORCID = "0000-0001-9408-0053")),
+    person("Bryan", "Greenhouse", role = "aut",
+           comment = c(ORCID = "0000-0003-0287-9111")),
+    person("Amy", "Wesolowski", role = "aut",
+           comment = c(ORCID = "0000-0001-6320-3575")),
+    person("PlasmoGenEpi", role = "cph")
+  )
+Description: Shared R functions and command-line interfaces used across
+    PlasmoGenEpi Nextflow and WDL pipelines. Provides bespoke analysis
+    helpers and thin wrappers around specialised malaria genomics R
+    packages. PGEcore does not install or distribute the external software
+    or specialised R packages that individual wrappers call; those must be
+    installed separately and available at runtime.
+License: MIT + file LICENSE
+URL: https://github.com/PlasmoGenEpi/PGEcore
+BugReports: https://github.com/PlasmoGenEpi/PGEcore/issues
+Encoding: UTF-8
+Language: en-US
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.1.0)
+Imports:
+    dplyr,
+    optparse,
+    readr,
+    rlang,
+    tibble,
+    tidyr
+Suggests:
+    coiaf,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
