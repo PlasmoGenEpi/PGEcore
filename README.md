@@ -2,11 +2,11 @@
 
 An R package for malaria genomics analysis. PGEcore does two things:
 
-1. **Wraps existing tools** (for example `coiaf`, `moire`, `dcifer`) behind a
+1. **Wraps existing tools** (for example `dcifer`, `moire`, `coiaf`) behind a
    consistent R API and CLI, with shared TSV inputs and outputs so steps are
    easy to chain.
-2. **Adds extra analyses** that are not just thin wrappers—naive COI /
-   frequency / prevalence estimators, filters, format converters, summaries,
+2. **Adds extra analyses** that are not just thin wrappers. This includes naive methods for
+   COI / frequency / prevalence estimation, filters, format converters, summaries,
    and similar helpers.
 
 Analyses are available both as **R functions** and as **command-line tools**,
@@ -14,7 +14,7 @@ so you can use PGEcore interactively, in your own scripts, or as a shared
 library across workflow pipelines (for example Nextflow or WDL).
 
 > **PGEcore does not install the specialised software it wraps.** Optional
-> dependencies (for example the `coiaf` package) must be installed separately
+> dependencies (for example the `dcifer` package) must be installed separately
 > when you need those tools.
 
 ## Install
@@ -42,7 +42,7 @@ library(PGEcore)
 count_samples_by_coi("my_coi_calls.tsv", output = "coi_distribution.tsv")
 
 # Or pass data frames already in memory
-# run_coiaf(snp_data = snp_df)   # requires the coiaf package
+# dcifer_slaf_wrapper(allele_table = allele_df, slaf_output = "slaf.tsv")  # requires dcifer
 ```
 
 ```r
@@ -70,9 +70,9 @@ Rscript exec/count_samples_by_coi \
   --coi_calls inst/extdata/example_coi_table.tsv \
   --output coi_distribution.tsv
 
-Rscript exec/coiaf_wrapper \
-  --snp_data inst/extdata/example_collapsed_snp_calls.tsv \
-  --output coi_estimates.tsv
+Rscript exec/dcifer_slaf_wrapper \
+  --allele_table inst/extdata/example_allele_table.tsv \
+  --slaf_output slaf.tsv
 ```
 
 Pass ordinary file paths to your data. Bundled examples for trying formats live
@@ -131,23 +131,24 @@ Full column notes and which tools consume each format: vignette **`input-formats
 
 ## Optional dependencies
 
-Wrappers that call another R package list that package under **Suggests**.
-Install only what you need, for example:
+Wrappers that call another R package list that package under **Suggests**. See
+[PGEforge](https://mrc-ide.github.io/PGEforge/) for more details on individual
+packages. Install only what you need, for example:
 
 ```r
 install.packages(
-  "coiaf",
+  "dcifer",
   repos = c("https://plasmogenepi.r-universe.dev", "https://cloud.r-project.org")
 )
 ```
 
-With Conda, a minimal environment might look like:
+`dcifer` is also available on Conda. A minimal environment might look like:
 
 ```yaml
 dependencies:
   - r-base
   - r-pgecore
-  - r-coiaf    # only if you use coiaf_wrapper
+  - r-dcifer    # only if you use dcifer_slaf_wrapper or dcifer_ibd_wrapper
 ```
 
 ## Package layout

@@ -71,9 +71,10 @@ readr::read_tsv(
 ```
 
 ```bash
-Rscript exec/coiaf_wrapper \
-  --snp_data my_snp_calls.tsv \
-  --output coi_estimates.tsv
+Rscript exec/THEREALMcCOIL_wrapper \
+  --snp_calls_input my_snp_calls.tsv \
+  --slaf_output slaf.tsv \
+  --coi_output coi.tsv
 ```
 
 ## Allele / microhaplotype table
@@ -81,9 +82,8 @@ Rscript exec/coiaf_wrapper \
 **Columns:** `specimen_name`, `target_name`, `seq`, `reads`
 
 **Example:** `example_allele_table.tsv`  
-**Used by:** `estimate_coi_naive`, `moire_wrapper`, `malariaem_wrapper`,
-`allele_per_locus_summary`, `per_locus_popgen_summary`, many allele-based
-wrappers
+**Used by:** `estimate_coi_naive`, `dcifer_slaf_wrapper`, `moire_wrapper`,
+`malariaem_wrapper`, `allele_per_locus_summary`, `per_locus_popgen_summary`, …
 
 ```{r}
 readr::read_tsv(
@@ -94,9 +94,9 @@ readr::read_tsv(
 ```
 
 ```bash
-Rscript exec/estimate_coi_naive \
-  --input_path my_allele_table.tsv \
-  --output_path coi_table.tsv
+Rscript exec/dcifer_slaf_wrapper \
+  --allele_table my_allele_table.tsv \
+  --slaf_output slaf.tsv
 ```
 
 ## Amino acid calls

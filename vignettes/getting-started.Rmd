@@ -32,7 +32,7 @@ results from one analysis into the next without reformatting.
 library(PGEcore)
 ```
 
-Specialised packages used by some wrappers (for example `coiaf`, `moire`) are
+Specialised packages used by some wrappers (for example `dcifer`, `moire`) are
 **Suggests** and must be installed separately when you need those tools.
 
 ## From R
@@ -50,7 +50,7 @@ count_samples_by_coi(coi_calls)
 
 Function names usually match the CLI name (`count_samples_by_coi`,
 `estimate_coi_naive`, …). Some wrappers also export a short `run_*` alias
-(for example `run_coiaf`).
+(for example `run_moire`).
 
 ```{r}
 ?count_samples_by_coi
@@ -79,9 +79,9 @@ Rscript exec/estimate_coi_naive \
   --input_path inst/extdata/example_allele_table.tsv \
   --output_path coi_table.tsv
 
-Rscript exec/coiaf_wrapper \
-  --snp_data inst/extdata/example_collapsed_snp_calls.tsv \
-  --output coi_estimates.tsv
+Rscript exec/dcifer_slaf_wrapper \
+  --allele_table inst/extdata/example_allele_table.tsv \
+  --slaf_output slaf.tsv
 ```
 
 Pass ordinary file paths. Example TSVs that show the expected columns are under
