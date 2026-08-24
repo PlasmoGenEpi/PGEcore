@@ -6,7 +6,7 @@
 \alias{PGEcore-package}
 \title{PGEcore: Malaria Genomics Analysis Tools}
 \description{
-Provides R functions and command-line interfaces for common malaria genomics analyses, including complexity of infection (COI), allele frequency and prevalence estimation, relatedness, and related tasks. Tools share standardised TSV input and output formats so analyses can be combined easily. Thin wrappers around specialised R packages and algorithms are included; PGEcore does not install those specialised dependencies — they must be installed separately when needed.
+Provides R functions and command-line interfaces for malaria genomics analysis. Wraps existing specialised tools behind a consistent interface and shared TSV formats, and adds extra helpers such as naive complexity of infection (COI), allele frequency and prevalence estimators, filters, and format converters. Suitable for interactive use, scripting, or as a shared library in workflow pipelines. Thin wrappers do not install their specialised dependencies; those must be installed separately when needed.
 }
 \seealso{
 Useful links:

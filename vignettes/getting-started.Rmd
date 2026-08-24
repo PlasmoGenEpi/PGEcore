@@ -15,10 +15,15 @@ knitr::opts_chunk$set(
 )
 ```
 
-PGEcore is an R package for malaria genomics analysis. Every tool is available
-both as an **R function** and as a **command-line program**. Inputs and outputs
-use shared TSV layouts so you can move results from one analysis into the next
-without reformatting.
+PGEcore is an R package for malaria genomics analysis. It **wraps existing
+tools** so they share a consistent R API, CLI, and TSV formats, and it also
+**adds extra pieces**—for example naive COI, frequency, and prevalence methods,
+filters, and converters—that sit alongside those wrappers.
+
+Every tool is available both as an **R function** and as a **command-line
+program**, so you can use it interactively, in scripts, or as a standard
+library across workflow pipelines. Shared table layouts make it easier to move
+results from one analysis into the next without reformatting.
 
 ## Install
 

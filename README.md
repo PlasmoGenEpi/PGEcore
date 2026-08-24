@@ -1,9 +1,17 @@
 # PGEcore
 
-An R package for malaria genomics analysis: estimating complexity of infection
-(COI), allele frequencies and prevalence, relatedness, and related tasks.
+An R package for malaria genomics analysis. PGEcore does two things:
+
+1. **Wraps existing tools** (for example `coiaf`, `moire`, `dcifer`) behind a
+   consistent R API and CLI, with shared TSV inputs and outputs so steps are
+   easy to chain.
+2. **Adds extra analyses** that are not just thin wrappers—naive COI /
+   frequency / prevalence estimators, filters, format converters, summaries,
+   and similar helpers.
+
 Analyses are available both as **R functions** and as **command-line tools**,
-with shared TSV input/output formats so steps are easy to chain.
+so you can use PGEcore interactively, in your own scripts, or as a shared
+library across workflow pipelines (for example Nextflow or WDL).
 
 > **PGEcore does not install the specialised software it wraps.** Optional
 > dependencies (for example the `coiaf` package) must be installed separately
