@@ -10,7 +10,9 @@ FreqEstimationModel_wrapper(
   groups,
   mlaf_output,
   threads = 1L,
-  seed = 1L
+  seed = 1L,
+  num_chains = 3L,
+  convergence_output = "convergence_diag.tsv"
 )
 }
 \arguments{
@@ -25,13 +27,20 @@ FreqEstimationModel_wrapper(
 \item{threads}{Number of threads.}
 
 \item{seed}{Random seed.}
+
+\item{num_chains}{Number of MCMC chains to run per group. At least two are
+needed to compute the Gelman-Rubin R-hat convergence diagnostic.}
+
+\item{convergence_output}{Output TSV path for per-group MCMC convergence
+diagnostics, with the columns \code{group_id}, \code{variable}, \code{mean}, \code{median},
+\code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}.}
 }
 \value{
 The formatted output data frame (also written to \code{mlaf_output}).
 }
 \description{
 File-oriented entry point used by the \code{FreqEstimationModel_wrapper} CLI.
-Optional \strong{FreqEstimationModel}, \strong{variantstring}, and parallel helpers
-(\strong{foreach}, \strong{doMC}, plus \strong{plyr}, \strong{coda}, \strong{abind}) must be installed
-separately.
+Optional \strong{FreqEstimationModel}, \strong{variantstring}, \strong{posterior}, and
+parallel helpers (\strong{foreach}, \strong{doMC}, plus \strong{plyr}, \strong{coda}, \strong{abind})
+must be installed separately.
 }

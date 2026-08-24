@@ -5,8 +5,8 @@ test_that("create_moire_input validates allele table columns", {
 
   err <- tryCatch(
     create_moire_input(
-      tmp, TRUE, 10, 10, FALSE, 1, 1, 1, 1, 1, 1, 0.1, 10, 2, 2,
-      FALSE, 1, 0, 1, TRUE, Inf
+      tmp, TRUE, 10, 10, 1, FALSE, 1, 1, 1, 1, 1, 1, 0.1, 10, 2, 2,
+      FALSE, 1, 0, 1, TRUE, Inf, 1, 1
     ),
     error = function(e) conditionMessage(e)
   )
@@ -28,8 +28,8 @@ test_that("run_moire / moire_wrapper skip when moire is unavailable", {
   readr::write_tsv(dat, tmp)
 
   obj <- create_moire_input(
-    tmp, FALSE, 2, 2, FALSE, 1, 1, 1, 1, 1, 1, 0.1, 10, 2, 2,
-    FALSE, 1, 0, 1, TRUE, 1
+    tmp, FALSE, 2, 2, 1, FALSE, 1, 1, 1, 1, 1, 1, 0.1, 10, 2, 2,
+    FALSE, 1, 0, 1, TRUE, 1, 1, 1
   )
   expect_true(all(c("moire_data", "moire_parameters") %in% names(obj)))
 })
@@ -114,6 +114,19 @@ test_that("snpslice_wrapper validates required arguments", {
       coi_output = "z"
     ),
     "missing the following arguments|snp.slicer|variantstring"
+  )
+})
+
+test_that("snpslice_wrapper rejects an unknown estimator", {
+  expect_error(
+    snpslice_wrapper(
+      allele_table = "a",
+      loci_groups_input = "x",
+      mlaf_output = "y",
+      coi_output = "z",
+      estimator = "mcmc"
+    ),
+    "estimator must be one of|snp.slicer|variantstring"
   )
 })
 

@@ -124,6 +124,27 @@ opts <- list(
     )
   ),
   make_option(
+    "--seed",
+    type = "integer",
+    default = 321,
+    help = paste0(
+      "Random seed for the first chain; chain i uses seed + i - 1. ",
+      "Can be used in both models. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--n_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of independent MCMC chains to run (in parallel, one per core). ",
+      "Multiple chains are required to compute the Gelman-Rubin R-hat ",
+      "convergence diagnostic. Can be used in both models. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
     "--slaf_output",
     type = "character",
     help = paste0(
@@ -139,6 +160,18 @@ opts <- list(
       "Output TSV containing single locus allele frequencies, with the ",
       "columns: variant, freq. ",
       "Required"
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    type = "character",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "Output TSV containing MCMC convergence diagnostics, with one row per ",
+      "parameter (coi per specimen, freq per locus, and error parameters ",
+      "when --err_method 3) and the columns: variable, mean, median, sd, q5, ",
+      "q95, rhat, ess_bulk, ess_tail. ",
+      "Default: %default"
     )
   )
 )
@@ -169,6 +202,9 @@ invisible(
     e1 = arg$e1,
     e2 = arg$e2,
     epsilon = arg$epsilon,
-    err_method = arg$err_method
+    err_method = arg$err_method,
+    seed = arg$seed,
+    n_chains = arg$n_chains,
+    convergence_output = arg$convergence_output
   )
 )

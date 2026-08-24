@@ -119,15 +119,15 @@ Full column notes and which tools consume each format: vignette **`input-formats
 | `translate_loci_of_interest` | Wrapper | `Biostrings`, `pwalign` |
 | `per_locus_popgen_summary` | Wrapper | `ape`, `msa`, `pegas` (+ Muscle/Clustal on PATH) |
 | `calculate_fws_from_vcf` | Wrapper | `moimix`, `SeqArray` |
-| `moire_wrapper` / `run_moire` | Wrapper | `moire` |
+| `moire_wrapper` / `run_moire` | Wrapper | `moire`, `posterior` |
 | `malariaem_wrapper` / `run_malariaem` | Wrapper | `malaria.em` |
 | `dcifer_slaf_wrapper` | Wrapper | `dcifer` |
 | `dcifer_ibd_wrapper` | Wrapper | `dcifer` (+ parallel helpers) |
 | `snpslice_wrapper` | Wrapper | `snp.slicer`, `variantstring` |
-| `FreqEstimationModel_wrapper` | Wrapper | `FreqEstimationModel` (+ helpers) |
+| `FreqEstimationModel_wrapper` | Wrapper | `FreqEstimationModel`, `posterior` (+ helpers) |
 | `IDM_wrapper` | Vendored algorithm | `Rmpfr`, `openxlsx` |
 | `MultiLociBiallelicModel_wrapper` | Vendored algorithm | `variantstring` |
-| `THEREALMcCOIL_wrapper` | Vendored C (`src/`) | — |
+| `THEREALMcCOIL_wrapper` | Vendored C (`src/`) | `posterior` |
 
 ## Optional dependencies
 

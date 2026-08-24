@@ -4,7 +4,7 @@
 \alias{prepare_snpslice_af_output}
 \title{Format SNP-Slice allele frequencies with variantstring names}
 \usage{
-prepare_snpslice_af_output(snpslice_res, loci_groups, use_mcmc)
+prepare_snpslice_af_output(snpslice_res, loci_groups, estimator)
 }
 \description{
 Format SNP-Slice allele frequencies with variantstring names

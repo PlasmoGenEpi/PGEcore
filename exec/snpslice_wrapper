@@ -73,16 +73,21 @@ opts <- list(
     )
   ),
   make_option(
-    "--n_mcmc",
+    "--n_sample",
     type = "integer",
     default = 10000,
-    help = "Number of MCMC iterations. Optional."
+    help = paste0(
+      "Number of post-burn-in MCMC iterations to retain per chain. Optional."
+    )
   ),
   make_option(
-    "--burnin",
+    "--n_burnin",
     type = "double",
     default = NULL,
-    help = "Burn-in period. If NULL, defaults to n_mcmc/2. Optional."
+    help = paste0(
+      "Number of burn-in iterations per chain. If NULL, defaults to ",
+      "floor(n_sample / 2). Optional."
+    )
   ),
   make_option(
     "--alpha",
@@ -93,8 +98,12 @@ opts <- list(
   make_option(
     "--rho",
     type = "double",
-    default = 0.5,
-    help = "Dictionary sparsity parameter. Optional."
+    default = NULL,
+    help = paste0(
+      "Dictionary sparsity parameter. Optional. If unset, SNP-Slice uses its ",
+      "model-specific default: 0.5 for the categorical model and the global ",
+      "minor allele frequency for count models."
+    )
   ),
   make_option(
     "--threshold",
@@ -107,17 +116,20 @@ opts <- list(
     type = "integer",
     default = NULL,
     help = paste0(
-      "Early stopping threshold. If NULL, runs for full n_mcmc iterations. ",
+      "Early stopping threshold. If NULL, runs for full n_sample iterations. ",
       "Optional."
     )
   ),
   make_option(
-    "--use_mcmc_for_af_and_coi",
-    action = "store_true",
-    default = FALSE,
+    "--estimator",
+    type = "character",
+    default = "final_sample",
     help = paste0(
-      "For calculating COI and allele frequencies, whether to sample from ",
-      "MCMC (TRUE) or use MAP estimates (FALSE; default)."
+      "Estimator used for COI and allele frequencies. One of 'final_sample' ",
+      "(the final sample of the MCMC chain, matching the SNP-Slice paper; ",
+      "default), 'map' (the maximum a posteriori state), or 'posterior' ",
+      "(the posterior mean over retained MCMC samples, which also yields ",
+      "uncertainty columns). Optional."
     )
   ),
   make_option(
@@ -133,6 +145,24 @@ opts <- list(
     help = "Random number seed. Optional."
   ),
   make_option(
+    "--n_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of independent MCMC chains to run. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Optional."
+    )
+  ),
+  make_option(
+    "--n_cores",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Number of cores used to run chains simultaneously (capped at ",
+      "n_chains). Optional."
+    )
+  ),
+  make_option(
     "--mlaf_output",
     help = paste0(
       "Path of TSV file to contain multilocus allele frequencies, with a ",
@@ -145,6 +175,16 @@ opts <- list(
     help = paste0(
       "Path of TSV file to contain COI estimates, with a specimen_name column ",
       "and a coi column. Required."
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "Path of TSV file to contain MCMC convergence diagnostics, with one row ",
+      "per parameter (logpost, n_strains, kstar, ktrunc, and coi per ",
+      "specimen) and the columns: variable, mean, median, sd, q5, q95, rhat, ",
+      "ess_bulk, ess_tail. Optional."
     )
   )
 )
@@ -170,19 +210,22 @@ invisible(
     loci_groups_input = arg$loci_groups_input,
     mlaf_output = arg$mlaf_output,
     coi_output = arg$coi_output,
+    convergence_output = arg$convergence_output,
     specimen_name_col = arg$specimen_name_col,
     target_name_col = arg$target_name_col,
     target_value_col = arg$target_value_col,
     target_count_col = arg$target_count_col,
     loci_limit = arg$loci_limit,
     model = arg$model,
-    n_mcmc = arg$n_mcmc,
-    burnin = arg$burnin,
+    n_sample = arg$n_sample,
+    n_burnin = arg$n_burnin,
     alpha = arg$alpha,
     rho = arg$rho,
     threshold = arg$threshold,
     gap = arg$gap,
-    use_mcmc_for_af_and_coi = isTRUE(arg$use_mcmc_for_af_and_coi),
+    estimator = arg$estimator,
+    n_chains = arg$n_chains,
+    n_cores = arg$n_cores,
     verbose = isTRUE(arg$verbose) || isTRUE(arg$v),
     seed = arg$seed
   )

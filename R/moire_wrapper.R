@@ -8,6 +8,7 @@ create_moire_input <- function(input_path,
                                allow_relatedness,
                                burnin,
                                samples_per_chain,
+                               thin,
                                verbose,
                                eps_pos_alpha,
                                eps_pos_beta,
@@ -24,7 +25,9 @@ create_moire_input <- function(input_path,
                                pt_grad_lower,
                                pt_num_threads,
                                adapt_temp,
-                               max_runtime) {
+                               max_runtime,
+                               num_chains,
+                               chains_num_threads) {
   check_suggested_pkg("checkmate", "MOIRe input validation")
 
   message("Reading input data")
@@ -62,8 +65,15 @@ create_moire_input <- function(input_path,
     )
 
   message("Creating Moire object")
+
+  # This wrapper does not support passing MOIRe's pt_grad argument. Instead a
+  # uniformly spaced sequence of rungs down to pt_grad_lower is generated,
+  # because the highly tempered distributions often do not swap well. The
+  # ladder must be descending (cold chain, temperature 1.0, first): MOIRe
+  # reports samples from rung 1 as the cold chain, so an ascending ladder makes
+  # it sample the pure-prior rung and corrupts the posterior summaries.
   if (pt_chains > 1) {
-    pt_chains <- seq(from = pt_grad_lower, to = 1, length.out = pt_chains)
+    pt_chains <- seq(from = 1, to = pt_grad_lower, length.out = pt_chains)
   } else {
     pt_chains <- 1
   }
@@ -74,6 +84,7 @@ create_moire_input <- function(input_path,
       allow_relatedness = allow_relatedness,
       burnin = burnin,
       samples_per_chain = samples_per_chain,
+      thin = thin,
       verbose = verbose,
       eps_pos_alpha = eps_pos_alpha,
       eps_pos_beta = eps_pos_beta,
@@ -89,7 +100,9 @@ create_moire_input <- function(input_path,
       pt_chains = pt_chains,
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
-      max_runtime = max_runtime
+      max_runtime = max_runtime,
+      num_chains = num_chains,
+      num_cores = chains_num_threads
     )
   )
 
@@ -97,6 +110,7 @@ create_moire_input <- function(input_path,
   checkmate::assert_logical(p$allow_relatedness, any.missing = FALSE, len = 1)
   checkmate::assert_numeric(p$burnin, any.missing = FALSE, len = 1)
   checkmate::assert_numeric(p$samples_per_chain, any.missing = FALSE, len = 1)
+  checkmate::assert_numeric(p$thin, any.missing = FALSE, len = 1)
   checkmate::assert_logical(p$verbose, any.missing = FALSE, len = 1)
   checkmate::assert_numeric(p$eps_pos_alpha, any.missing = FALSE, len = 1)
   checkmate::assert_numeric(p$eps_pos_beta, any.missing = FALSE, len = 1)
@@ -109,9 +123,14 @@ create_moire_input <- function(input_path,
   checkmate::assert_numeric(p$max_eps_pos, any.missing = FALSE, len = 1)
   checkmate::assert_numeric(p$max_eps_neg, any.missing = FALSE, len = 1)
   checkmate::assert_logical(p$record_latent_genotypes, any.missing = FALSE, len = 1)
+  # pt_grad_lower only shapes the pt_chains ladder and is not stored in
+  # moire_parameters, so the incoming argument is validated directly.
+  checkmate::assert_numeric(pt_grad_lower, any.missing = FALSE, len = 1)
   checkmate::assert_numeric(p$pt_num_threads, any.missing = FALSE, len = 1)
   checkmate::assert_logical(p$adapt_temp, any.missing = FALSE, len = 1)
   checkmate::assert_numeric(p$max_runtime, any.missing = FALSE, len = 1)
+  checkmate::assert_numeric(p$num_chains, any.missing = FALSE, len = 1)
+  checkmate::assert_numeric(p$num_cores, any.missing = FALSE, len = 1)
 
   message("Returning Moire object")
   moire_object
@@ -139,6 +158,7 @@ run_moire <- function(moire_object) {
     allow_relatedness = moire_parameters$allow_relatedness,
     burnin = moire_parameters$burnin,
     samples_per_chain = moire_parameters$samples_per_chain,
+    thin = moire_parameters$thin,
     verbose = moire_parameters$verbose,
     eps_pos_alpha = moire_parameters$eps_pos_alpha,
     eps_pos_beta = moire_parameters$eps_pos_beta,
@@ -154,7 +174,9 @@ run_moire <- function(moire_object) {
     pt_chains = moire_parameters$pt_chains,
     pt_num_threads = moire_parameters$pt_num_threads,
     adapt_temp = moire_parameters$adapt_temp,
-    max_runtime = moire_parameters$max_runtime
+    max_runtime = moire_parameters$max_runtime,
+    num_chains = moire_parameters$num_chains,
+    num_cores = moire_parameters$num_cores
   )
 }
 
@@ -245,6 +267,110 @@ summarize_and_write_moire_results <- function(moire_object,
   readr::write_tsv(effective_coi_summary, effective_coi_summary_o)
 }
 
+#' Assemble a named list of every estimated parameter's draws for one chain
+#'
+#' @param chain One element of `mcmc_results$chains`.
+#' @param sample_ids Character vector of specimen IDs; order matches the
+#'   per-sample draw lists (`chain$coi`, `chain$eps_pos`, etc.).
+#' @param loci Character vector of locus names; order matches
+#'   `chain$allele_freqs`.
+#' @return A named list of numeric draw vectors, each of length
+#'   `samples_per_chain`, named for the parameter it belongs to.
+#' @keywords internal
+extract_moire_chain_draws <- function(chain, sample_ids, loci) {
+  draws <- list()
+  for (s in seq_along(sample_ids)) {
+    sid <- sample_ids[s]
+    draws[[sprintf("coi[%s]", sid)]] <- chain$coi[[s]]
+    draws[[sprintf("eps_pos[%s]", sid)]] <- chain$eps_pos[[s]]
+    draws[[sprintf("eps_neg[%s]", sid)]] <- chain$eps_neg[[s]]
+    # Raw (unmasked) relatedness trace, so the mixing of the sampler's
+    # relatedness parameter is assessed. MOIRe masks coi <= 1 only when
+    # reporting relatedness estimates, not for convergence.
+    draws[[sprintf("relatedness[%s]", sid)]] <- chain$relatedness[[s]]
+  }
+  for (l in seq_along(loci)) {
+    locus <- chain$allele_freqs[[l]]
+    num_alleles <- length(locus[[1]])
+    allele_freq_matrix <- matrix(unlist(locus), nrow = num_alleles)
+    for (a in seq_len(num_alleles)) {
+      draws[[sprintf("allele_freq[%s.%d]", loci[l], a)]] <-
+        allele_freq_matrix[a, ]
+    }
+  }
+  draws[["mean_coi"]] <- chain$mean_coi
+  draws
+}
+
+#' Compute MCMC convergence diagnostics across all chains
+#'
+#' Assembles a posterior draws array (iteration x chain x variable) covering
+#' every estimated parameter (per-sample COI, false-positive/false-negative
+#' error rates, within-host relatedness; per-locus/allele frequencies; and the
+#' population mean COI) and summarizes it with [summarize_convergence_draws()].
+#'
+#' @param mcmc_results The list returned by [run_moire()].
+#' @return A data frame of convergence diagnostics, one row per parameter.
+#' @keywords internal
+prepare_moire_convergence_output <- function(mcmc_results) {
+  check_suggested_pkg("posterior", "MOIRe convergence diagnostics")
+
+  sample_ids <- mcmc_results$args$data$sample_ids
+  loci <- mcmc_results$args$data$loci
+  per_chain <- lapply(
+    mcmc_results$chains,
+    extract_moire_chain_draws,
+    sample_ids,
+    loci
+  )
+  var_names <- names(per_chain[[1]])
+  n_iter <- length(per_chain[[1]][[1]])
+  n_chains <- length(per_chain)
+  draws <- array(
+    NA_real_,
+    dim = c(n_iter, n_chains, length(var_names)),
+    dimnames = list(iteration = NULL, chain = NULL, variable = var_names)
+  )
+  for (i in seq_len(n_chains)) {
+    draws[, i, ] <- sapply(var_names, function(v) per_chain[[i]][[v]])
+  }
+  summarize_convergence_draws(posterior::as_draws_array(draws))
+}
+
+#' Compute parallel tempering swap acceptance rates
+#'
+#' For each independent chain and each temperature rung, computes the swap
+#' (exchange) acceptance rate with the adjacent hotter rung, following MOIRe's
+#' own convention (see `moire::plot_chain_swaps()`):
+#' `swap_acceptances / (samples_per_chain / 2)`.
+#'
+#' @param mcmc_results The list returned by [run_moire()].
+#'
+#' @details Swap acceptances are recorded per adjacent rung pair, so the rate
+#'   for rung `k` describes swaps between rung `k` and rung `k + 1`; the final
+#'   rung has no partner above it and its rate is `NA`. `temperature` is MOIRe's
+#'   `temp_gradient` value for the rung (the power-posterior exponent in
+#'   `[0, 1]`), read per chain as it may be adapted.
+#'
+#' @return A tibble with one row per chain-rung combination and the columns
+#'   `chain`, `rung`, `temperature`, and `swap_acceptance_rate`.
+#' @keywords internal
+prepare_moire_acceptance_rates_output <- function(mcmc_results) {
+  swap_attempts <- mcmc_results$args$samples_per_chain / 2
+  chain_tables <- lapply(seq_along(mcmc_results$chains), function(chain_num) {
+    chain <- mcmc_results$chains[[chain_num]]
+    temps <- chain$temp_gradient
+    swap_rate <- c(chain$swap_acceptances / swap_attempts, NA_real_)
+    tibble::tibble(
+      chain = chain_num,
+      rung = seq_along(temps),
+      temperature = temps,
+      swap_acceptance_rate = swap_rate
+    )
+  })
+  dplyr::bind_rows(chain_tables)
+}
+
 #' Run MOIRe from allele-table and output paths
 #'
 #' File-oriented entry point used by the `moire_wrapper` CLI. Optional
@@ -255,6 +381,13 @@ summarize_and_write_moire_results <- function(moire_object,
 #' @param allow_relatedness Logical; allow relatedness within samples.
 #' @param burnin MCMC burn-in iterations.
 #' @param samples_per_chain Samples per MCMC chain.
+#' @param num_chains Number of independent MCMC chains. More than one is
+#'   required to compute the Gelman-Rubin R-hat convergence diagnostic. This is
+#'   distinct from `pt_chains` (parallel-tempering rungs within a chain).
+#' @param chains_num_threads Threads used to run the independent chains in
+#'   parallel (MOIRe's `num_cores`).
+#' @param thin Thinning interval for the MCMC sampler; only every `thin`-th
+#'   sample is retained.
 #' @param verbose Logical; verbose MOIRe output.
 #' @param eps_pos_alpha,eps_pos_beta Positive error-rate prior.
 #' @param eps_neg_alpha,eps_neg_beta Negative error-rate prior.
@@ -273,6 +406,14 @@ summarize_and_write_moire_results <- function(moire_object,
 #' @param relatedness_summary Output path for relatedness summary TSV.
 #' @param effective_coi_summary Output path for effective COI summary TSV.
 #' @param mcmc_results_output Optional RDS path for full MCMC results.
+#' @param convergence_output Output path for the MCMC convergence diagnostics
+#'   TSV, with one row per estimated parameter and the columns `variable`,
+#'   `mean`, `median`, `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, and `ess_tail`.
+#' @param acceptance_rates_output Optional output path for a parallel-tempering
+#'   swap (exchange) acceptance rates TSV, with one row per chain and
+#'   temperature rung and the columns `chain`, `rung`, `temperature`, and
+#'   `swap_acceptance_rate`. Only meaningful when parallel tempering is used
+#'   (`pt_chains > 1`).
 #'
 #' @return Invisibly, the MOIRe MCMC result object.
 #' @export
@@ -280,6 +421,9 @@ moire_wrapper <- function(allele_table,
                           allow_relatedness = TRUE,
                           burnin = 10000L,
                           samples_per_chain = 1000L,
+                          num_chains = 3L,
+                          chains_num_threads = 1L,
+                          thin = 1L,
                           verbose = FALSE,
                           eps_pos_alpha = 1,
                           eps_pos_beta = 1,
@@ -302,9 +446,12 @@ moire_wrapper <- function(allele_table,
                           allele_freq_summary = "allele_freq_summary.tsv",
                           relatedness_summary = "relatedness_summary.tsv",
                           effective_coi_summary = "effective_coi_summary.tsv",
-                          mcmc_results_output = NULL) {
+                          mcmc_results_output = NULL,
+                          convergence_output = "convergence_diag.tsv",
+                          acceptance_rates_output = NULL) {
   check_suggested_pkg("moire", "MOIRe analysis via moire_wrapper()")
   check_suggested_pkg("checkmate", "MOIRe input validation")
+  check_suggested_pkg("posterior", "MOIRe convergence diagnostics")
 
   if (!file.exists(allele_table)) {
     stop("allele_table file not found: ", allele_table, call. = FALSE)
@@ -315,6 +462,7 @@ moire_wrapper <- function(allele_table,
     allow_relatedness,
     burnin,
     samples_per_chain,
+    thin,
     verbose,
     eps_pos_alpha,
     eps_pos_beta,
@@ -331,7 +479,9 @@ moire_wrapper <- function(allele_table,
     pt_grad_lower,
     pt_num_threads,
     adapt_temp,
-    max_runtime
+    max_runtime,
+    num_chains,
+    chains_num_threads
   )
 
   moire_results <- run_moire(moire_object)
@@ -344,6 +494,26 @@ moire_wrapper <- function(allele_table,
     relatedness_summary,
     effective_coi_summary
   )
+
+  readr::write_tsv(
+    prepare_moire_convergence_output(moire_results),
+    convergence_output
+  )
+
+  if (!is.null(acceptance_rates_output)) {
+    if (length(moire_results$chains[[1]]$temp_gradient) > 1) {
+      readr::write_tsv(
+        prepare_moire_acceptance_rates_output(moire_results),
+        acceptance_rates_output
+      )
+    } else {
+      warning(
+        "acceptance_rates_output was provided but parallel tempering was not ",
+        "used (pt_chains must be > 1); no acceptance rates table written.",
+        call. = FALSE
+      )
+    }
+  }
 
   if (!is.null(mcmc_results_output)) {
     saveRDS(moire_results, mcmc_results_output)

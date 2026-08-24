@@ -9,6 +9,9 @@ moire_wrapper(
   allow_relatedness = TRUE,
   burnin = 10000L,
   samples_per_chain = 1000L,
+  num_chains = 3L,
+  chains_num_threads = 1L,
+  thin = 1L,
   verbose = FALSE,
   eps_pos_alpha = 1,
   eps_pos_beta = 1,
@@ -31,7 +34,9 @@ moire_wrapper(
   allele_freq_summary = "allele_freq_summary.tsv",
   relatedness_summary = "relatedness_summary.tsv",
   effective_coi_summary = "effective_coi_summary.tsv",
-  mcmc_results_output = NULL
+  mcmc_results_output = NULL,
+  convergence_output = "convergence_diag.tsv",
+  acceptance_rates_output = NULL
 )
 }
 \arguments{
@@ -43,6 +48,16 @@ moire_wrapper(
 \item{burnin}{MCMC burn-in iterations.}
 
 \item{samples_per_chain}{Samples per MCMC chain.}
+
+\item{num_chains}{Number of independent MCMC chains. More than one is
+required to compute the Gelman-Rubin R-hat convergence diagnostic. This is
+distinct from \code{pt_chains} (parallel-tempering rungs within a chain).}
+
+\item{chains_num_threads}{Threads used to run the independent chains in
+parallel (MOIRe's \code{num_cores}).}
+
+\item{thin}{Thinning interval for the MCMC sampler; only every \code{thin}-th
+sample is retained.}
 
 \item{verbose}{Logical; verbose MOIRe output.}
 
@@ -79,6 +94,16 @@ moire_wrapper(
 \item{effective_coi_summary}{Output path for effective COI summary TSV.}
 
 \item{mcmc_results_output}{Optional RDS path for full MCMC results.}
+
+\item{convergence_output}{Output path for the MCMC convergence diagnostics
+TSV, with one row per estimated parameter and the columns \code{variable},
+\code{mean}, \code{median}, \code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, and \code{ess_tail}.}
+
+\item{acceptance_rates_output}{Optional output path for a parallel-tempering
+swap (exchange) acceptance rates TSV, with one row per chain and
+temperature rung and the columns \code{chain}, \code{rung}, \code{temperature}, and
+\code{swap_acceptance_rate}. Only meaningful when parallel tempering is used
+(\code{pt_chains > 1}).}
 }
 \value{
 Invisibly, the MOIRe MCMC result object.

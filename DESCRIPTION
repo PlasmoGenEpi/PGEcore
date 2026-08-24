@@ -78,6 +78,7 @@ Suggests:
     parallelly,
     pegas,
     plyr,
+    posterior,
     pwalign,
     Rmpfr,
     rmarkdown,

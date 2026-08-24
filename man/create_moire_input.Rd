@@ -9,6 +9,7 @@ create_moire_input(
   allow_relatedness,
   burnin,
   samples_per_chain,
+  thin,
   verbose,
   eps_pos_alpha,
   eps_pos_beta,
@@ -25,7 +26,9 @@ create_moire_input(
   pt_grad_lower,
   pt_num_threads,
   adapt_temp,
-  max_runtime
+  max_runtime,
+  num_chains,
+  chains_num_threads
 )
 }
 \description{

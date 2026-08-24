@@ -4,7 +4,7 @@
 \alias{prepare_snpslice_coi_output}
 \title{Format SNP-Slice COI estimates}
 \usage{
-prepare_snpslice_coi_output(snpslice_res, specimen_name_col, use_mcmc)
+prepare_snpslice_coi_output(snpslice_res, specimen_name_col, estimator)
 }
 \description{
 Format SNP-Slice COI estimates

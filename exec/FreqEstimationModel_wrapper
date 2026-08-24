@@ -40,10 +40,28 @@ opts <- list(
     default = 1
   ),
   make_option(
+    "--num_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of MCMC chains to run per group. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Optional."
+    )
+  ),
+  make_option(
     "--mlaf_output",
     help = paste0(
       "Output TSV to contain multilocus allele frequencies, with the columns: ",
       "variant, freq, median_freq, CI_2.5, CI_97.5, prev, sample_total. Required."
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "Output TSV to contain per-group MCMC convergence diagnostics, with the ",
+      "columns: group_id, variable, mean, median, sd, q5, q95, rhat, ess_bulk, ",
+      "ess_tail. Optional."
     )
   )
 )
@@ -64,6 +82,8 @@ invisible(
     groups = arg$groups,
     mlaf_output = arg$mlaf_output,
     threads = arg$threads,
-    seed = arg$seed
+    seed = arg$seed,
+    num_chains = arg$num_chains,
+    convergence_output = arg$convergence_output
   )
 )

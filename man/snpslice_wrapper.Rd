@@ -9,19 +9,22 @@ snpslice_wrapper(
   loci_groups_input,
   mlaf_output,
   coi_output,
+  convergence_output = "convergence_diag.tsv",
   specimen_name_col = "specimen_name",
   target_name_col = "aa_locus",
   target_value_col = "aa",
   target_count_col = "reads",
   loci_limit = NULL,
   model = "negative_binomial",
-  n_mcmc = 10000L,
-  burnin = NULL,
+  n_sample = 10000L,
+  n_burnin = NULL,
   alpha = 2.6,
-  rho = 0.5,
+  rho = NULL,
   threshold = 0.001,
   gap = NULL,
-  use_mcmc_for_af_and_coi = FALSE,
+  estimator = "final_sample",
+  n_chains = 3L,
+  n_cores = 1L,
   verbose = FALSE,
   seed = 1L
 )
@@ -35,24 +38,46 @@ snpslice_wrapper(
 
 \item{coi_output}{Path for COI TSV.}
 
+\item{convergence_output}{Path for the MCMC convergence-diagnostics TSV, with
+one row per parameter (\code{logpost}, \code{n_strains}, \code{kstar}, \code{ktrunc}, and \code{coi}
+per specimen).}
+
 \item{specimen_name_col, target_name_col, target_value_col, target_count_col}{Column names in \code{allele_table}.}
 
 \item{loci_limit}{Optional cap on the number of loci.}
 
 \item{model}{Observation model for SNP-Slice.}
 
-\item{n_mcmc, burnin, alpha, rho, threshold, gap}{SNP-Slice MCMC settings.}
+\item{n_sample}{Post-burn-in MCMC iterations retained per chain.}
 
-\item{use_mcmc_for_af_and_coi}{If \code{TRUE}, sample from MCMC instead of MAP.}
+\item{n_burnin}{Burn-in iterations per chain. If \code{NULL}, SNP-Slice uses
+\code{floor(n_sample / 2)}.}
+
+\item{alpha, threshold, gap}{SNP-Slice MCMC settings.}
+
+\item{rho}{Dictionary sparsity parameter. If \code{NULL}, it is left to
+\code{\link[snp.slicer:snp_slice]{snp.slicer::snp_slice()}}, which defaults to 0.5 for the categorical model
+and the global minor allele frequency for count models.}
+
+\item{estimator}{Estimator for COI and allele frequencies: \code{"final_sample"}
+(default, matching the SNP-Slice paper), \code{"map"}, or \code{"posterior"} (the
+posterior mean, which also yields uncertainty columns).}
+
+\item{n_chains}{Number of independent MCMC chains. More than one is required
+for the Gelman-Rubin R-hat diagnostic.}
+
+\item{n_cores}{Cores used to run chains simultaneously (capped at \code{n_chains}).}
 
 \item{verbose}{Verbose SNP-Slice output.}
 
 \item{seed}{Random seed.}
 }
 \value{
-Invisibly, a list with \code{mlaf} and \code{coi} tibbles.
+Invisibly, a list with \code{mlaf}, \code{coi}, and \code{convergence} tibbles.
 }
 \description{
 File-oriented entry point used by the \code{snpslice_wrapper} CLI. Optional
-\strong{snp.slicer} and \strong{variantstring} (1.x) must be installed separately.
+\strong{snp.slicer} and \strong{variantstring} (1.x) must be installed separately. A
+\strong{snp.slicer} version providing multi-chain sampling, the \code{estimate}
+argument, and \code{\link[snp.slicer:convergence_diagnostics]{snp.slicer::convergence_diagnostics()}} is required.
 }

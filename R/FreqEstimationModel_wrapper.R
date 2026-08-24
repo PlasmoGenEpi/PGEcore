@@ -150,12 +150,27 @@ create_FEM_input <- function(input_data, groups, group_id) {
 
 #' Run FreqEstimationModel MCMC for one group
 #'
+#' @param sample_matrix_list Output of [create_FEM_input()].
+#' @param COI Average complexity of infection.
+#' @param threads Number of threads.
+#' @param seed Random seed.
+#' @param num_chains Number of MCMC chains to run. At least two are needed to
+#'   compute the Gelman-Rubin R-hat convergence diagnostic.
+#'
+#' @return A list with the population frequency table, MCMC runtime, marker
+#'   names, alternate alleles, group size, mono-allelic loci, and a
+#'   `convergence_diag` data frame.
 #' @keywords internal
-run_FreqEstimationModel <- function(sample_matrix_list, COI, threads, seed) {
+run_FreqEstimationModel <- function(sample_matrix_list,
+                                    COI,
+                                    threads,
+                                    seed,
+                                    num_chains = 3L) {
   check_suggested_pkgs(
     c("FreqEstimationModel", "plyr", "coda", "abind", "foreach", "doMC"),
     "FreqEstimationModel MCMC"
   )
+  check_suggested_pkg("posterior", "FEM convergence diagnostics")
 
   sample_matrix <- sample_matrix_list[[1]]
   alt_alleles <- sample_matrix_list[[2]]
@@ -166,7 +181,7 @@ run_FreqEstimationModel <- function(sample_matrix_list, COI, threads, seed) {
   runtime <- system.time({
     thinning_interval <- 1
     no_traces_preburnin <- 10000
-    no_mcmc_chains <- 3
+    no_mcmc_chains <- num_chains
     NGS <- FALSE
     log_like_zero <- FALSE
     mcmc_variable_list <- list(
@@ -265,13 +280,20 @@ run_FreqEstimationModel <- function(sample_matrix_list, COI, threads, seed) {
   )
   pop_freq <- cbind(sequence_column, pop_freq)
   rownames(pop_freq) <- NULL
+
+  # One variable per haplotype frequency chain
+  convergence_diag <- summarize_convergence_draws(
+    posterior::as_draws_array(mcmc_frequency_chains)
+  )
+
   list(
     plsf_table = pop_freq,
     runtime = runtime,
     names = processed_data_list[["markerID"]],
     alt_allele = alt_alleles,
     num_group = num_group,
-    monos = monos
+    monos = monos,
+    convergence_diag = convergence_diag
   )
 }
 
@@ -423,9 +445,9 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 #' Estimate multilocus allele frequencies with FreqEstimationModel
 #'
 #' File-oriented entry point used by the `FreqEstimationModel_wrapper` CLI.
-#' Optional **FreqEstimationModel**, **variantstring**, and parallel helpers
-#' (**foreach**, **doMC**, plus **plyr**, **coda**, **abind**) must be installed
-#' separately.
+#' Optional **FreqEstimationModel**, **variantstring**, **posterior**, and
+#' parallel helpers (**foreach**, **doMC**, plus **plyr**, **coda**, **abind**)
+#' must be installed separately.
 #'
 #' @param aa_calls Path to amino-acid call TSV.
 #' @param coi Path to COI TSV, or a numeric average COI.
@@ -433,6 +455,11 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 #' @param mlaf_output Output TSV path.
 #' @param threads Number of threads.
 #' @param seed Random seed.
+#' @param num_chains Number of MCMC chains to run per group. At least two are
+#'   needed to compute the Gelman-Rubin R-hat convergence diagnostic.
+#' @param convergence_output Output TSV path for per-group MCMC convergence
+#'   diagnostics, with the columns `group_id`, `variable`, `mean`, `median`,
+#'   `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`.
 #'
 #' @return The formatted output data frame (also written to `mlaf_output`).
 #' @export
@@ -441,7 +468,9 @@ FreqEstimationModel_wrapper <- function(aa_calls,
                                         groups,
                                         mlaf_output,
                                         threads = 1L,
-                                        seed = 1L) {
+                                        seed = 1L,
+                                        num_chains = 3L,
+                                        convergence_output = "convergence_diag.tsv") {
   check_suggested_pkg(
     "FreqEstimationModel",
     "multilocus frequencies via FreqEstimationModel_wrapper()"
@@ -449,6 +478,10 @@ FreqEstimationModel_wrapper <- function(aa_calls,
   check_suggested_pkg(
     "variantstring",
     "STAVE strings via FreqEstimationModel_wrapper()"
+  )
+  check_suggested_pkg(
+    "posterior",
+    "MCMC convergence diagnostics via FreqEstimationModel_wrapper()"
   )
   check_suggested_pkgs(
     c("foreach", "doMC", "plyr", "coda", "abind"),
@@ -472,6 +505,8 @@ FreqEstimationModel_wrapper <- function(aa_calls,
     CI_2.5 = numeric(),
     CI_97.5 = numeric()
   )
+  # Invariant groups skip MCMC and contribute no diagnostic rows.
+  convergence_diags <- list()
 
   for (group in unique(groups_tbl$group_id)) {
     fem_input <- create_FEM_input(aa_tbl, groups_tbl, group)
@@ -482,9 +517,13 @@ FreqEstimationModel_wrapper <- function(aa_calls,
         fem_input,
         COI,
         threads,
-        seed
+        seed,
+        num_chains
       )
       fem_plsf <- format_single_group_output(fem_results)
+      convergence_diags[[group]] <- fem_results$convergence_diag |>
+        dplyr::mutate(group_id = group) |>
+        dplyr::relocate("group_id")
     }
     fem_plsf$group_id <- group
     overall_output <- rbind(overall_output, fem_plsf)
@@ -493,5 +532,8 @@ FreqEstimationModel_wrapper <- function(aa_calls,
   overall_output <- apply(overall_output, 2, as.character)
   overall_output_df <- data.frame(overall_output)
   readr::write_tsv(overall_output_df, mlaf_output)
+
+  readr::write_tsv(dplyr::bind_rows(convergence_diags), convergence_output)
+
   overall_output_df
 }

@@ -18,7 +18,10 @@ THEREALMcCOIL_wrapper(
   e1 = 0.05,
   e2 = 0.05,
   epsilon = 0.02,
-  err_method = 1L
+  err_method = 1L,
+  seed = 321L,
+  n_chains = 3L,
+  convergence_output = "convergence_diag.tsv"
 )
 }
 \arguments{
@@ -52,9 +55,18 @@ THEREALMcCOIL_wrapper(
 
 \item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
 with COI and allele frequencies.}
+
+\item{seed}{Random seed for the first chain; chain \code{i} uses \code{seed + i - 1}.}
+
+\item{n_chains}{Number of independent MCMC chains. More than one chain is
+required for the Gelman-Rubin R-hat diagnostic.}
+
+\item{convergence_output}{Output TSV of MCMC convergence diagnostics, one
+row per parameter.}
 }
 \value{
-A list with \code{slaf} and \code{coi} (invisibly after writing outputs).
+A list with \code{slaf}, \code{coi} and \code{convergence} (invisibly after writing
+outputs).
 }
 \description{
 File-oriented entry point used by the \code{THEREALMcCOIL_wrapper} CLI. Compiled

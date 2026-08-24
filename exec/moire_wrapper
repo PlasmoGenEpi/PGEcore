@@ -41,6 +41,35 @@ opts <- list(
     )
   ),
   make_option(
+    "--num_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of independent MCMC chains to run. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Note this is ",
+      "distinct from --pt_chains (parallel tempering rungs within a chain). ",
+      "Default set to 3."
+    )
+  ),
+  make_option(
+    "--chains_num_threads",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Number of threads used to run the independent chains in parallel ",
+      "(moire's num_cores). Default set to 1."
+    )
+  ),
+  make_option(
+    "--thin",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Thinning interval for the MCMC sampler; only every thin-th sample is ",
+      "retained. Default is set to 1 (no thinning)."
+    )
+  ),
+  make_option(
     "--verbose",
     type = "logical",
     default = FALSE,
@@ -212,6 +241,25 @@ opts <- list(
       "Optionally can export the full results of moire, which can be helpful ",
       "for debugging or quality assurance (e.g. checking if MCMC properly converged)"
     )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "TSV file for MCMC convergence diagnostics, with one row per estimated ",
+      "parameter and the columns: variable, mean, median, sd, q5, q95, rhat, ",
+      "ess_bulk, ess_tail. Default set to convergence_diag.tsv."
+    )
+  ),
+  make_option(
+    "--acceptance_rates_output",
+    default = NULL,
+    help = paste0(
+      "Optional TSV file for parallel tempering swap (exchange) acceptance ",
+      "rates, with one row per chain and temperature rung and the columns: ",
+      "chain, rung, temperature, swap_acceptance_rate. Only meaningful when ",
+      "parallel tempering is used (--pt_chains > 1)."
+    )
   )
 )
 
@@ -227,6 +275,9 @@ invisible(
     allow_relatedness = arg$allow_relatedness,
     burnin = arg$burnin,
     samples_per_chain = arg$samples_per_chain,
+    num_chains = arg$num_chains,
+    chains_num_threads = arg$chains_num_threads,
+    thin = arg$thin,
     verbose = arg$verbose,
     eps_pos_alpha = arg$eps_pos_alpha,
     eps_pos_beta = arg$eps_pos_beta,
@@ -249,6 +300,8 @@ invisible(
     allele_freq_summary = arg$allele_freq_summary,
     relatedness_summary = arg$relatedness_summary,
     effective_coi_summary = arg$effective_coi_summary,
-    mcmc_results_output = arg$mcmc_results_output
+    mcmc_results_output = arg$mcmc_results_output,
+    convergence_output = arg$convergence_output,
+    acceptance_rates_output = arg$acceptance_rates_output
   )
 )
