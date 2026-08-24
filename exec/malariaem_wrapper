@@ -1,0 +1,88 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = paste0(
+      "TSV containing alleles present in each specimen, with columns: ",
+      "specimen_name, target_name, seq"
+    ),
+    type = "character",
+    default = NULL
+  ),
+  make_option(
+    "--subset_targets",
+    help = "A logical to indicate whether the matrix should be subset by user-supplied target_name",
+    type = "logical",
+    default = FALSE
+  ),
+  make_option(
+    "--target_groups",
+    help = paste0(
+      "TSV containing the targets that should be analyzed for specific groups (eg pfdhr/pfdhps), with columns: ",
+      "group_id, target_name"
+    ),
+    type = "character",
+    default = NULL
+  ),
+  make_option(
+    "--max_size",
+    help = paste0(
+      "Single population-COI value (e.g. '2')",
+      "Cutoff to not run Malaria EM due to time constraints",
+      "Default is max size of 8"
+    ),
+    type = "character",
+    default = "8"
+  ),
+  make_option(
+    "--test_size",
+    help = paste0(
+      "Single COI value (e.g. '2'), or 'min' to default to the minimum allowed set size",
+      "Default is 'min'"
+    ),
+    type = "character",
+    default = "min"
+  ),
+  make_option(
+    "--freq_output",
+    help = "Path to frequency output file",
+    type = "character",
+    default = "gt_freq_summary_all.tsv"
+  ),
+  make_option(
+    "--phase_output",
+    help = "Path to phasing output file",
+    type = "character",
+    default = "gt_phase_summary_all.tsv"
+  ),
+  make_option(
+    "--seed",
+    help = "seed",
+    type = "character",
+    default = "1"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$allele_table)) {
+  stop("Missing required arguments: allele_table", call. = FALSE)
+}
+
+invisible(
+  malariaem_wrapper(
+    allele_table = arg$allele_table,
+    subset_targets = arg$subset_targets,
+    target_groups = arg$target_groups,
+    max_size = arg$max_size,
+    test_size = arg$test_size,
+    freq_output = arg$freq_output,
+    phase_output = arg$phase_output,
+    seed = arg$seed
+  )
+)

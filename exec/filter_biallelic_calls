@@ -1,0 +1,45 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--amino_acid_calls",
+    help = "table with amino acid calls"
+  ),
+  make_option(
+    "--out",
+    help = "the out file to write to"
+  ),
+  make_option(
+    "--out_nonbiallelic",
+    help = "only process these targets"
+  ),
+  make_option(
+    "--overwrite",
+    help = "overwrite the output if it already exists",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$amino_acid_calls) || is.null(arg$out)) {
+  stop(
+    "Missing required arguments: --amino_acid_calls and --out",
+    call. = FALSE
+  )
+}
+
+invisible(
+  filter_biallelic_calls(
+    amino_acid_calls = arg$amino_acid_calls,
+    out = arg$out,
+    out_nonbiallelic = arg$out_nonbiallelic,
+    overwrite = isTRUE(arg$overwrite)
+  )
+)

@@ -1,0 +1,174 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--snp_calls_input",
+    type = "character",
+    help = paste0(
+      "TSV containing snp calls, with at least the following columns: ",
+      "specimen_name, target_name, snp_name, pos, seq_base, reads, he. ",
+      "Required"
+    )
+  ),
+  make_option(
+    "--model",
+    type = "character",
+    default = "categorical",
+    help = paste0(
+      "categorial or proprotional. ",
+      "The `categorical` one models heterozygous/homozygous calls; ",
+      "the `proportional` one models frequency data",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--maxCOI",
+    type = "integer",
+    default = 25,
+    help = paste0(
+      "Upper bound for COI. ",
+      "Can be used in both models. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--threshold_ind",
+    type = "integer",
+    default = 20,
+    help = paste0(
+      "The minimum number of sites for a sample to be considered. ",
+      "Used only in the categorical model. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--threshold_site",
+    type = "integer",
+    default = 20,
+    help = paste0(
+      "The minimum number of samples for a locus to be considered. ",
+      "Used only in the categorical model. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--totalrun",
+    type = "integer",
+    default = 10000,
+    help = paste0(
+      "The total number of MCMC iterations. ",
+      "Can be used in both models. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--burnin",
+    type = "integer",
+    default = 1000,
+    help = paste0(
+      "The total number of burnin iterations",
+      "Can be used in both models. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--M0",
+    type = "integer",
+    default = 15,
+    help = paste0(
+      "Initial COI",
+      "Can be used in both models. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--e1",
+    type = "double",
+    default = 0.05,
+    help = paste0(
+      "The probability of calling homozygous loci heterozygous. ",
+      "Used only in the categorical model. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--e2",
+    type = "double",
+    default = 0.05,
+    help = paste0(
+      "The probability of calling heterozygous loci homozygous",
+      "Used only in the categorical model. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--epsilon",
+    type = "double",
+    default = 0.02,
+    help = "[P] Default: %default"
+  ),
+  make_option(
+    "--err_method",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "1: use pre-specified e1 and e2 and treat them as constants; ",
+      "3: e1 and e2 are estimated with COI and allele frequencies",
+      "Can be used in both models. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--slaf_output",
+    type = "character",
+    help = paste0(
+      "Output TSV containing single locus allele frequencies, with the ",
+      "columns: variant, freq. ",
+      "Required"
+    )
+  ),
+  make_option(
+    "--coi_output",
+    type = "character",
+    help = paste0(
+      "Output TSV containing single locus allele frequencies, with the ",
+      "columns: variant, freq. ",
+      "Required"
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$snp_calls_input) || !nzchar(arg$snp_calls_input)) {
+  stop("--snp_calls_input must be set", call. = FALSE)
+}
+if (is.null(arg$slaf_output) || !nzchar(arg$slaf_output)) {
+  stop("--slaf_output must be set", call. = FALSE)
+}
+if (is.null(arg$coi_output) || !nzchar(arg$coi_output)) {
+  stop("--coi_output must be set", call. = FALSE)
+}
+
+invisible(
+  THEREALMcCOIL_wrapper(
+    snp_calls_input = arg$snp_calls_input,
+    slaf_output = arg$slaf_output,
+    coi_output = arg$coi_output,
+    model = arg$model,
+    maxCOI = arg$maxCOI,
+    threshold_ind = arg$threshold_ind,
+    threshold_site = arg$threshold_site,
+    totalrun = arg$totalrun,
+    burnin = arg$burnin,
+    M0 = arg$M0,
+    e1 = arg$e1,
+    e2 = arg$e2,
+    epsilon = arg$epsilon,
+    err_method = arg$err_method
+  )
+)

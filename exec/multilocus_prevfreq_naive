@@ -1,0 +1,97 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_table",
+    type = "character",
+    help = paste0(
+      "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ",
+      "gene, pos, reads, aa"
+    )
+  ),
+  make_option(
+    "--loci_groups_input",
+    type = "character",
+    help = paste0(
+      "Path to a TSV file containing loci group definitions, with the ",
+      "columns: group_id, gene_id, aa_position"
+    )
+  ),
+  make_option(
+    "--output_path",
+    type = "character",
+    help = paste0(
+      "Path to write an output TSV file containing prevalence and frequency estimates ",
+      "for all variants in the data"
+    )
+  ),
+  make_option(
+    "--recalc_single_locus_output_path",
+    type = "character",
+    help = paste0(
+      "An optional output for the re-calculated single locus frequences/prevalences from the multilocus, ",
+      "can be helpful for checking if the multilocus is capturing well all available variants"
+    )
+  ),
+  make_option(
+    c("--method"),
+    help = paste0(
+      "Method to use for estimating allele frequency. Options are: ",
+      "wsaf_prop (frequencies are weighted by their within-sample-allele-frequency, no allele_counts will be exported in this case), presence_absence (simply count by how many times each allele appears). Default: %default"
+    ),
+    type = "character",
+    default = "wsaf_prop",
+    callback = function(opt, flag_string, value, parser, ...) {
+      if (!value %in% c("wsaf_prop", "presence_absence")) {
+        stop(paste0(value, " is not a valid method"), call. = FALSE)
+      }
+      value
+    }
+  ),
+  make_option(
+    "--wsaf_cut_off",
+    type = "double",
+    default = 0.70,
+    help = paste0(
+      "To help determine multi-locus variants, we filter off minor variants to determine ",
+      "a \"dominant\" strain at each loci that will then be reasonable to assume at least ",
+      "one haplotype with all variants above that cut off exists"
+    )
+  )
+)
+
+args <- parse_args(OptionParser(option_list = opts))
+
+missing <- character()
+if (is.null(args$aa_table)) {
+  missing <- c(missing, "--aa_table")
+}
+if (is.null(args$loci_groups_input)) {
+  missing <- c(missing, "--loci_groups_input")
+}
+if (is.null(args$output_path)) {
+  missing <- c(missing, "--output_path")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  multilocus_prevfreq_naive(
+    aa_table = args$aa_table,
+    loci_groups_input = args$loci_groups_input,
+    output_path = args$output_path,
+    recalc_single_locus_output_path = args$recalc_single_locus_output_path,
+    method = args$method,
+    wsaf_cut_off = args$wsaf_cut_off
+  )
+)

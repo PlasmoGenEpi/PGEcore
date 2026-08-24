@@ -1,0 +1,80 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = paste(
+      "TSV containing the columns: specimen_name, target_name, reads, seq"
+    )
+  ),
+  make_option(
+    "--ref_bed",
+    help = paste(
+      "a bed file containing the reference location of the ref_seq, no column",
+      "names but the first 6 columns should be chrom, start, end, target_name,",
+      "length, strand, ref_seq"
+    )
+  ),
+  make_option(
+    "--snps_of_interest",
+    help = paste(
+      "a bed file containing the snps of interest to calculate pileup, is",
+      "genomic location of the snp position so all snps should be of size 1,",
+      "should have columns, #chrom, start, end, name, length, strand"
+    )
+  ),
+  make_option(
+    "--output_directory",
+    help = "the output directory to write results to"
+  ),
+  make_option(
+    "--select_target_names",
+    help = "only process these targets"
+  ),
+  make_option(
+    "--select_specimen_names",
+    help = "only process these samples"
+  ),
+  make_option(
+    "--overwrite_dir",
+    help = "overwrite the output directory if it already exists",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  ),
+  make_option(
+    "--collapse_calls_by_summing",
+    help = paste(
+      "collapse SNPs calls by summing across targets, by default the target",
+      "with the highest read count will be used as the final call"
+    ),
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+arg <- drop_null_args(arg)
+check_optparse_required_args(
+  arg,
+  c("allele_table", "ref_bed", "snps_of_interest", "output_directory")
+)
+
+invisible(
+  pileup_specific_snps(
+    allele_table = arg$allele_table,
+    ref_bed = arg$ref_bed,
+    snps_of_interest = arg$snps_of_interest,
+    output_directory = arg$output_directory,
+    select_target_names = arg$select_target_names,
+    select_specimen_names = arg$select_specimen_names,
+    overwrite_dir = isTRUE(arg$overwrite_dir),
+    collapse_calls_by_summing = isTRUE(arg$collapse_calls_by_summing)
+  )
+)

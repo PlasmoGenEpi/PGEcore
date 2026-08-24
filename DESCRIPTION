@@ -41,16 +41,45 @@ Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+NeedsCompilation: yes
 Depends:
     R (>= 4.1.0)
 Imports:
     dplyr,
     optparse,
+    purrr,
     readr,
     rlang,
+    stringr,
     tibble,
-    tidyr
+    tidyr,
+    validate
 Suggests:
+    abind,
+    ape,
+    Biostrings,
+    checkmate,
+    coda,
     coiaf,
-    testthat (>= 3.0.0)
+    dcifer,
+    doMC,
+    doParallel,
+    foreach,
+    FreqEstimationModel,
+    iterators,
+    malaria.em,
+    moimix,
+    moire,
+    msa,
+    openxlsx,
+    parallelly,
+    pegas,
+    plyr,
+    pwalign,
+    Rmpfr,
+    rngtools,
+    SeqArray,
+    snp.slicer,
+    testthat (>= 3.0.0),
+    variantstring
 Config/testthat/edition: 3

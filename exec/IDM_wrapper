@@ -1,0 +1,85 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table_input",
+    type = "character",
+    default = "",
+    help = paste0(
+      "TSV containing allele calls, with the columns: specimen_name, ",
+      "target_name, seq, reads. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--aa_calls_input",
+    type = "character",
+    default = "",
+    help = paste0(
+      "TSV containing amino acid calls, with the columns: specimen_name, ",
+      "target_name, gene_id, aa_position, ref_aa, aa. Optional",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--model",
+    type = "character",
+    default = "IDM",
+    help = paste0(
+      "OM or IDM. OM for original model; IDM for incomplete-data model. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--lambda_initial",
+    type = "numeric",
+    default = 1.0,
+    help = paste0(
+      "the initial value (default to 1) for the numerical iteration to ",
+      "find the estimate  lambda. The default value can be changed to ",
+      "optimize computational time. Unless numerical problem occur, the ",
+      "default parameter should be used. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--eps_initial",
+    type = "numeric",
+    default = 0.1,
+    help = paste0(
+      "the argument eps_initial (default 0.1) specifies the initial ",
+      "value in the numerical iteration to find eps. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--slaf_output",
+    type = "character",
+    help = paste0(
+      "Output TSV containing single locus allele frequencies, with the ",
+      "columns: variant, freq. ",
+      "Required"
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$slaf_output)) {
+  stop("Missing required arguments: --slaf_output", call. = FALSE)
+}
+
+invisible(
+  IDM_wrapper(
+    allele_table_input = arg$allele_table_input,
+    aa_calls_input = arg$aa_calls_input,
+    slaf_output = arg$slaf_output,
+    model = arg$model,
+    lambda_initial = arg$lambda_initial,
+    eps_initial = arg$eps_initial
+  )
+)

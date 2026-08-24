@@ -1,0 +1,69 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_calls",
+    help = paste0(
+      "TSV containing amino acid calls, with the columns: specimen_name, ",
+      "target_name, gene_id, aa_position, ref_aa, aa. Required."
+    )
+  ),
+  make_option(
+    "--coi",
+    help = paste0(
+      "TSV containing COI for each specimen, with the columns: specimen_name, ",
+      "coi, or numeric input of COI. Required."
+    )
+  ),
+  make_option(
+    "--groups",
+    help = paste0(
+      "TSV containing which regions should be analyzed for each group, with the columns: ",
+      "group_id, gene_id, aa_position. Required."
+    )
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    help = "Number of threads to use. Optional.",
+    default = 1
+  ),
+  make_option(
+    "--seed",
+    type = "integer",
+    help = "Random number seed. Optional.",
+    default = 1
+  ),
+  make_option(
+    "--mlaf_output",
+    help = paste0(
+      "Output TSV to contain multilocus allele frequencies, with the columns: ",
+      "variant, freq, median_freq, CI_2.5, CI_97.5, prev, sample_total. Required."
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$aa_calls) || is.null(arg$coi) ||
+    is.null(arg$groups) || is.null(arg$mlaf_output)) {
+  stop(
+    "Missing required arguments: --aa_calls, --coi, --groups, --mlaf_output",
+    call. = FALSE
+  )
+}
+
+invisible(
+  FreqEstimationModel_wrapper(
+    aa_calls = arg$aa_calls,
+    coi = arg$coi,
+    groups = arg$groups,
+    mlaf_output = arg$mlaf_output,
+    threads = arg$threads,
+    seed = arg$seed
+  )
+)

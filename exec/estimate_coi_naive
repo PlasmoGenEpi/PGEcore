@@ -1,0 +1,88 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--input_path",
+    type = "character",
+    help = paste0(
+      "Path to a TSV file containing allele calls, with the columns: specimen_name, ",
+      "target_name, reads, seq"
+    )
+  ),
+  make_option(
+    "--output_path",
+    type = "character",
+    help = "Path to write a TSV file containing results, with the columns: specimen_name, coi"
+  ),
+  make_option(
+    "--method",
+    type = "character",
+    default = "integer_method",
+    help = paste0(
+      "Which method is used to infer COI: 'integer_method' or 'quantile_method'. ",
+      "Both methods start by calculating the number of observed alleles at each ",
+      "locus, and sorting these in decreasing order. The integer method then takes ",
+      "the nth value as the COI estimate. A higher n will tend to lead to lower COI ",
+      "estimates, but is more robust to errors. The quantile method works in the same ",
+      "way, but by specifying a percentage quantile rather than a raw integer. This has ",
+      "the advantage of naturally scaling with the number of loci, while the integer method ",
+      "does not. Default: %default."
+    ),
+    metavar = "method"
+  ),
+  make_option(
+    "--integer_threshold",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "The index in the ordered sequence that is used as the COI estimate ",
+      "(used in integer_method only). A positive integer of 1 or above. ",
+      "Default: %default"
+    ),
+    metavar = "integer"
+  ),
+  make_option(
+    "--quantile_threshold",
+    type = "double",
+    default = 0.05,
+    help = paste0(
+      "The quantile used to define the COI estimate from the ordered sequence ",
+      "(used in quantile_method only). A numeric value between 0 and 1. Number of ",
+      "alleles is in increasing order, meaning quantiles close to zero lead to ",
+      "higher COI estimates. Default: %default"
+    ),
+    metavar = "number"
+  )
+)
+
+args <- parse_args(OptionParser(option_list = opts))
+
+missing <- character()
+if (is.null(args$input_path)) {
+  missing <- c(missing, "--input_path")
+}
+if (is.null(args$output_path)) {
+  missing <- c(missing, "--output_path")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  estimate_coi_naive(
+    input_path = args$input_path,
+    output_path = args$output_path,
+    method = args$method,
+    integer_threshold = args$integer_threshold,
+    quantile_threshold = args$quantile_threshold
+  )
+)

@@ -7,3 +7,9 @@ CLAUDE.md
 .Rcheck/
 *.tar.gz
 inst/doc
+
+# Compiled objects
+src/*.o
+src/*.so
+src/*.dll
+*.o

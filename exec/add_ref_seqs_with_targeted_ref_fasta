@@ -1,0 +1,63 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--ref_bed",
+    help = paste(
+      "a bed file containing the reference location of the ref_seq, no column",
+      "names but the first 6 columns should be chrom, start, end, target_name,",
+      "length, strand"
+    )
+  ),
+  make_option(
+    "--target_fasta",
+    help = paste(
+      "a fasta file with the ref sequences for the targets, the names of the",
+      "records should match up with the target_name of the --ref_bed file"
+    )
+  ),
+  make_option(
+    "--out",
+    help = "the out file to write to"
+  ),
+  make_option(
+    "--overwrite",
+    help = "overwrite the output if it already exists",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+missing <- character()
+if (is.null(arg$ref_bed)) {
+  missing <- c(missing, "--ref_bed")
+}
+if (is.null(arg$target_fasta)) {
+  missing <- c(missing, "--target_fasta")
+}
+if (is.null(arg$out)) {
+  missing <- c(missing, "--out")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  add_ref_seqs_with_targeted_ref_fasta(
+    ref_bed = arg$ref_bed,
+    target_fasta = arg$target_fasta,
+    out = arg$out,
+    overwrite = isTRUE(arg$overwrite)
+  )
+)

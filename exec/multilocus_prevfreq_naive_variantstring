@@ -1,0 +1,61 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_table",
+    type = "character",
+    help = paste0(
+      "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ",
+      "gene, pos, reads, aa"
+    )
+  ),
+  make_option(
+    "--loci_groups_input",
+    type = "character",
+    help = paste0(
+      "Path to a TSV file containing loci group definitions, with the ",
+      "columns: group_id, gene_id, aa_position"
+    )
+  ),
+  make_option(
+    "--output_path",
+    type = "character",
+    help = paste0(
+      "Path to write an output TSV file containing prevalence and frequency estimates ",
+      "for all variants in the data"
+    )
+  )
+)
+
+args <- parse_args(OptionParser(option_list = opts))
+
+missing <- character()
+if (is.null(args$aa_table)) {
+  missing <- c(missing, "--aa_table")
+}
+if (is.null(args$loci_groups_input)) {
+  missing <- c(missing, "--loci_groups_input")
+}
+if (is.null(args$output_path)) {
+  missing <- c(missing, "--output_path")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  multilocus_prevfreq_naive_variantstring(
+    aa_table = args$aa_table,
+    loci_groups_input = args$loci_groups_input,
+    output_path = args$output_path
+  )
+)

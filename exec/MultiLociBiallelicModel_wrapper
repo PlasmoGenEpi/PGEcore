@@ -1,0 +1,60 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_calls",
+    type = "character",
+    help = paste0(
+      "TSV containing aminoacid calls per specimen, with the columns: ",
+      "specimen_name, gene_id, aa_position, ref_aa, and aa."
+    )
+  ),
+  make_option(
+    "--loci_group_table",
+    type = "character",
+    help = paste0(
+      "TSV containing loci groups, with the columns: group_id, gene_id, ",
+      "aa_position."
+    )
+  ),
+  make_option(
+    "--mlaf_output",
+    type = "character",
+    help = paste0(
+      "TSV to contain multilocus allele frequency estimates, with the ",
+      "columns group_id, variant, and freq"
+    )
+  ),
+  make_option(
+    "--aa_sample_occurence_cut_off",
+    type = "integer",
+    default = 0,
+    help = paste0(
+      "Amino acid calls must occur in more than this number of samples ",
+      "to be included in final input data"
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$aa_calls) || is.null(arg$loci_group_table) ||
+    is.null(arg$mlaf_output)) {
+  stop(
+    "Missing required arguments: --aa_calls, --loci_group_table, --mlaf_output",
+    call. = FALSE
+  )
+}
+
+invisible(
+  MultiLociBiallelicModel_wrapper(
+    aa_calls = arg$aa_calls,
+    loci_group_table = arg$loci_group_table,
+    mlaf_output = arg$mlaf_output,
+    aa_sample_occurence_cut_off = arg$aa_sample_occurence_cut_off
+  )
+)

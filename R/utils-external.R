@@ -24,6 +24,39 @@ check_suggested_pkg <- function(pkg, reason = NULL) {
   invisible(TRUE)
 }
 
+#' Check several suggested packages
+#'
+#' @param pkgs Character vector of package names.
+#' @param reason Optional short description of why they are needed.
+#' @return Invisibly returns `TRUE` if all packages are available.
+#' @keywords internal
+check_suggested_pkgs <- function(pkgs, reason = NULL) {
+  for (pkg in pkgs) {
+    check_suggested_pkg(pkg, reason)
+  }
+  invisible(TRUE)
+}
+
+#' Require variantstring 1.x
+#'
+#' @param reason Passed to [check_suggested_pkg()].
+#' @return Invisibly returns `TRUE` if a 1.x version is installed.
+#' @keywords internal
+check_variantstring_v1 <- function(reason = NULL) {
+  check_suggested_pkg("variantstring", reason)
+  ver <- as.character(utils::packageVersion("variantstring"))
+  if (utils::compareVersion(ver, "1.0.0") < 0 ||
+      utils::compareVersion(ver, "2.0.0") >= 0) {
+    stop(
+      "This functionality requires variantstring version 1.x.x, but version ",
+      ver,
+      " is installed.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
 #' Check that an external executable is on PATH
 #'
 #' External tools are not R package dependencies and are not installed by
