@@ -1,0 +1,93 @@
+---
+title: "Getting started with PGEcore"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with PGEcore}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+PGEcore is an R package for malaria genomics analysis. Every tool is available
+both as an **R function** and as a **command-line program**. Inputs and outputs
+use shared TSV layouts so you can move results from one analysis into the next
+without reformatting.
+
+## Install
+
+```{r}
+# remotes::install_github("PlasmoGenEpi/PGEcore")
+library(PGEcore)
+```
+
+Specialised packages used by some wrappers (for example `coiaf`, `moire`) are
+**Suggests** and must be installed separately when you need those tools.
+
+## From R
+
+```{r}
+library(PGEcore)
+
+# File paths
+count_samples_by_coi("my_coi_calls.tsv", output = "coi_distribution.tsv")
+
+# Or in-memory tables
+coi_calls <- readr::read_tsv("my_coi_calls.tsv", show_col_types = FALSE)
+count_samples_by_coi(coi_calls)
+```
+
+Function names usually match the CLI name (`count_samples_by_coi`,
+`estimate_coi_naive`, …). Some wrappers also export a short `run_*` alias
+(for example `run_coiaf`).
+
+```{r}
+?count_samples_by_coi
+help(package = "PGEcore")
+```
+
+## Command line
+
+Each tool has an executable in the package `exec/` directory. After an install
+that puts those on `PATH`:
+
+```bash
+count_samples_by_coi \
+  --coi_calls my_coi_calls.tsv \
+  --output coi_distribution.tsv
+```
+
+From a source checkout of this repository:
+
+```bash
+Rscript exec/count_samples_by_coi \
+  --coi_calls inst/extdata/example_coi_table.tsv \
+  --output coi_distribution.tsv
+
+Rscript exec/estimate_coi_naive \
+  --input_path inst/extdata/example_allele_table.tsv \
+  --output_path coi_table.tsv
+
+Rscript exec/coiaf_wrapper \
+  --snp_data inst/extdata/example_collapsed_snp_calls.tsv \
+  --output coi_estimates.tsv
+```
+
+Pass ordinary file paths. Example TSVs that show the expected columns are under
+`inst/extdata/` (see the **input-formats** vignette).
+
+## Combining analyses
+
+1. Match your tables to a **standard format** (SNP calls, allele table, amino
+   acid calls, COI table, …).
+2. Run a PGEcore function or CLI.
+3. Feed the output TSV into the next tool when the column layouts already align.
+
+That interoperability—one invocation style and shared table layouts—is a core
+goal of the package.

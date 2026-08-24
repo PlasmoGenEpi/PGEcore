@@ -4,9 +4,9 @@
 \name{PGEcore-package}
 \alias{PGEcore}
 \alias{PGEcore-package}
-\title{PGEcore: Shared PlasmoGenEpi Bioinformatics Scripts and Tool Wrappers}
+\title{PGEcore: Malaria Genomics Analysis Tools}
 \description{
-Shared R functions and command-line interfaces used across PlasmoGenEpi Nextflow and WDL pipelines. Provides bespoke analysis helpers and thin wrappers around specialised malaria genomics R packages. PGEcore does not install or distribute the external software or specialised R packages that individual wrappers call; those must be installed separately and available at runtime.
+Provides R functions and command-line interfaces for common malaria genomics analyses, including complexity of infection (COI), allele frequency and prevalence estimation, relatedness, and related tasks. Tools share standardised TSV input and output formats so analyses can be combined easily. Thin wrappers around specialised R packages and algorithms are included; PGEcore does not install those specialised dependencies — they must be installed separately when needed.
 }
 \seealso{
 Useful links:

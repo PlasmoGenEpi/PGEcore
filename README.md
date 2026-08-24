@@ -1,186 +1,167 @@
 # PGEcore
 
-Shared R functions and command-line interfaces used across PlasmoGenEpi
-Nextflow and WDL pipelines.
+An R package for malaria genomics analysis: estimating complexity of infection
+(COI), allele frequencies and prevalence, relatedness, and related tasks.
+Analyses are available both as **R functions** and as **command-line tools**,
+with shared TSV input/output formats so steps are easy to chain.
 
-> **PGEcore does not install or distribute the external software or specialised
-> R packages that it wraps.** Those tools must be installed separately and
-> available at runtime (for example on `PATH`, or as Conda packages in the same
-> process environment). This allows each workflow process to install only the
-> software it needs.
-
-This repository is being converted from a Git-submodule script collection into a
-versioned R package. Legacy modules remain under `scripts/` while they are
-migrated into `R/` + `exec/`.
+> **PGEcore does not install the specialised software it wraps.** Optional
+> dependencies (for example the `coiaf` package) must be installed separately
+> when you need those tools.
 
 ## Install
 
 ```r
-# From GitHub (development)
+# From GitHub
 # remotes::install_github("PlasmoGenEpi/PGEcore")
 
-# Or from a local clone
+# From a local clone
 devtools::install()
 ```
 
-Specialised Suggests packages (for example `coiaf`) are **not** installed
-automatically. Install them separately when you need a given wrapper.
+## Two ways to run every tool
 
-## Two ways to use PGEcore
+1. An **R function** — interactive analysis, notebooks, or other R code
+2. A **CLI** under `exec/` — shell scripts or batch jobs
+
+Flags and file formats match between the two.
 
 ### From R
 
 ```r
 library(PGEcore)
 
-coi_path <- system.file("extdata", "example_coi_table.tsv", package = "PGEcore")
-count_samples_by_coi(coi_path)
+count_samples_by_coi("my_coi_calls.tsv", output = "coi_distribution.tsv")
 
-# Optional dependency (install coiaf separately)
-# results <- run_coiaf(snp_data = snp_df, plmaf = NULL)
+# Or pass data frames already in memory
+# run_coiaf(snp_data = snp_df)   # requires the coiaf package
 ```
 
-### From a workflow / CLI
+```r
+help(package = "PGEcore")
+browseVignettes("PGEcore")
+# vignette("getting-started", package = "PGEcore")
+# vignette("input-formats", package = "PGEcore")
+```
 
-After installation, thin CLIs live in the package `exec/` directory (executable
-scripts shipped with the package). Conda recipes for `r-pgecore` should expose
-them on `PATH`; until then, invoke via the installed path:
+### Command line
+
+Once the package executables are on your `PATH` (for example after a Conda
+install of `r-pgecore`):
 
 ```bash
-# Resolve installed CLI path
-COI_CLI="$(Rscript -e 'cat(system.file("exec", "count_samples_by_coi", package = "PGEcore"))')"
-"$COI_CLI" --coi_calls example_coi_table.tsv --output coi_distribution.tsv
-
-# Or, once Conda puts them on PATH:
-count_samples_by_coi --coi_calls example_coi_table.tsv --output coi_distribution.tsv
-
-# Requires the coiaf R package in the same environment
-COIAF_CLI="$(Rscript -e 'cat(system.file("exec", "coiaf_wrapper", package = "PGEcore"))')"
-"$COIAF_CLI" --snp_data snps.tsv --output coi_estimates.tsv
+count_samples_by_coi \
+  --coi_calls my_coi_calls.tsv \
+  --output coi_distribution.tsv
 ```
 
-Preserve existing flag names when migrating pipelines from submodule
-`Rscript scripts/...` invocations; only the executable path should change.
+From a source checkout of this repository:
 
-## Package layout
+```bash
+Rscript exec/count_samples_by_coi \
+  --coi_calls inst/extdata/example_coi_table.tsv \
+  --output coi_distribution.tsv
 
-```text
-PGEcore/
-├── DESCRIPTION
-├── R/                 # Implementation and exported API
-├── exec/              # Thin CLIs installed onto PATH
-├── src/               # Install-time C (THEREALMcCOIL)
-├── inst/extdata/      # Example inputs
-├── man/
-├── tests/testthat/
-├── scripts/           # Legacy modules (migration in progress)
-└── data/              # Legacy examples (also in inst/extdata)
+Rscript exec/coiaf_wrapper \
+  --snp_data inst/extdata/example_collapsed_snp_calls.tsv \
+  --output coi_estimates.tsv
 ```
 
-## Migrated so far
+Pass ordinary file paths to your data. Bundled examples for trying formats live
+in `inst/extdata/`.
 
-| Function / CLI | Kind | Optional dependency |
+## Standard input formats
+
+Tools share a small set of TSV layouts so outputs from one step can feed the
+next. Required columns (minimum):
+
+| Format | Required columns | Example file |
+| ------ | ---------------- | ------------ |
+| COI calls | `specimen_name`, `coi` | `inst/extdata/example_coi_table.tsv` |
+| SNP calls | `specimen_name`, `snp_name`, `reads`, `seq_base` | `inst/extdata/example_collapsed_snp_calls.tsv` |
+| Allele / microhap table | `specimen_name`, `target_name`, `seq`, `reads` | `inst/extdata/example_allele_table.tsv` |
+| Amino acid calls | `specimen_name`, `gene_id`, `aa_position`, `aa`, `reads` (+ often `target_name`, `aa_locus`, …) | `inst/extdata/example_amino_acid_calls.tsv` |
+| Loci groups | `group_id`, `gene_id`, `aa_position` | `inst/extdata/example_loci_groups.tsv` |
+| Allele frequency (MLAF) | `group_id`, `variant`, `freq` | `inst/extdata/example_mlaf.tsv` |
+| Population MAF (PLMAF) | `snp_name`, `seq_base`, `plmaf` | `inst/extdata/example_coiaf_plmaf.tsv` |
+
+Full column notes and which tools consume each format: vignette **`input-formats`**.
+
+## Available tools
+
+| CLI / function | Kind | Optional dependency |
 | -------------- | ---- | ------------------- |
 | `count_samples_by_coi` | Pure R | — |
 | `estimate_coi_naive` | Pure R | — |
 | `estimate_allele_frequency_naive` | Pure R | — |
 | `estimate_allele_prevalence_naive` | Pure R | — |
 | `allele_per_locus_summary` | Pure R | — |
-| `run_coiaf` / `coiaf_wrapper` | R-package wrapper | `coiaf` |
+| `coiaf_wrapper` / `run_coiaf` | Wrapper | `coiaf` |
 | `filter_biallelic_calls` | Pure R | — |
 | `filter_to_highest_diversity_independent_snp_call` | Pure R | — |
 | `slaf_from_mhaps_freqs` | Pure R | — |
-| `slaf_from_stave_mlaf` | R-package wrapper | `variantstring` |
+| `slaf_from_stave_mlaf` | Wrapper | `variantstring` |
 | `multilocus_prevfreq_naive` | Pure R | — |
-| `multilocus_prevfreq_naive_variantstring` | R-package wrapper | `variantstring` |
-| `snp_calls_to_vcf` | R-package wrapper | `Biostrings` |
+| `multilocus_prevfreq_naive_variantstring` | Wrapper | `variantstring` |
+| `snp_calls_to_vcf` | Wrapper | `Biostrings` |
 | `vcf_to_snp_calls` | Pure R | — |
-| `add_ref_seqs_with_targeted_ref_fasta` | R-package wrapper | `Biostrings` |
-| `add_ref_seqs_with_full_genome_ref_fasta` | R-package wrapper | `Biostrings` |
-| `pileup_specific_snps` | R-package wrapper | `Biostrings`, `pwalign` |
-| `translate_loci_of_interest` | R-package wrapper | `Biostrings`, `pwalign` |
-| `per_locus_popgen_summary` | R-package wrapper | `ape`, `msa`, `pegas`; Muscle/Clustal binaries |
-| `calculate_fws_from_vcf` | R-package wrapper | `moimix`, `SeqArray` |
-| `run_moire` / `moire_wrapper` | R-package wrapper | `moire`, `checkmate` |
-| `run_malariaem` / `malariaem_wrapper` | R-package wrapper | `malaria.em`, `checkmate` |
-| `dcifer_slaf_wrapper` | R-package wrapper | `dcifer` |
-| `dcifer_ibd_wrapper` | R-package wrapper | `dcifer`, `foreach`, `doParallel`, `parallelly`, `iterators` |
-| `snpslice_wrapper` | R-package wrapper | `snp.slicer`, `variantstring` |
-| `FreqEstimationModel_wrapper` | R-package wrapper | `FreqEstimationModel`, `variantstring`, `foreach`, `doMC`, `plyr`, `coda`, `abind` |
-| `IDM_wrapper` | Vendored algorithm wrapper | `Rmpfr`, `openxlsx` |
-| `MultiLociBiallelicModel_wrapper` | Vendored algorithm wrapper | `variantstring` |
-| `THEREALMcCOIL_wrapper` | Vendored C in `src/` (install-time compile) | — |
+| `add_ref_seqs_with_targeted_ref_fasta` | Wrapper | `Biostrings` |
+| `add_ref_seqs_with_full_genome_ref_fasta` | Wrapper | `Biostrings` |
+| `pileup_specific_snps` | Wrapper | `Biostrings`, `pwalign` |
+| `translate_loci_of_interest` | Wrapper | `Biostrings`, `pwalign` |
+| `per_locus_popgen_summary` | Wrapper | `ape`, `msa`, `pegas` (+ Muscle/Clustal on PATH) |
+| `calculate_fws_from_vcf` | Wrapper | `moimix`, `SeqArray` |
+| `moire_wrapper` / `run_moire` | Wrapper | `moire` |
+| `malariaem_wrapper` / `run_malariaem` | Wrapper | `malaria.em` |
+| `dcifer_slaf_wrapper` | Wrapper | `dcifer` |
+| `dcifer_ibd_wrapper` | Wrapper | `dcifer` (+ parallel helpers) |
+| `snpslice_wrapper` | Wrapper | `snp.slicer`, `variantstring` |
+| `FreqEstimationModel_wrapper` | Wrapper | `FreqEstimationModel` (+ helpers) |
+| `IDM_wrapper` | Vendored algorithm | `Rmpfr`, `openxlsx` |
+| `MultiLociBiallelicModel_wrapper` | Vendored algorithm | `variantstring` |
+| `THEREALMcCOIL_wrapper` | Vendored C (`src/`) | — |
 
-## External and optional dependencies
+## Optional dependencies
 
-| PGEcore function/script | Dependency | Type | Notes |
-| ----------------------- | ---------- | ---- | ----- |
-| `count_samples_by_coi` | — | — | Pure R |
-| `estimate_coi_naive` | — | — | Pure R |
-| `estimate_allele_frequency_naive` | — | — | Pure R |
-| `estimate_allele_prevalence_naive` | — | — | Pure R |
-| `allele_per_locus_summary` | — | — | Pure R |
-| `run_coiaf` / `coiaf_wrapper` | `coiaf` | Optional R (Suggests) | Install separately; not pulled in by PGEcore |
-| `filter_biallelic_calls` | — | — | Pure R |
-| `filter_to_highest_diversity_independent_snp_call` | — | — | Pure R |
-| `slaf_from_mhaps_freqs` | — | — | Pure R |
-| `slaf_from_stave_mlaf` | `variantstring` | Optional R (Suggests) | Install separately; not pulled in by PGEcore |
-| `multilocus_prevfreq_naive` | — | — | Pure R |
-| `multilocus_prevfreq_naive_variantstring` | `variantstring` | Optional R (Suggests) | Install separately; not pulled in by PGEcore |
-| `snp_calls_to_vcf` | `Biostrings` | Optional R (Suggests) | Bioconductor; install separately |
-| `vcf_to_snp_calls` | — | — | Pure R |
-| `add_ref_seqs_with_targeted_ref_fasta` | `Biostrings` | Optional R (Suggests) | Bioconductor; install separately |
-| `add_ref_seqs_with_full_genome_ref_fasta` | `Biostrings` | Optional R (Suggests) | Bioconductor; install separately |
-| `pileup_specific_snps` | `Biostrings`, `pwalign` | Optional R (Suggests) | Bioconductor; install separately |
-| `translate_loci_of_interest` | `Biostrings`, `pwalign` | Optional R (Suggests) | Bioconductor; install separately |
-| `per_locus_popgen_summary` | `ape`, `msa`, `pegas` | Optional R (Suggests) | **msa** also needs a `muscle`, `clustalw`, or `clustalo` binary on `PATH` (not installed by the R package) |
-| `calculate_fws_from_vcf` | `moimix`, `SeqArray` | Optional R (Suggests) | `SeqArray` is Bioconductor; `moimix` is GitHub-only (`bahlolab/moimix`) |
-| `run_moire` / `moire_wrapper` | `moire`, `checkmate` | Optional R (Suggests) | Install separately |
-| `run_malariaem` / `malariaem_wrapper` | `malaria.em`, `checkmate` | Optional R (Suggests) | Install separately |
-| `dcifer_slaf_wrapper` | `dcifer` | Optional R (Suggests) | Install separately |
-| `dcifer_ibd_wrapper` | `dcifer` (+ parallel helpers) | Optional R (Suggests) | `foreach`, `doParallel`, `parallelly`, `iterators` |
-| `snpslice_wrapper` | `snp.slicer`, `variantstring` | Optional R (Suggests) | `variantstring` 1.x required |
-| `FreqEstimationModel_wrapper` | `FreqEstimationModel` (+ helpers) | Optional R (Suggests) | `variantstring`, `foreach`, `doMC`, `plyr`, `coda`, `abind` |
-| `IDM_wrapper` | `Rmpfr`, `openxlsx` | Optional R (Suggests) | Vendored Hashemi & Schneider (2024) Incomplete Data Model |
-| `MultiLociBiallelicModel_wrapper` | `variantstring` | Optional R (Suggests) | Vendored SNPModel.R; `variantstring` 1.x required |
-| `THEREALMcCOIL_wrapper` | Vendored C (`src/`) | Compiled at install | No runtime `R CMD SHLIB`; grid in `inst/extdata/` |
+Wrappers that call another R package list that package under **Suggests**.
+Install only what you need, for example:
 
-R packages used across most of PGEcore (see `Imports` in `DESCRIPTION`) are
-installed with the package. Specialised analysis packages belong in `Suggests`
-and are checked at runtime with `check_suggested_pkg()`.
+```r
+install.packages(
+  "coiaf",
+  repos = c("https://plasmogenepi.r-universe.dev", "https://cloud.r-project.org")
+)
+```
 
-## Conda / workflow note
-
-A process environment should look conceptually like:
+With Conda, a minimal environment might look like:
 
 ```yaml
 dependencies:
   - r-base
   - r-pgecore
-  - r-coiaf          # only if this process needs coiaf_wrapper
+  - r-coiaf    # only if you use coiaf_wrapper
 ```
 
-Do **not** build a single environment containing every tool PGEcore can wrap.
+## Package layout
 
-## How to contribute
+```text
+PGEcore/
+├── R/              # Exported API and helpers
+├── exec/           # Thin CLIs (same flags as the R API)
+├── src/            # THEREALMcCOIL C (compiled at install)
+├── inst/extdata/   # Example inputs (standard formats)
+├── vignettes/      # Getting started + input formats
+├── man/
+└── tests/
+```
 
-We use [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
-Open PRs into `develop` (not `main`).
+## Contribute
 
-### Adding a new wrapper (package style)
+PRs go to `develop` (Gitflow). To add a tool:
 
-1. Put implementation functions in `R/<name>.R` (validate → prepare → run → format).
-2. Export only the high-level API; keep helpers internal.
-3. If the wrapper needs a specialised R package, list it under `Suggests` and call
-   `check_suggested_pkg()` before use. Do not add it to `Imports`.
-4. If it shells out to a binary, call `check_external_tool()` and document the
-   executable; do not download or install it from PGEcore.
-5. Add a thin CLI under `exec/` that only parses arguments (optparse) and calls
-   the exported function. Preserve existing flag names when migrating a legacy
-   script.
-6. Add unit tests that do not require optional tools; integration tests should
-   `skip_if_not_installed()` / skip when binaries are missing.
-7. Document with roxygen2 and update this README’s dependency table.
-
-Legacy contribution notes for unmigrated `scripts/` modules still apply until
-those modules are moved; see per-script READMEs under `scripts/`.
+1. Implement in `R/` (validate → prepare → run → format).
+2. Export one high-level function; keep helpers internal.
+3. Put specialised deps in `Suggests` and use `check_suggested_pkg()`.
+4. Add a thin `exec/` CLI with the same optparse flags.
+5. Add tests and document formats in the `input-formats` vignette if you
+   introduce a new shared table layout.

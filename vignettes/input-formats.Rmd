@@ -1,0 +1,195 @@
+---
+title: "Standard input and output formats"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Standard input and output formats}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+PGEcore tools read and write **TSV** tables with agreed column names so outputs
+from one step can be inputs to another. Bundled examples live in
+`inst/extdata/` after you install the package (or in that folder in the source
+tree).
+
+```{r}
+library(PGEcore)
+extdata <- system.file("extdata", package = "PGEcore")
+list.files(extdata, pattern = "^example")[1:8]
+```
+
+The snippets below use those examples only to show **column structure**. In
+normal use, pass paths to **your** files on the CLI or in R.
+
+## COI calls
+
+**Columns:** `specimen_name`, `coi`
+
+**Example:** `example_coi_table.tsv`  
+**Used by:** `count_samples_by_coi`, and as optional COI input to several
+wrappers (`dcifer_*`, `FreqEstimationModel_wrapper`, …)
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_coi_table.tsv"),
+  show_col_types = FALSE,
+  n_max = 3
+)
+```
+
+```bash
+Rscript exec/count_samples_by_coi \
+  --coi_calls my_coi_calls.tsv \
+  --output coi_distribution.tsv
+```
+
+## SNP calls
+
+**Minimum columns:** `specimen_name`, `snp_name`, `reads`, `seq_base`
+
+Collapsed SNP tables may include extra columns (`target_name`, `chrom`, `pos`,
+…). Tools that need only the minimum set ignore the rest.
+
+**Example:** `example_collapsed_snp_calls.tsv`  
+**Used by:** `coiaf_wrapper`, `THEREALMcCOIL_wrapper`, `snp_calls_to_vcf`,
+SNP filtering and pileup tools, …
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_collapsed_snp_calls.tsv"),
+  show_col_types = FALSE,
+  n_max = 3
+) |>
+  dplyr::select(specimen_name, snp_name, reads, seq_base)
+```
+
+```bash
+Rscript exec/coiaf_wrapper \
+  --snp_data my_snp_calls.tsv \
+  --output coi_estimates.tsv
+```
+
+## Allele / microhaplotype table
+
+**Columns:** `specimen_name`, `target_name`, `seq`, `reads`
+
+**Example:** `example_allele_table.tsv`  
+**Used by:** `estimate_coi_naive`, `moire_wrapper`, `malariaem_wrapper`,
+`allele_per_locus_summary`, `per_locus_popgen_summary`, many allele-based
+wrappers
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_allele_table.tsv"),
+  show_col_types = FALSE,
+  n_max = 3
+)
+```
+
+```bash
+Rscript exec/estimate_coi_naive \
+  --input_path my_allele_table.tsv \
+  --output_path coi_table.tsv
+```
+
+## Amino acid calls
+
+**Core columns:** `specimen_name`, `gene_id`, `aa_position`, `aa`, `reads`  
+Often also: `target_name`, `aa_locus`, `gene`, `ref_aa`
+
+**Example:** `example_amino_acid_calls.tsv`  
+**Used by:** `estimate_allele_frequency_naive`, `estimate_allele_prevalence_naive`,
+`filter_biallelic_calls`, `multilocus_prevfreq_*`, `snpslice_wrapper`, …
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_amino_acid_calls.tsv"),
+  show_col_types = FALSE,
+  n_max = 3
+)
+```
+
+## Loci groups
+
+**Columns:** `group_id`, `gene_id`, `aa_position` (often `aa_locus` too)
+
+Defines which loci are analysed together for multi-locus tools.
+
+**Example:** `example_loci_groups.tsv`  
+**Used by:** `multilocus_prevfreq_*`, `snpslice_wrapper`,
+`FreqEstimationModel_wrapper`, `MultiLociBiallelicModel_wrapper`
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_loci_groups.tsv"),
+  show_col_types = FALSE,
+  n_max = 4
+)
+```
+
+## Multilocus allele frequency (MLAF)
+
+**Columns:** `group_id`, `variant`, `freq`
+
+`variant` is often a STAVE-style string (`gene_id:aa_position:aa`).
+
+**Example:** `example_mlaf.tsv`  
+**Used by:** `slaf_from_stave_mlaf` (and produced by several multi-locus tools)
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_mlaf.tsv"),
+  show_col_types = FALSE,
+  n_max = 3
+)
+```
+
+## Population-level minor allele frequency (PLMAF)
+
+**Columns:** `snp_name`, `seq_base`, `plmaf`
+
+**Example:** `example_coiaf_plmaf.tsv`  
+**Used by:** `coiaf_wrapper` (optional; otherwise PLMAF is estimated from the
+SNP table)
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_coiaf_plmaf.tsv"),
+  show_col_types = FALSE,
+  n_max = 3
+)
+```
+
+## Microhaplotype SLAF
+
+**Columns:** `target_name`, `seq`, `freq`, `sample_total`
+
+**Example:** `example_mhaps_slaf.tsv`  
+**Used by:** `slaf_from_mhaps_freqs`
+
+```{r}
+readr::read_tsv(
+  file.path(extdata, "example_mhaps_slaf.tsv"),
+  show_col_types = FALSE,
+  n_max = 3
+)
+```
+
+## Common outputs
+
+| Output | Typical columns | Example producers |
+| ------ | --------------- | ----------------- |
+| COI per specimen | `specimen_name`, `coi` | `estimate_coi_naive`, McCOIL, snpslice, … |
+| COI distribution | `coi`, `n`, `proportion` | `count_samples_by_coi` |
+| Allele frequency | `variant`, `freq` (sometimes counts) | naive AF, McCOIL SLAF, … |
+| Prevalence | `variant`, `prev`, … | `estimate_allele_prevalence_naive` |
+
+When you add a new tool, reuse these layouts whenever possible so downstream
+steps do not need format converters.

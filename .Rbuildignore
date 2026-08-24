@@ -4,14 +4,11 @@
 ^\.github$
 ^\.gitignore$
 ^\.DS_Store$
-^plan\.txt$
 ^LICENSE\.md$
 ^CITATION\.cff$
-^docs$
-^scripts$
-^data$
 ^\.claude$
 ^CLAUDE\.md$
 ^README\.Rmd$
 ^\.cursor$
 ^.*\.tar\.gz$
+^vignettes/*\.html$
