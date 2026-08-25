@@ -85,7 +85,7 @@ test_that("estimate_coi_naive works on packaged example allele table", {
   on.exit(unlink(tmp_out), add = TRUE)
   out2 <- estimate_coi_naive(
     path,
-    output_path = tmp_out,
+    output = tmp_out,
     method = "integer_method"
   )
   expect_true(file.exists(tmp_out))

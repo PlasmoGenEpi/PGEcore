@@ -15,7 +15,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--loci_group_table",
+    "--loci_groups",
     type = "character",
     help = paste0(
       "TSV containing loci groups, with the columns: group_id, gene_id, ",
@@ -42,10 +42,10 @@ opts <- list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
-if (is.null(arg$aa_calls) || is.null(arg$loci_group_table) ||
+if (is.null(arg$aa_calls) || is.null(arg$loci_groups) ||
     is.null(arg$mlaf_output)) {
   stop(
-    "Missing required arguments: --aa_calls, --loci_group_table, --mlaf_output",
+    "Missing required arguments: --aa_calls, --loci_groups, --mlaf_output",
     call. = FALSE
   )
 }
@@ -53,7 +53,7 @@ if (is.null(arg$aa_calls) || is.null(arg$loci_group_table) ||
 invisible(
   MultiLociBiallelicModel_wrapper(
     aa_calls = arg$aa_calls,
-    loci_group_table = arg$loci_group_table,
+    loci_groups = arg$loci_groups,
     mlaf_output = arg$mlaf_output,
     aa_sample_occurence_cut_off = arg$aa_sample_occurence_cut_off
   )

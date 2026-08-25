@@ -109,13 +109,13 @@ format_naive_af_output <- function(out, from_aa) {
 
 #' Estimate allele frequency naively from AA or microhaplotype calls
 #'
-#' Exactly one of `aa_calls` or `mh_calls` must be provided. Frequency is
+#' Exactly one of `aa_calls` or `allele_table` must be provided. Frequency is
 #' estimated either from within-sample read-count proportions
 #' (`read_count_prop`) or from presence/absence (`presence_absence`).
 #'
 #' @param aa_calls Optional path to a TSV of amino acid calls with columns
 #'   `specimen_name`, `gene_id`, `aa_position`, `aa`, and `reads`.
-#' @param mh_calls Optional path to a TSV of microhaplotype genotypes with
+#' @param allele_table Optional path to a TSV of microhaplotype genotypes with
 #'   columns `specimen_name`, `target_name`, `seq`, and `reads`.
 #' @param method Estimation method: `"presence_absence"` (default) or
 #'   `"read_count_prop"`.
@@ -129,21 +129,21 @@ format_naive_af_output <- function(out, from_aa) {
 #'
 #' @examples
 #' aa_path <- system.file(
-#'   "extdata", "example_amino_acid_calls.tsv",
+#'   "extdata", "example_aa_calls.tsv",
 #'   package = "PGEcore"
 #' )
 #' estimate_allele_frequency_naive(aa_calls = aa_path)
 #'
 #' @export
 estimate_allele_frequency_naive <- function(aa_calls = NULL,
-                                            mh_calls = NULL,
+                                            allele_table = NULL,
                                             method = "presence_absence",
                                             output = NULL) {
   options(dplyr.summarise.inform = FALSE)
 
-  if (is.null(aa_calls) == is.null(mh_calls)) {
+  if (is.null(aa_calls) == is.null(allele_table)) {
     stop(
-      "One and only one of the args --aa_calls and --mh_calls should be ",
+      "One and only one of the args --aa_calls and --allele_table should be ",
       "provided.",
       call. = FALSE
     )
@@ -159,10 +159,10 @@ estimate_allele_frequency_naive <- function(aa_calls = NULL,
     }
     allele_table <- af_parse_aa_calls(aa_calls)
   } else {
-    if (!file.exists(mh_calls)) {
-      stop(mh_calls, " does not exist", call. = FALSE)
+    if (!file.exists(allele_table)) {
+      stop(allele_table, " does not exist", call. = FALSE)
     }
-    allele_table <- af_parse_mh_calls(mh_calls)
+    allele_table <- af_parse_mh_calls(allele_table)
   }
 
   out <- switch(

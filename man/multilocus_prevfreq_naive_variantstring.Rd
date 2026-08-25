@@ -4,20 +4,16 @@
 \alias{multilocus_prevfreq_naive_variantstring}
 \title{Estimate multilocus prevalence and frequency with variantstring}
 \usage{
-multilocus_prevfreq_naive_variantstring(
-  aa_table,
-  loci_groups_input,
-  output_path = NULL
-)
+multilocus_prevfreq_naive_variantstring(aa_calls, loci_groups, output = NULL)
 }
 \arguments{
-\item{aa_table}{Path to a TSV of amino acid calls with columns
+\item{aa_calls}{Path to a TSV of amino acid calls with columns
 \code{specimen_name}, \code{gene_id}, \code{aa_position}, \code{reads}, and \code{aa}.}
 
-\item{loci_groups_input}{Path to a TSV of loci groups with columns
+\item{loci_groups}{Path to a TSV of loci groups with columns
 \code{group_id}, \code{gene_id}, and \code{aa_position}.}
 
-\item{output_path}{Optional path for the prev/freq TSV. If \code{NULL}, results
+\item{output}{Optional path for the prev/freq TSV. If \code{NULL}, results
 are returned without writing.}
 }
 \value{
@@ -37,7 +33,7 @@ installed automatically with PGEcore.
 \examples{
 \dontshow{if (requireNamespace("variantstring", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 aa_path <- system.file(
-  "extdata", "example_amino_acid_calls.tsv",
+  "extdata", "example_aa_calls.tsv",
   package = "PGEcore"
 )
 groups_path <- system.file(

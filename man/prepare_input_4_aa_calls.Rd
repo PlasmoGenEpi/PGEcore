@@ -4,10 +4,10 @@
 \alias{prepare_input_4_aa_calls}
 \title{Prepare amino-acid-call input for the Incomplete Data Model}
 \usage{
-prepare_input_4_aa_calls(aa_calls_input)
+prepare_input_4_aa_calls(aa_calls)
 }
 \arguments{
-\item{aa_calls_input}{Path to amino-acid TSV.}
+\item{aa_calls}{Path to amino-acid TSV.}
 }
 \value{
 Tibble with \code{specimen_name}, \code{locus}, \code{variants}.

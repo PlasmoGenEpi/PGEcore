@@ -5,25 +5,25 @@
 \title{Estimate multilocus prevalence and frequency with naive phasing}
 \usage{
 multilocus_prevfreq_naive(
-  aa_table,
-  loci_groups_input,
-  output_path = NULL,
-  recalc_single_locus_output_path = NULL,
+  aa_calls,
+  loci_groups,
+  output = NULL,
+  single_locus_output = NULL,
   method = "wsaf_prop",
   wsaf_cut_off = 0.7
 )
 }
 \arguments{
-\item{aa_table}{Path to a TSV of amino acid calls with columns
+\item{aa_calls}{Path to a TSV of amino acid calls with columns
 \code{specimen_name}, \code{gene}, \code{gene_id}, \code{aa_position}, \code{reads}, and \code{aa}.}
 
-\item{loci_groups_input}{Path to a TSV of loci groups with columns
+\item{loci_groups}{Path to a TSV of loci groups with columns
 \code{group_id}, \code{gene_id}, and \code{aa_position}.}
 
-\item{output_path}{Optional path for the multilocus prev/freq TSV. If
+\item{output}{Optional path for the multilocus prev/freq TSV. If
 \code{NULL}, results are returned without writing.}
 
-\item{recalc_single_locus_output_path}{Optional path for single-locus
+\item{single_locus_output}{Optional path for single-locus
 prev/freq recalculated from the inferred multilocus calls.}
 
 \item{method}{\code{"wsaf_prop"} (default) or \code{"presence_absence"}.}
@@ -43,7 +43,7 @@ samples). Prevalence and frequency are then estimated with \code{wsaf_prop} or
 }
 \examples{
 aa_path <- system.file(
-  "extdata", "example2_amino_acid_calls.tsv",
+  "extdata", "example2_aa_calls.tsv",
   package = "PGEcore"
 )
 groups_path <- system.file(

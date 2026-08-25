@@ -8,7 +8,7 @@ pileup_specific_snps(
   allele_table,
   ref_bed,
   snps_of_interest,
-  output_directory,
+  output_dir,
   select_target_names = NULL,
   select_specimen_names = NULL,
   overwrite_dir = FALSE,
@@ -26,7 +26,7 @@ pileup_specific_snps(
 \code{end}, \code{name}, \code{length}, and \code{strand}. Each SNP must span one base
 (\code{end - start == 1}).}
 
-\item{output_directory}{Directory to write results. Created if missing.}
+\item{output_dir}{Directory to write results. Created if missing.}
 
 \item{select_target_names}{Optional comma-separated names, path to a
 one-column TSV, or character vector of targets to keep.}
@@ -35,7 +35,7 @@ one-column TSV, or character vector of targets to keep.}
 one-column TSV, or character vector of specimens to keep.}
 
 \item{overwrite_dir}{If \code{FALSE} (default), refuse to replace an existing
-\code{output_directory}.}
+\code{output_dir}.}
 
 \item{collapse_calls_by_summing}{If \code{TRUE}, sum reads across overlapping
 targets; otherwise keep the target with the highest read count.}
@@ -52,5 +52,5 @@ Requires \strong{Biostrings} and \strong{pwalign} (Suggests).
 \details{
 Writes \code{snp_calls.tsv.gz}, \code{collapsed_snp_calls.tsv.gz},
 \code{snps_covered_by_target_samples_info.tsv}, and optionally
-\code{allele_table_out_uncallable.tsv} under \code{output_directory}.
+\code{allele_table_out_uncallable.tsv} under \code{output_dir}.
 }

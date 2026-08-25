@@ -1,16 +1,16 @@
 #' Read amino acid calls for variantstring multilocus prev/freq
 #'
-#' @param aa_table Path to a TSV of amino acid calls.
+#' @param aa_calls Path to a TSV of amino acid calls.
 #' @return A tibble with `specimen_name`, `gene`, `pos`, `reads`, `aa`, `n_aa`.
 #' @keywords internal
-read_mlp_vs_aa_table <- function(aa_table) {
-  stopifnot(is.character(aa_table), length(aa_table) == 1L)
-  if (!file.exists(aa_table)) {
-    stop(aa_table, " does not exist", call. = FALSE)
+read_mlp_vs_aa_table <- function(aa_calls) {
+  stopifnot(is.character(aa_calls), length(aa_calls) == 1L)
+  if (!file.exists(aa_calls)) {
+    stop(aa_calls, " does not exist", call. = FALSE)
   }
 
   df_aa <- utils::read.table(
-    aa_table,
+    aa_calls,
     header = TRUE,
     colClasses = c(specimen_name = "character")
   )
@@ -18,7 +18,7 @@ read_mlp_vs_aa_table <- function(aa_table) {
   validate_required_columns(
     df_aa,
     c("specimen_name", "gene_id", "aa_position", "reads", "aa"),
-    "aa_table"
+    "aa_calls"
   )
 
   rules <- validate::validator(
@@ -33,7 +33,7 @@ read_mlp_vs_aa_table <- function(aa_table) {
     !is.na(reads),
     !is.na(aa)
   )
-  stop_on_validate_fails(df_aa, rules, "aa_table")
+  stop_on_validate_fails(df_aa, rules, "aa_calls")
 
   df_aa |>
     dplyr::select("specimen_name", "gene_id", "aa_position", "reads", "aa") |>
@@ -66,7 +66,7 @@ read_mlp_vs_loci_groups <- function(loci_groups_path) {
   validate_required_columns(
     loci_groups,
     c("group_id", "gene_id", "aa_position"),
-    "loci_groups_input"
+    "loci_groups"
   )
 
   rules <- validate::validator(
@@ -77,7 +77,7 @@ read_mlp_vs_loci_groups <- function(loci_groups_path) {
     !is.na(gene_id),
     !is.na(aa_position)
   )
-  stop_on_validate_fails(loci_groups, rules, "loci_groups_input")
+  stop_on_validate_fails(loci_groups, rules, "loci_groups")
   loci_groups
 }
 
@@ -192,15 +192,15 @@ compute_prevfreq_for_group <- function(group_loci, aa_table) {
 #' Write a variantstring prev/freq table
 #'
 #' @param df_prev Data frame with `group_id`, `variant`, `prev`, `freq`, `sample_total`.
-#' @param output_path Output TSV path.
+#' @param output Output TSV path.
 #' @keywords internal
-write_mlp_vs_prev <- function(df_prev, output_path) {
+write_mlp_vs_prev <- function(df_prev, output) {
   stopifnot(is.data.frame(df_prev))
   stopifnot(
     all(names(df_prev) == c("group_id", "variant", "prev", "freq", "sample_total"))
   )
-  stopifnot(is.character(output_path), length(output_path) == 1L)
-  readr::write_tsv(df_prev, file = output_path)
+  stopifnot(is.character(output), length(output) == 1L)
+  readr::write_tsv(df_prev, file = output)
 }
 
 #' Estimate multilocus prevalence and frequency with variantstring
@@ -213,11 +213,11 @@ write_mlp_vs_prev <- function(df_prev, output_path) {
 #' Requires the optional **variantstring** package (Suggests). It is not
 #' installed automatically with PGEcore.
 #'
-#' @param aa_table Path to a TSV of amino acid calls with columns
+#' @param aa_calls Path to a TSV of amino acid calls with columns
 #'   `specimen_name`, `gene_id`, `aa_position`, `reads`, and `aa`.
-#' @param loci_groups_input Path to a TSV of loci groups with columns
+#' @param loci_groups Path to a TSV of loci groups with columns
 #'   `group_id`, `gene_id`, and `aa_position`.
-#' @param output_path Optional path for the prev/freq TSV. If `NULL`, results
+#' @param output Optional path for the prev/freq TSV. If `NULL`, results
 #'   are returned without writing.
 #'
 #' @return A tibble with columns `group_id`, `variant`, `prev`, `freq`, and
@@ -225,7 +225,7 @@ write_mlp_vs_prev <- function(df_prev, output_path) {
 #'
 #' @examplesIf requireNamespace("variantstring", quietly = TRUE)
 #' aa_path <- system.file(
-#'   "extdata", "example_amino_acid_calls.tsv",
+#'   "extdata", "example_aa_calls.tsv",
 #'   package = "PGEcore"
 #' )
 #' groups_path <- system.file(
@@ -235,17 +235,17 @@ write_mlp_vs_prev <- function(df_prev, output_path) {
 #' multilocus_prevfreq_naive_variantstring(aa_path, groups_path)
 #'
 #' @export
-multilocus_prevfreq_naive_variantstring <- function(aa_table,
-                                                    loci_groups_input,
-                                                    output_path = NULL) {
+multilocus_prevfreq_naive_variantstring <- function(aa_calls,
+                                                    loci_groups,
+                                                    output = NULL) {
   options(dplyr.summarise.inform = FALSE)
   check_suggested_pkg(
     "variantstring",
     "multilocus prev/freq via multilocus_prevfreq_naive_variantstring()"
   )
 
-  aa_calls <- read_mlp_vs_aa_table(aa_table)
-  loci_groups <- read_mlp_vs_loci_groups(loci_groups_input)
+  aa_calls <- read_mlp_vs_aa_table(aa_calls)
+  loci_groups <- read_mlp_vs_loci_groups(loci_groups)
 
   df_prev <- loci_groups |>
     dplyr::select("group_id", "gene_id", "aa_position") |>
@@ -260,8 +260,8 @@ multilocus_prevfreq_naive_variantstring <- function(aa_table,
     dplyr::select(-"group_loci") |>
     tidyr::unnest("group_mlafp")
 
-  if (!is.null(output_path)) {
-    write_mlp_vs_prev(df_prev = df_prev, output_path = output_path)
+  if (!is.null(output)) {
+    write_mlp_vs_prev(df_prev = df_prev, output = output)
   }
 
   df_prev

@@ -7,7 +7,7 @@
 add_ref_seqs_with_targeted_ref_fasta(
   ref_bed,
   target_fasta,
-  out = NULL,
+  output = NULL,
   overwrite = FALSE
 )
 }
@@ -17,10 +17,10 @@ columns \verb{#chrom}, \code{start}, \code{end}, \code{target_name}, \code{lengt
 
 \item{target_fasta}{Path to a FASTA whose record names match \code{target_name}.}
 
-\item{out}{Optional output TSV path. If \code{NULL}, results are returned without
-writing.}
+\item{output}{Optional output TSV path. If \code{NULL}, results are returned
+without writing.}
 
-\item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{out}.}
+\item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{output}.}
 }
 \value{
 A tibble of \code{ref_bed} with a \code{ref_seq} column.

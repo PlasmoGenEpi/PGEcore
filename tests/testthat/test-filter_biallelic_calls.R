@@ -28,7 +28,7 @@ test_that("filter_biallelic_calls validates columns and overwrite", {
   on.exit(unlink(tmp), add = TRUE)
   readr::write_tsv(aa, tmp)
   expect_error(
-    filter_biallelic_calls(aa, out = tmp, overwrite = FALSE),
+    filter_biallelic_calls(aa, output = tmp, overwrite = FALSE),
     "already exists"
   )
 })
@@ -36,7 +36,7 @@ test_that("filter_biallelic_calls validates columns and overwrite", {
 test_that("filter_biallelic_calls works on packaged example", {
   path <- system.file(
     "extdata",
-    "example_amino_acid_calls.tsv",
+    "example_aa_calls.tsv",
     package = "PGEcore"
   )
   skip_if_not(nzchar(path) && file.exists(path))

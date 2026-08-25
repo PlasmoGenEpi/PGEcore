@@ -336,7 +336,7 @@ malariaem_wrapper <- function(allele_table,
                               test_size = "min",
                               freq_output = "gt_freq_summary_all.tsv",
                               phase_output = "gt_phase_summary_all.tsv",
-                              seed = "1") {
+                              seed = 1L) {
   options(dplyr.summarise.inform = FALSE)
   check_suggested_pkg("malaria.em", "malaria.em via malariaem_wrapper()")
   check_suggested_pkg("checkmate", "malaria.em input validation")

@@ -22,7 +22,7 @@ opts <- list(
     }
   ),
   make_option(
-    c("--mh_calls"),
+    c("--allele_table"),
     help = paste0(
       "TSV containing microhaplotype genotypes, with the columns: ",
       "specimen_name, target_name, seq, reads"
@@ -62,11 +62,11 @@ opts <- list(
 )
 
 args <- parse_args(OptionParser(option_list = opts))
-input_data_args <- c("aa_calls", "mh_calls")
+input_data_args <- c("aa_calls", "allele_table")
 absent_data_args <- setdiff(input_data_args, names(args))
 if (length(absent_data_args) != 1) {
   stop(
-    "One and only one of the args --aa_calls and --mh_calls should be ",
+    "One and only one of the args --aa_calls and --allele_table should be ",
     "provided.",
     call. = FALSE
   )
@@ -75,7 +75,7 @@ if (length(absent_data_args) != 1) {
 invisible(
   estimate_allele_frequency_naive(
     aa_calls = args$aa_calls,
-    mh_calls = args$mh_calls,
+    allele_table = args$allele_table,
     method = args$method,
     output = args$output
   )

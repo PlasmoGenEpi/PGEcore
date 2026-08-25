@@ -6,19 +6,19 @@
 #' @param ref_bed Path to a TSV BED table with a header, or a data frame, with
 #'   columns `#chrom`, `start`, `end`, `target_name`, `length`, and `strand`.
 #' @param target_fasta Path to a FASTA whose record names match `target_name`.
-#' @param out Optional output TSV path. If `NULL`, results are returned without
-#'   writing.
-#' @param overwrite If `FALSE` (default), refuse to overwrite `out`.
+#' @param output Optional output TSV path. If `NULL`, results are returned
+#'   without writing.
+#' @param overwrite If `FALSE` (default), refuse to overwrite `output`.
 #'
 #' @return A tibble of `ref_bed` with a `ref_seq` column.
 #'
 #' @export
 add_ref_seqs_with_targeted_ref_fasta <- function(ref_bed,
                                                  target_fasta,
-                                                 out = NULL,
+                                                 output = NULL,
                                                  overwrite = FALSE) {
   options(dplyr.summarise.inform = FALSE)
-  stop_if_output_exists(out, overwrite)
+  stop_if_output_exists(output, overwrite)
   check_suggested_pkg(
     "Biostrings",
     "reading targeted reference FASTA via add_ref_seqs_with_targeted_ref_fasta()"
@@ -62,8 +62,8 @@ add_ref_seqs_with_targeted_ref_fasta <- function(ref_bed,
   }
   bed <- dplyr::left_join(bed, dna_tab, by = "target_name")
 
-  if (!is.null(out)) {
-    readr::write_tsv(bed, out)
+  if (!is.null(output)) {
+    readr::write_tsv(bed, output)
   }
   bed
 }

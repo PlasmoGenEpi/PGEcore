@@ -6,8 +6,8 @@
 \title{Filter SNPs to highest-diversity loci spaced by a minimum distance}
 \usage{
 filter_to_highest_diversity_independent_snp_call(
-  snp_table_in,
-  snp_table_out = NULL,
+  snp_calls,
+  snp_calls_output = NULL,
   mindist_between_snps = 10000,
   select_target_names = NULL,
   select_specimen_names = NULL,
@@ -17,11 +17,11 @@ filter_to_highest_diversity_independent_snp_call(
 )
 }
 \arguments{
-\item{snp_table_in}{Path to a SNP TSV, or a data frame, with columns
+\item{snp_calls}{Path to a SNP TSV, or a data frame, with columns
 \code{specimen_name}, \code{target_name}, \code{chrom}, \code{pos}, \code{snp_name}, \code{ref_base},
 \code{seq_base}, \code{reads}, and \code{is_biallelic}.}
 
-\item{snp_table_out}{Optional output TSV path.}
+\item{snp_calls_output}{Optional output TSV path.}
 
 \item{mindist_between_snps}{Minimum distance between kept SNPs (default
 \code{10000}).}
@@ -32,7 +32,7 @@ one-column TSV, or character vector of targets to keep.}
 \item{select_specimen_names}{Optional comma-separated names, path to a
 one-column TSV, or character vector of specimens to keep.}
 
-\item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{snp_table_out}.}
+\item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{snp_calls_output}.}
 
 \item{only_biallelic}{If \code{TRUE}, restrict to rows where \code{is_biallelic} is
 \code{TRUE}.}

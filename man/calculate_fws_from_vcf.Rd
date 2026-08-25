@@ -5,16 +5,16 @@
 \title{Calculate within-host Fws from a VCF via moimix}
 \usage{
 calculate_fws_from_vcf(
-  input,
+  vcf,
   output = "fws_result.tsv",
   gds = NULL,
   population_name = NULL,
-  force = FALSE,
+  overwrite = FALSE,
   verbose = FALSE
 )
 }
 \arguments{
-\item{input}{Input VCF path (\code{.vcf} or \code{.vcf.gz}).}
+\item{vcf}{Input VCF path (\code{.vcf} or \code{.vcf.gz}).}
 
 \item{output}{Output TSV path. Defaults to \code{"fws_result.tsv"}.}
 
@@ -23,7 +23,7 @@ calculate_fws_from_vcf(
 
 \item{population_name}{Optional population label added as a column.}
 
-\item{force}{If \code{TRUE}, rebuild the GDS even when it is up to date.}
+\item{overwrite}{If \code{TRUE}, rebuild the GDS even when it is up to date.}
 
 \item{verbose}{If \code{TRUE}, print progress messages.}
 }
@@ -33,8 +33,8 @@ A tibble with \code{specimen_name}, \code{fws}, and optionally
 }
 \description{
 Converts the VCF to GDS with \strong{SeqArray} when the GDS is missing, older
-than the VCF, or \code{force} is \code{TRUE}, then runs \code{moimix::getFws()}. Requires
-\strong{moimix} and \strong{SeqArray} (Suggests). \code{moimix} is installed from GitHub
-(\code{bahlolab/moimix}), not CRAN. The VCF must carry per-sample allelic depths
-(\code{FORMAT/AD}).
+than the VCF, or \code{overwrite} is \code{TRUE}, then runs \code{moimix::getFws()}.
+Requires \strong{moimix} and \strong{SeqArray} (Suggests). \code{moimix} is installed from
+GitHub (\code{bahlolab/moimix}), not CRAN. The VCF must carry per-sample allelic
+depths (\code{FORMAT/AD}).
 }

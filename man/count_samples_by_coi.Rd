@@ -4,10 +4,10 @@
 \alias{count_samples_by_coi}
 \title{Count specimens by complexity of infection (COI)}
 \usage{
-count_samples_by_coi(coi_calls, output = NULL)
+count_samples_by_coi(coi_table, output = NULL)
 }
 \arguments{
-\item{coi_calls}{Path to a TSV with columns \code{specimen_name} and \code{coi}, or a
+\item{coi_table}{Path to a TSV with columns \code{specimen_name} and \code{coi}, or a
 data frame with those columns.}
 
 \item{output}{Optional output TSV path. If \code{NULL}, results are returned

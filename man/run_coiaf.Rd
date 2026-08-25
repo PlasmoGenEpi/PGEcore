@@ -4,14 +4,14 @@
 \alias{run_coiaf}
 \title{Estimate complexity of infection (COI) using coiaf}
 \usage{
-run_coiaf(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25)
+run_coiaf(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25)
 }
 \arguments{
-\item{snp_data}{A data frame with columns \code{specimen_name}, \code{snp_name},
+\item{snp_calls}{A data frame with columns \code{specimen_name}, \code{snp_name},
 \code{reads}, and \code{seq_base}.}
 
 \item{plmaf}{Optional data frame with columns \code{snp_name}, \code{seq_base}, and
-\code{plmaf}. If \code{NULL}, PLMAF is calculated from \code{snp_data}.}
+\code{plmaf}. If \code{NULL}, PLMAF is calculated from \code{snp_calls}.}
 
 \item{seq_error}{Sequencing error rate (default: \code{0.01}).}
 

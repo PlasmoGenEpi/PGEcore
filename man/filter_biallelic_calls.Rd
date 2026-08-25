@@ -5,19 +5,19 @@
 \title{Filter amino acid calls to biallelic loci}
 \usage{
 filter_biallelic_calls(
-  amino_acid_calls,
-  out = NULL,
-  out_nonbiallelic = NULL,
+  aa_calls,
+  output = NULL,
+  nonbiallelic_output = NULL,
   overwrite = FALSE
 )
 }
 \arguments{
-\item{amino_acid_calls}{Path to a TSV, or a data frame, with columns
+\item{aa_calls}{Path to a TSV, or a data frame, with columns
 \code{gene_id}, \code{aa_position}, \code{ref_aa}, and \code{aa}.}
 
-\item{out}{Optional path for the biallelic output TSV.}
+\item{output}{Optional path for the biallelic output TSV.}
 
-\item{out_nonbiallelic}{Optional path for loci with more than two alleles.}
+\item{nonbiallelic_output}{Optional path for loci with more than two alleles.}
 
 \item{overwrite}{If \code{FALSE} (default), refuse to overwrite existing outputs.}
 }
@@ -30,7 +30,7 @@ Keeps loci (\code{gene_id}, \code{aa_position}, \code{ref_aa}) with at most two 
 \code{aa} alleles. Optionally writes non-biallelic loci to a second file.
 }
 \examples{
-path <- system.file("extdata", "example_amino_acid_calls.tsv", package = "PGEcore")
+path <- system.file("extdata", "example_aa_calls.tsv", package = "PGEcore")
 filter_biallelic_calls(path)
 
 }

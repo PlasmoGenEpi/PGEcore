@@ -7,11 +7,11 @@
 FreqEstimationModel_wrapper(
   aa_calls,
   coi,
-  groups,
+  loci_groups,
   mlaf_output,
   threads = 1L,
   seed = 1L,
-  num_chains = 3L,
+  n_chains = 3L,
   convergence_output = "convergence_diag.tsv"
 )
 }
@@ -20,7 +20,7 @@ FreqEstimationModel_wrapper(
 
 \item{coi}{Path to COI TSV, or a numeric average COI.}
 
-\item{groups}{Path to group TSV (\code{group_id}, \code{gene_id}, \code{aa_position}).}
+\item{loci_groups}{Path to group TSV (\code{group_id}, \code{gene_id}, \code{aa_position}).}
 
 \item{mlaf_output}{Output TSV path.}
 
@@ -28,7 +28,7 @@ FreqEstimationModel_wrapper(
 
 \item{seed}{Random seed.}
 
-\item{num_chains}{Number of MCMC chains to run per group. At least two are
+\item{n_chains}{Number of MCMC chains to run per group. At least two are
 needed to compute the Gelman-Rubin R-hat convergence diagnostic.}
 
 \item{convergence_output}{Output TSV path for per-group MCMC convergence

@@ -6,7 +6,7 @@
 \usage{
 snpslice_wrapper(
   allele_table,
-  loci_groups_input,
+  loci_groups,
   mlaf_output,
   coi_output,
   convergence_output = "convergence_diag.tsv",
@@ -24,7 +24,7 @@ snpslice_wrapper(
   gap = NULL,
   estimator = "final_sample",
   n_chains = 3L,
-  n_cores = 1L,
+  threads = 1L,
   verbose = FALSE,
   seed = 1L
 )
@@ -32,7 +32,7 @@ snpslice_wrapper(
 \arguments{
 \item{allele_table}{Path to allele TSV with counts.}
 
-\item{loci_groups_input}{Path to loci-group TSV.}
+\item{loci_groups}{Path to loci-group TSV.}
 
 \item{mlaf_output}{Path for multilocus allele-frequency TSV.}
 
@@ -66,7 +66,7 @@ posterior mean, which also yields uncertainty columns).}
 \item{n_chains}{Number of independent MCMC chains. More than one is required
 for the Gelman-Rubin R-hat diagnostic.}
 
-\item{n_cores}{Cores used to run chains simultaneously (capped at \code{n_chains}).}
+\item{threads}{Cores used to run chains simultaneously (capped at \code{n_chains}).}
 
 \item{verbose}{Verbose SNP-Slice output.}
 

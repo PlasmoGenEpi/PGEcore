@@ -9,8 +9,8 @@ moire_wrapper(
   allow_relatedness = TRUE,
   burnin = 10000L,
   samples_per_chain = 1000L,
-  num_chains = 3L,
-  chains_num_threads = 1L,
+  n_chains = 3L,
+  threads = 1L,
   thin = 1L,
   verbose = FALSE,
   eps_pos_alpha = 1,
@@ -29,11 +29,11 @@ moire_wrapper(
   pt_num_threads = 1L,
   adapt_temp = TRUE,
   max_runtime = Inf,
-  coi_summary = "coi_summary.tsv",
-  he_summary = "he_summary.tsv",
-  allele_freq_summary = "allele_freq_summary.tsv",
-  relatedness_summary = "relatedness_summary.tsv",
-  effective_coi_summary = "effective_coi_summary.tsv",
+  coi_output = "coi_output.tsv",
+  he_output = "he_output.tsv",
+  allele_freq_output = "allele_freq_output.tsv",
+  relatedness_output = "relatedness_output.tsv",
+  effective_coi_output = "effective_coi_output.tsv",
   mcmc_results_output = NULL,
   convergence_output = "convergence_diag.tsv",
   acceptance_rates_output = NULL
@@ -49,11 +49,11 @@ moire_wrapper(
 
 \item{samples_per_chain}{Samples per MCMC chain.}
 
-\item{num_chains}{Number of independent MCMC chains. More than one is
+\item{n_chains}{Number of independent MCMC chains. More than one is
 required to compute the Gelman-Rubin R-hat convergence diagnostic. This is
 distinct from \code{pt_chains} (parallel-tempering rungs within a chain).}
 
-\item{chains_num_threads}{Threads used to run the independent chains in
+\item{threads}{Threads used to run the independent chains in
 parallel (MOIRe's \code{num_cores}).}
 
 \item{thin}{Thinning interval for the MCMC sampler; only every \code{thin}-th
@@ -83,15 +83,15 @@ sample is retained.}
 
 \item{max_runtime}{Maximum MCMC runtime.}
 
-\item{coi_summary}{Output path for COI summary TSV.}
+\item{coi_output}{Output path for COI summary TSV.}
 
-\item{he_summary}{Output path for He summary TSV.}
+\item{he_output}{Output path for He summary TSV.}
 
-\item{allele_freq_summary}{Output path for allele-frequency summary TSV.}
+\item{allele_freq_output}{Output path for allele-frequency summary TSV.}
 
-\item{relatedness_summary}{Output path for relatedness summary TSV.}
+\item{relatedness_output}{Output path for relatedness summary TSV.}
 
-\item{effective_coi_summary}{Output path for effective COI summary TSV.}
+\item{effective_coi_output}{Output path for effective COI summary TSV.}
 
 \item{mcmc_results_output}{Optional RDS path for full MCMC results.}
 

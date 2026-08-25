@@ -8,19 +8,19 @@
 #' @param ref_bed Path to a TSV BED table with a header, or a data frame, with
 #'   columns `#chrom`, `start`, `end`, `target_name`, `length`, and `strand`.
 #' @param genome_fasta Path to a genome FASTA.
-#' @param out Optional output TSV path. If `NULL`, results are returned without
-#'   writing.
-#' @param overwrite If `FALSE` (default), refuse to overwrite `out`.
+#' @param output Optional output TSV path. If `NULL`, results are returned
+#'   without writing.
+#' @param overwrite If `FALSE` (default), refuse to overwrite `output`.
 #'
 #' @return A tibble of `ref_bed` with a `ref_seq` column.
 #'
 #' @export
 add_ref_seqs_with_full_genome_ref_fasta <- function(ref_bed,
                                                     genome_fasta,
-                                                    out = NULL,
+                                                    output = NULL,
                                                     overwrite = FALSE) {
   options(dplyr.summarise.inform = FALSE)
-  stop_if_output_exists(out, overwrite)
+  stop_if_output_exists(output, overwrite)
   check_suggested_pkg(
     "Biostrings",
     "extracting intervals from a genome FASTA via add_ref_seqs_with_full_genome_ref_fasta()"
@@ -68,8 +68,8 @@ add_ref_seqs_with_full_genome_ref_fasta <- function(ref_bed,
     bed$ref_seq[row] <- unname(as.character(ref_seq))
   }
 
-  if (!is.null(out)) {
-    readr::write_tsv(bed, out)
+  if (!is.null(output)) {
+    readr::write_tsv(bed, output)
   }
   bed
 }

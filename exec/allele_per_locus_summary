@@ -12,6 +12,14 @@ opts <- list(
       "TSV containing allele present/absent per specimen, with the ",
       "columns: specimen_name, target_name, seq"
     )
+  ),
+  make_option(
+    "--output",
+    default = "allele_summary_by_target.tsv",
+    help = paste0(
+      "Output TSV path for the per-locus allele summary. ",
+      "Default: allele_summary_by_target.tsv"
+    )
   )
 )
 
@@ -21,4 +29,9 @@ if (is.null(arg$allele_table) ||
   stop("Missing required arguments: --allele_table", call. = FALSE)
 }
 
-invisible(allele_per_locus_summary(allele_table = arg$allele_table))
+invisible(
+  allele_per_locus_summary(
+    allele_table = arg$allele_table,
+    output = arg$output
+  )
+)

@@ -29,7 +29,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--output_directory",
+    "--output_dir",
     help = "the output directory to write results to"
   ),
   make_option(
@@ -64,7 +64,7 @@ missing <- character()
 if (is.null(arg$allele_table)) missing <- c(missing, "--allele_table")
 if (is.null(arg$ref_bed)) missing <- c(missing, "--ref_bed")
 if (is.null(arg$snps_of_interest)) missing <- c(missing, "--snps_of_interest")
-if (is.null(arg$output_directory)) missing <- c(missing, "--output_directory")
+if (is.null(arg$output_dir)) missing <- c(missing, "--output_dir")
 if (length(missing) > 0) {
   stop("Missing required arguments: ", paste(missing, collapse = ", "), call. = FALSE)
 }
@@ -74,7 +74,7 @@ invisible(
     allele_table = arg$allele_table,
     ref_bed = arg$ref_bed,
     snps_of_interest = arg$snps_of_interest,
-    output_directory = arg$output_directory,
+    output_dir = arg$output_dir,
     select_target_names = arg$select_target_names,
     select_specimen_names = arg$select_specimen_names,
     overwrite_dir = isTRUE(arg$overwrite_dir),

@@ -126,9 +126,9 @@ estimate_coi_naive_from_alleles <- function(df_alleles,
 #' `method = "quantile_method"`, the value at `quantile_threshold` is used
 #' instead (scaling naturally with the number of observed allele rows).
 #'
-#' @param input_path Path to a TSV of allele calls with columns
+#' @param allele_table Path to a TSV of allele calls with columns
 #'   `specimen_name`, `target_name`, `reads`, and `seq`.
-#' @param output_path Optional path to write a TSV with columns
+#' @param output Optional path to write a TSV with columns
 #'   `specimen_name` and `coi`. If `NULL`, results are returned without writing.
 #' @param method One of `"integer_method"` or `"quantile_method"`.
 #'   Default: `"integer_method"`.
@@ -147,18 +147,18 @@ estimate_coi_naive_from_alleles <- function(df_alleles,
 #' estimate_coi_naive(allele_path, method = "integer_method")
 #'
 #' @export
-estimate_coi_naive <- function(input_path,
-                               output_path = NULL,
+estimate_coi_naive <- function(allele_table,
+                               output = NULL,
                                method = "integer_method",
                                integer_threshold = 1,
                                quantile_threshold = 0.05) {
-  stopifnot(is.character(input_path), length(input_path) == 1L)
-  if (!file.exists(input_path)) {
-    stop(input_path, " does not exist", call. = FALSE)
+  stopifnot(is.character(allele_table), length(allele_table) == 1L)
+  if (!file.exists(allele_table)) {
+    stop(allele_table, " does not exist", call. = FALSE)
   }
 
   df_alleles <- readr::read_tsv(
-    input_path,
+    allele_table,
     col_types = readr::cols(
       specimen_name = readr::col_character(),
       .default = readr::col_character(),
@@ -174,10 +174,10 @@ estimate_coi_naive <- function(input_path,
     quantile_threshold = quantile_threshold
   )
 
-  if (!is.null(output_path)) {
+  if (!is.null(output)) {
     check_coi_format(df_coi)
-    stopifnot(is.character(output_path), length(output_path) == 1L)
-    readr::write_tsv(df_coi, output_path)
+    stopifnot(is.character(output), length(output) == 1L)
+    readr::write_tsv(df_coi, output)
   }
 
   df_coi

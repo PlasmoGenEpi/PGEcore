@@ -22,8 +22,8 @@ opts <- list(
     )
   ),
   make_option(
-    "--out",
-    help = "the out file to write to"
+    "--output",
+    help = "the output file to write to"
   ),
   make_option(
     "--overwrite",
@@ -42,8 +42,8 @@ if (is.null(arg$ref_bed)) {
 if (is.null(arg$target_fasta)) {
   missing <- c(missing, "--target_fasta")
 }
-if (is.null(arg$out)) {
-  missing <- c(missing, "--out")
+if (is.null(arg$output)) {
+  missing <- c(missing, "--output")
 }
 if (length(missing) > 0) {
   stop(
@@ -57,7 +57,7 @@ invisible(
   add_ref_seqs_with_targeted_ref_fasta(
     ref_bed = arg$ref_bed,
     target_fasta = arg$target_fasta,
-    out = arg$out,
+    output = arg$output,
     overwrite = isTRUE(arg$overwrite)
   )
 )

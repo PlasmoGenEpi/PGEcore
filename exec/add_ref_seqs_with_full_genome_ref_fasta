@@ -19,8 +19,8 @@ opts <- list(
     help = "a genome fasta file to extract the ref_seq"
   ),
   make_option(
-    "--out",
-    help = "the out file to write to"
+    "--output",
+    help = "the output file to write to"
   ),
   make_option(
     "--overwrite",
@@ -39,8 +39,8 @@ if (is.null(arg$ref_bed)) {
 if (is.null(arg$genome_fasta)) {
   missing <- c(missing, "--genome_fasta")
 }
-if (is.null(arg$out)) {
-  missing <- c(missing, "--out")
+if (is.null(arg$output)) {
+  missing <- c(missing, "--output")
 }
 if (length(missing) > 0) {
   stop(
@@ -54,7 +54,7 @@ invisible(
   add_ref_seqs_with_full_genome_ref_fasta(
     ref_bed = arg$ref_bed,
     genome_fasta = arg$genome_fasta,
-    out = arg$out,
+    output = arg$output,
     overwrite = isTRUE(arg$overwrite)
   )
 )

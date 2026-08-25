@@ -6,7 +6,7 @@
 \usage{
 dcifer_ibd_wrapper(
   allele_table,
-  btwn_host_rel_output,
+  relatedness_output,
   coi_table = NULL,
   allele_freq_table = NULL,
   specimen_name_col = "specimen_name",
@@ -25,7 +25,7 @@ dcifer_ibd_wrapper(
 \arguments{
 \item{allele_table}{Path to allele TSV.}
 
-\item{btwn_host_rel_output}{Path for relatedness TSV.}
+\item{relatedness_output}{Path for relatedness TSV.}
 
 \item{coi_table}{Optional COI TSV.}
 
@@ -51,7 +51,7 @@ dcifer_ibd_wrapper(
 \item{verbose}{Print parallel worker output.}
 }
 \value{
-The relatedness tibble (also written to \code{btwn_host_rel_output}).
+The relatedness tibble (also written to \code{relatedness_output}).
 }
 \description{
 File-oriented entry point used by the \code{dcifer_ibd_wrapper} CLI. Optional

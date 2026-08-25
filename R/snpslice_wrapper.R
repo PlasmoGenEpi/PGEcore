@@ -66,7 +66,7 @@ create_snpslice_loci_group_input <- function(loci_groups_path,
     !is.na(group_id),
     !is.na(target_name)
   )
-  stop_on_validate_fails(loci_groups, rules, "loci_groups_input")
+  stop_on_validate_fails(loci_groups, rules, "loci_groups")
 
   loci_groups <- split(loci_groups$target_name, loci_groups$group_id)
 
@@ -202,7 +202,7 @@ prepare_snpslice_coi_output <- function(snpslice_res,
 #' argument, and [snp.slicer::convergence_diagnostics()] is required.
 #'
 #' @param allele_table Path to allele TSV with counts.
-#' @param loci_groups_input Path to loci-group TSV.
+#' @param loci_groups Path to loci-group TSV.
 #' @param mlaf_output Path for multilocus allele-frequency TSV.
 #' @param coi_output Path for COI TSV.
 #' @param convergence_output Path for the MCMC convergence-diagnostics TSV, with
@@ -224,14 +224,14 @@ prepare_snpslice_coi_output <- function(snpslice_res,
 #'   posterior mean, which also yields uncertainty columns).
 #' @param n_chains Number of independent MCMC chains. More than one is required
 #'   for the Gelman-Rubin R-hat diagnostic.
-#' @param n_cores Cores used to run chains simultaneously (capped at `n_chains`).
+#' @param threads Cores used to run chains simultaneously (capped at `n_chains`).
 #' @param verbose Verbose SNP-Slice output.
 #' @param seed Random seed.
 #'
 #' @return Invisibly, a list with `mlaf`, `coi`, and `convergence` tibbles.
 #' @export
 snpslice_wrapper <- function(allele_table,
-                             loci_groups_input,
+                             loci_groups,
                              mlaf_output,
                              coi_output,
                              convergence_output = "convergence_diag.tsv",
@@ -249,7 +249,7 @@ snpslice_wrapper <- function(allele_table,
                              gap = NULL,
                              estimator = "final_sample",
                              n_chains = 3L,
-                             n_cores = 1L,
+                             threads = 1L,
                              verbose = FALSE,
                              seed = 1L) {
   check_suggested_pkg("snp.slicer", "SNP-Slice via snpslice_wrapper()")
@@ -257,7 +257,7 @@ snpslice_wrapper <- function(allele_table,
 
   required <- list(
     allele_table = allele_table,
-    loci_groups_input = loci_groups_input,
+    loci_groups = loci_groups,
     mlaf_output = mlaf_output,
     coi_output = coi_output
   )
@@ -287,7 +287,7 @@ snpslice_wrapper <- function(allele_table,
     target_count_col = target_count_col
   )
   loci_groups <- create_snpslice_loci_group_input(
-    loci_groups_input,
+    loci_groups,
     allele_tbl,
     target_name_col = target_name_col
   )
@@ -320,7 +320,7 @@ snpslice_wrapper <- function(allele_table,
     threshold = threshold,
     gap = gap,
     n_chains = n_chains,
-    n_cores = n_cores,
+    n_cores = threads,  # snp.slicer arg name
     seed = seed,
     # store_mcmc is forced on because the convergence diagnostics and the
     # "posterior" estimator both need the retained per-iteration samples.

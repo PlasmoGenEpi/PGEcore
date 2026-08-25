@@ -7,7 +7,7 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    c("-i", "--mlaf_input"),
+    c("-i", "--mlaf"),
     help = paste(
       "TSV containing multi-locus allele frequency data with columns:",
       "group_id, variant, freq. Variant column is in STAVE format."
@@ -30,10 +30,10 @@ opts <- list(
 )
 
 args <- parse_args(OptionParser(option_list = opts))
-if (is.null(args$mlaf_input)) {
-  stop("Missing required arguments: --mlaf_input", call. = FALSE)
+if (is.null(args$mlaf)) {
+  stop("Missing required arguments: --mlaf", call. = FALSE)
 }
 
 invisible(
-  slaf_from_stave_mlaf(mlaf_input = args$mlaf_input, output = args$output)
+  slaf_from_stave_mlaf(mlaf = args$mlaf, output = args$output)
 )

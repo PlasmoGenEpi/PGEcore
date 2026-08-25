@@ -7,7 +7,7 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    "--input_path",
+    "--allele_table",
     type = "character",
     help = paste0(
       "Path to a TSV file containing allele calls, with the columns: specimen_name, ",
@@ -15,7 +15,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--output_path",
+    "--output",
     type = "character",
     help = "Path to write a TSV file containing results, with the columns: specimen_name, coi"
   ),
@@ -63,11 +63,11 @@ opts <- list(
 args <- parse_args(OptionParser(option_list = opts))
 
 missing <- character()
-if (is.null(args$input_path)) {
-  missing <- c(missing, "--input_path")
+if (is.null(args$allele_table)) {
+  missing <- c(missing, "--allele_table")
 }
-if (is.null(args$output_path)) {
-  missing <- c(missing, "--output_path")
+if (is.null(args$output)) {
+  missing <- c(missing, "--output")
 }
 if (length(missing) > 0) {
   stop(
@@ -79,8 +79,8 @@ if (length(missing) > 0) {
 
 invisible(
   estimate_coi_naive(
-    input_path = args$input_path,
-    output_path = args$output_path,
+    allele_table = args$allele_table,
+    output = args$output,
     method = args$method,
     integer_threshold = args$integer_threshold,
     quantile_threshold = args$quantile_threshold

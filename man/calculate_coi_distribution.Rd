@@ -4,10 +4,10 @@
 \alias{calculate_coi_distribution}
 \title{Calculate the distribution of COI values across specimens}
 \usage{
-calculate_coi_distribution(coi_calls)
+calculate_coi_distribution(coi_table)
 }
 \arguments{
-\item{coi_calls}{A data frame with a numeric \code{coi} column.}
+\item{coi_table}{A data frame with a numeric \code{coi} column.}
 }
 \value{
 A tibble with columns \code{coi}, \code{n}, and \code{proportion} for each integer

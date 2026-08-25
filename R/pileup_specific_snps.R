@@ -164,7 +164,7 @@ collapse_snp_allele_table <- function(allele_table_to_collapse,
 #'
 #' Writes `snp_calls.tsv.gz`, `collapsed_snp_calls.tsv.gz`,
 #' `snps_covered_by_target_samples_info.tsv`, and optionally
-#' `allele_table_out_uncallable.tsv` under `output_directory`.
+#' `allele_table_out_uncallable.tsv` under `output_dir`.
 #'
 #' @param allele_table Path or data frame with columns `specimen_name`,
 #'   `target_name`, `reads`, and `seq`.
@@ -173,13 +173,13 @@ collapse_snp_allele_table <- function(allele_table_to_collapse,
 #' @param snps_of_interest Path or data frame with columns `#chrom`, `start`,
 #'   `end`, `name`, `length`, and `strand`. Each SNP must span one base
 #'   (`end - start == 1`).
-#' @param output_directory Directory to write results. Created if missing.
+#' @param output_dir Directory to write results. Created if missing.
 #' @param select_target_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of targets to keep.
 #' @param select_specimen_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of specimens to keep.
 #' @param overwrite_dir If `FALSE` (default), refuse to replace an existing
-#'   `output_directory`.
+#'   `output_dir`.
 #' @param collapse_calls_by_summing If `TRUE`, sum reads across overlapping
 #'   targets; otherwise keep the target with the highest read count.
 #'
@@ -190,7 +190,7 @@ collapse_snp_allele_table <- function(allele_table_to_collapse,
 pileup_specific_snps <- function(allele_table,
                                  ref_bed,
                                  snps_of_interest,
-                                 output_directory,
+                                 output_dir,
                                  select_target_names = NULL,
                                  select_specimen_names = NULL,
                                  overwrite_dir = FALSE,
@@ -198,7 +198,7 @@ pileup_specific_snps <- function(allele_table,
   options(dplyr.summarise.inform = FALSE)
   options(readr.show_col_types = FALSE)
   check_microhap_alignment_pkgs("pileup_specific_snps()")
-  ensure_output_directory(output_directory, overwrite_dir)
+  ensure_output_directory(output_dir, overwrite_dir)
 
   select_targets <- parse_name_list_arg(select_target_names)
   select_specs <- parse_name_list_arg(select_specimen_names)
@@ -376,20 +376,20 @@ pileup_specific_snps <- function(allele_table,
 
   readr::write_tsv(
     allele_table_out,
-    file.path(output_directory, "snp_calls.tsv.gz")
+    file.path(output_dir, "snp_calls.tsv.gz")
   )
   readr::write_tsv(
     collapsed,
-    file.path(output_directory, "collapsed_snp_calls.tsv.gz")
+    file.path(output_dir, "collapsed_snp_calls.tsv.gz")
   )
   readr::write_tsv(
     snps_of_interest_out,
-    file.path(output_directory, "snps_covered_by_target_samples_info.tsv")
+    file.path(output_dir, "snps_covered_by_target_samples_info.tsv")
   )
   if (nrow(uncallable) > 0) {
     readr::write_tsv(
       uncallable,
-      file.path(output_directory, "allele_table_out_uncallable.tsv")
+      file.path(output_dir, "allele_table_out_uncallable.tsv")
     )
   }
 

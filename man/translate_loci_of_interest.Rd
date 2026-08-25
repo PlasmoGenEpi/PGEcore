@@ -8,7 +8,7 @@ translate_loci_of_interest(
   allele_table,
   ref_bed,
   loci_of_interest,
-  output_directory,
+  output_dir,
   select_target_names = NULL,
   select_specimen_names = NULL,
   overwrite_dir = FALSE,
@@ -27,7 +27,7 @@ translate_loci_of_interest(
 \code{end}, \code{name}, \code{length}, \code{strand}, \code{gene}, \code{gene_id}, and \code{aa_position}.
 Each locus must have \code{length == 3}.}
 
-\item{output_directory}{Directory to write results. Created if missing.}
+\item{output_dir}{Directory to write results. Created if missing.}
 
 \item{select_target_names}{Optional comma-separated names, path to a
 one-column TSV, or character vector of targets to keep.}
@@ -36,7 +36,7 @@ one-column TSV, or character vector of targets to keep.}
 one-column TSV, or character vector of specimens to keep.}
 
 \item{overwrite_dir}{If \code{FALSE} (default), refuse to replace an existing
-\code{output_directory}.}
+\code{output_dir}.}
 
 \item{output_stop_codons}{If \code{FALSE} (default), treat \code{*} as untranslatable
 (along with \code{X}).}
@@ -58,5 +58,5 @@ translates it. Requires \strong{Biostrings} and \strong{pwalign} (Suggests).
 Writes \code{loci_of_interest_for_target_for_microhap.tsv.gz},
 \code{amino_acid_calls.tsv.gz}, \code{collapsed_amino_acid_calls.tsv.gz},
 \code{loci_covered_by_target_samples_info.tsv}, and optionally
-\code{allele_table_out_untranslatable.tsv} under \code{output_directory}.
+\code{allele_table_out_untranslatable.tsv} under \code{output_dir}.
 }

@@ -7,10 +7,10 @@
 #' The **coiaf** package is an optional dependency (Suggests). It is not
 #' installed automatically with PGEcore.
 #'
-#' @param snp_data A data frame with columns `specimen_name`, `snp_name`,
+#' @param snp_calls A data frame with columns `specimen_name`, `snp_name`,
 #'   `reads`, and `seq_base`.
 #' @param plmaf Optional data frame with columns `snp_name`, `seq_base`, and
-#'   `plmaf`. If `NULL`, PLMAF is calculated from `snp_data`.
+#'   `plmaf`. If `NULL`, PLMAF is calculated from `snp_calls`.
 #' @param seq_error Sequencing error rate (default: `0.01`).
 #' @param max_coi Maximum COI to consider (default: `25`).
 #'
@@ -18,11 +18,11 @@
 #'   `coi_variant`.
 #'
 #' @export
-run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
+run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
   check_suggested_pkg("coiaf", "COI estimation via run_coiaf()")
 
   validate_required_columns(
-    snp_data,
+    snp_calls,
     c("specimen_name", "snp_name", "reads", "seq_base"),
     "SNP data"
   )
@@ -42,7 +42,7 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
 
   message("Processing SNP data...")
 
-  complete_snp_data <- snp_data |>
+  complete_snp_data <- snp_calls |>
     tidyr::complete(
       specimen_name,
       tidyr::nesting(snp_name, seq_base),
@@ -147,7 +147,7 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
 #'
 #' File-oriented entry point used by the `coiaf_wrapper` CLI.
 #'
-#' @param snp_data Path to SNP data TSV.
+#' @param snp_calls Path to SNP data TSV.
 #' @param output Path for output TSV.
 #' @param plmaf Optional path to PLMAF TSV.
 #' @param seq_error Sequencing error rate (default: `0.01`).
@@ -155,13 +155,13 @@ run_coiaf <- function(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
 #'
 #' @return The result tibble (also written to `output`).
 #' @export
-coiaf_wrapper <- function(snp_data,
+coiaf_wrapper <- function(snp_calls,
                           output,
                           plmaf = NULL,
                           seq_error = 0.01,
                           max_coi = 25) {
-  if (!file.exists(snp_data)) {
-    stop("SNP data file not found: ", snp_data, call. = FALSE)
+  if (!file.exists(snp_calls)) {
+    stop("SNP data file not found: ", snp_calls, call. = FALSE)
   }
   if (!is.null(plmaf) && !file.exists(plmaf)) {
     stop("PLMAF file not found: ", plmaf, call. = FALSE)
@@ -173,7 +173,7 @@ coiaf_wrapper <- function(snp_data,
   }
 
   snp_tbl <- readr::read_tsv(
-    snp_data,
+    snp_calls,
     show_col_types = FALSE,
     col_types = readr::cols(specimen_name = readr::col_character())
   )
@@ -184,7 +184,7 @@ coiaf_wrapper <- function(snp_data,
   }
 
   results <- run_coiaf(
-    snp_data = snp_tbl,
+    snp_calls = snp_tbl,
     plmaf = plmaf_tbl,
     seq_error = seq_error,
     max_coi = max_coi

@@ -21,7 +21,7 @@ read_in_amino_acid_calls <- function(amino_acid_calls_fnp) {
     !is.na(ref_aa),
     !is.na(aa)
   )
-  stop_on_validate_fails(amino_acid_calls, rules, "amino_acid_calls")
+  stop_on_validate_fails(amino_acid_calls, rules, "aa_calls")
   amino_acid_calls
 }
 
@@ -30,44 +30,44 @@ read_in_amino_acid_calls <- function(amino_acid_calls_fnp) {
 #' Keeps loci (`gene_id`, `aa_position`, `ref_aa`) with at most two distinct
 #' `aa` alleles. Optionally writes non-biallelic loci to a second file.
 #'
-#' @param amino_acid_calls Path to a TSV, or a data frame, with columns
+#' @param aa_calls Path to a TSV, or a data frame, with columns
 #'   `gene_id`, `aa_position`, `ref_aa`, and `aa`.
-#' @param out Optional path for the biallelic output TSV.
-#' @param out_nonbiallelic Optional path for loci with more than two alleles.
+#' @param output Optional path for the biallelic output TSV.
+#' @param nonbiallelic_output Optional path for loci with more than two alleles.
 #' @param overwrite If `FALSE` (default), refuse to overwrite existing outputs.
 #'
 #' @return A list with tibbles `biallelic` and `nonbiallelic`. Each includes an
 #'   `allele_calls` column with the distinct allele count per locus.
 #'
 #' @examples
-#' path <- system.file("extdata", "example_amino_acid_calls.tsv", package = "PGEcore")
+#' path <- system.file("extdata", "example_aa_calls.tsv", package = "PGEcore")
 #' filter_biallelic_calls(path)
 #'
 #' @export
-filter_biallelic_calls <- function(amino_acid_calls,
-                                   out = NULL,
-                                   out_nonbiallelic = NULL,
+filter_biallelic_calls <- function(aa_calls,
+                                   output = NULL,
+                                   nonbiallelic_output = NULL,
                                    overwrite = FALSE) {
   options(dplyr.summarise.inform = FALSE)
 
-  if (is.character(amino_acid_calls) && length(amino_acid_calls) == 1L) {
-    if (!file.exists(amino_acid_calls)) {
-      stop(amino_acid_calls, " does not exist", call. = FALSE)
+  if (is.character(aa_calls) && length(aa_calls) == 1L) {
+    if (!file.exists(aa_calls)) {
+      stop(aa_calls, " does not exist", call. = FALSE)
     }
-    aa_calls <- read_in_amino_acid_calls(amino_acid_calls)
-  } else if (is.data.frame(amino_acid_calls)) {
+    aa_calls <- read_in_amino_acid_calls(aa_calls)
+  } else if (is.data.frame(aa_calls)) {
     validate_required_columns(
-      amino_acid_calls,
+      aa_calls,
       c("gene_id", "aa_position", "ref_aa", "aa"),
-      "amino_acid_calls"
+      "aa_calls"
     )
-    aa_calls <- tibble::as_tibble(amino_acid_calls)
+    aa_calls <- tibble::as_tibble(aa_calls)
   } else {
-    stop("`amino_acid_calls` must be a file path or a data frame.", call. = FALSE)
+    stop("`aa_calls` must be a file path or a data frame.", call. = FALSE)
   }
 
-  stop_if_output_exists(out, overwrite)
-  stop_if_output_exists(out_nonbiallelic, overwrite)
+  stop_if_output_exists(output, overwrite)
+  stop_if_output_exists(nonbiallelic_output, overwrite)
 
   aa_calls <- aa_calls |>
     dplyr::group_by(.data$gene_id, .data$aa_position, .data$ref_aa) |>
@@ -77,11 +77,11 @@ filter_biallelic_calls <- function(amino_acid_calls,
   biallelic <- dplyr::filter(aa_calls, .data$allele_calls <= 2)
   nonbiallelic <- dplyr::filter(aa_calls, .data$allele_calls > 2)
 
-  if (!is.null(out)) {
-    readr::write_tsv(biallelic, out)
+  if (!is.null(output)) {
+    readr::write_tsv(biallelic, output)
   }
-  if (!is.null(out_nonbiallelic)) {
-    readr::write_tsv(nonbiallelic, out_nonbiallelic)
+  if (!is.null(nonbiallelic_output)) {
+    readr::write_tsv(nonbiallelic, nonbiallelic_output)
   }
 
   list(biallelic = biallelic, nonbiallelic = nonbiallelic)

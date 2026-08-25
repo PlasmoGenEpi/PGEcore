@@ -71,7 +71,7 @@ test_that("dcifer_slaf_wrapper integration skips without dcifer", {
 
 test_that("dcifer_ibd_wrapper validates required paths", {
   expect_error(
-    dcifer_ibd_wrapper(allele_table = NULL, btwn_host_rel_output = "x.tsv"),
+    dcifer_ibd_wrapper(allele_table = NULL, relatedness_output = "x.tsv"),
     "required|dcifer|foreach"
   )
 })
@@ -96,7 +96,7 @@ test_that("dcifer_ibd_wrapper integration skips without dcifer", {
   readr::write_tsv(dat, tmp)
   res <- dcifer_ibd_wrapper(
     allele_table = tmp,
-    btwn_host_rel_output = out,
+    relatedness_output = out,
     threads = 1L
   )
   expect_true(file.exists(out))
@@ -109,7 +109,7 @@ test_that("snpslice_wrapper validates required arguments", {
   expect_error(
     snpslice_wrapper(
       allele_table = NULL,
-      loci_groups_input = "x",
+      loci_groups = "x",
       mlaf_output = "y",
       coi_output = "z"
     ),
@@ -121,7 +121,7 @@ test_that("snpslice_wrapper rejects an unknown estimator", {
   expect_error(
     snpslice_wrapper(
       allele_table = "a",
-      loci_groups_input = "x",
+      loci_groups = "x",
       mlaf_output = "y",
       coi_output = "z",
       estimator = "mcmc"
@@ -134,7 +134,7 @@ test_that("snpslice_wrapper integration skips without snp.slicer", {
   skip_if_not_installed("snp.slicer")
   skip_if_not_installed("variantstring")
 
-  aa <- system.file("extdata", "example2_amino_acid_calls.tsv", package = "PGEcore")
+  aa <- system.file("extdata", "example2_aa_calls.tsv", package = "PGEcore")
   lg <- system.file("extdata", "example_loci_groups.tsv", package = "PGEcore")
   skip_if_not(nzchar(aa) && file.exists(aa))
   skip_if_not(nzchar(lg) && file.exists(lg))
@@ -155,7 +155,7 @@ test_that("FreqEstimationModel_wrapper validates required arguments", {
     FreqEstimationModel_wrapper(
       aa_calls = NULL,
       coi = 1,
-      groups = "g",
+      loci_groups = "g",
       mlaf_output = "o"
     ),
     "required|FreqEstimationModel|variantstring"
@@ -179,7 +179,7 @@ test_that("FreqEstimationModel_wrapper integration skips without FEM", {
   skip_if_not_installed("foreach")
   skip_if_not_installed("doMC")
 
-  aa <- system.file("extdata", "example_amino_acid_calls.tsv", package = "PGEcore")
+  aa <- system.file("extdata", "example_aa_calls.tsv", package = "PGEcore")
   groups <- system.file("extdata", "example_loci_groups.tsv", package = "PGEcore")
   skip_if_not(nzchar(aa) && file.exists(aa))
   skip_if_not(nzchar(groups) && file.exists(groups))

@@ -4,10 +4,10 @@
 \alias{slaf_from_stave_mlaf}
 \title{Convert STAVE multi-locus allele frequencies to single-locus frequencies}
 \usage{
-slaf_from_stave_mlaf(mlaf_input, output = NULL)
+slaf_from_stave_mlaf(mlaf, output = NULL)
 }
 \arguments{
-\item{mlaf_input}{Path to an MLAF TSV, or a data frame, with columns
+\item{mlaf}{Path to an MLAF TSV, or a data frame, with columns
 \code{group_id}, \code{variant}, and \code{freq}.}
 
 \item{output}{Optional output TSV path. If \code{NULL}, results are returned

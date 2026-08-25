@@ -4,10 +4,10 @@
 \alias{prepare_input_4_allele_table}
 \title{Prepare allele-table input for the Incomplete Data Model}
 \usage{
-prepare_input_4_allele_table(allele_table_input)
+prepare_input_4_allele_table(allele_table)
 }
 \arguments{
-\item{allele_table_input}{Path to allele TSV.}
+\item{allele_table}{Path to allele TSV.}
 }
 \value{
 Tibble with \code{specimen_name}, \code{locus}, \code{variants}.

@@ -9,7 +9,7 @@ per_locus_popgen_summary(
   specimen_name_col = "specimen_name",
   target_name_col = "target_name",
   target_value_col = "seq",
-  out = "per_locus_popgen_summary.tsv",
+  output = "per_locus_popgen_summary.tsv",
   msa_method = "Muscle"
 )
 }
@@ -22,7 +22,7 @@ per_locus_popgen_summary(
 
 \item{target_value_col}{Allele/sequence column name.}
 
-\item{out}{Optional output TSV path. Defaults to
+\item{output}{Optional output TSV path. Defaults to
 \code{"per_locus_popgen_summary.tsv"}. If \code{NULL}, results are returned without
 writing.}
 

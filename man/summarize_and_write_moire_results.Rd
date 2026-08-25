@@ -7,11 +7,11 @@
 summarize_and_write_moire_results(
   moire_object,
   mcmc_results,
-  coi_summary_o,
-  he_summary_o,
-  allele_freq_summary_o,
-  relatedness_summary_o,
-  effective_coi_summary_o
+  coi_output,
+  he_output,
+  allele_freq_output,
+  relatedness_output,
+  effective_coi_output
 )
 }
 \description{

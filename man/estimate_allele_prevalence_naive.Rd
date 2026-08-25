@@ -6,7 +6,7 @@
 \usage{
 estimate_allele_prevalence_naive(
   aa_calls = NULL,
-  mh_calls = NULL,
+  allele_table = NULL,
   output = NULL
 )
 }
@@ -14,7 +14,7 @@ estimate_allele_prevalence_naive(
 \item{aa_calls}{Optional path to a TSV of amino acid calls with columns
 \code{specimen_name}, \code{gene_id}, \code{aa_position}, and \code{aa}.}
 
-\item{mh_calls}{Optional path to a TSV of microhaplotype genotypes with
+\item{allele_table}{Optional path to a TSV of microhaplotype genotypes with
 columns \code{specimen_name}, \code{target_name}, and \code{seq}.}
 
 \item{output}{Optional output TSV path. If \code{NULL}, results are returned
@@ -26,12 +26,12 @@ A tibble of allele prevalences. For amino acid input: \code{variant},
 \code{target_name}, \code{seq}, \code{prev}, \code{sample_count}, \code{sample_total}.
 }
 \description{
-Exactly one of \code{aa_calls} or \code{mh_calls} must be provided. Prevalence is the
+Exactly one of \code{aa_calls} or \code{allele_table} must be provided. Prevalence is the
 fraction of specimens carrying each allele at a locus.
 }
 \examples{
 aa_path <- system.file(
-  "extdata", "example_amino_acid_calls.tsv",
+  "extdata", "example_aa_calls.tsv",
   package = "PGEcore"
 )
 estimate_allele_prevalence_naive(aa_calls = aa_path)

@@ -6,7 +6,7 @@
 \usage{
 estimate_allele_frequency_naive(
   aa_calls = NULL,
-  mh_calls = NULL,
+  allele_table = NULL,
   method = "presence_absence",
   output = NULL
 )
@@ -15,7 +15,7 @@ estimate_allele_frequency_naive(
 \item{aa_calls}{Optional path to a TSV of amino acid calls with columns
 \code{specimen_name}, \code{gene_id}, \code{aa_position}, \code{aa}, and \code{reads}.}
 
-\item{mh_calls}{Optional path to a TSV of microhaplotype genotypes with
+\item{allele_table}{Optional path to a TSV of microhaplotype genotypes with
 columns \code{specimen_name}, \code{target_name}, \code{seq}, and \code{reads}.}
 
 \item{method}{Estimation method: \code{"presence_absence"} (default) or
@@ -31,13 +31,13 @@ microhaplotype input columns include \code{target_name}, \code{seq}, and \code{f
 (plus count columns for \code{presence_absence}).
 }
 \description{
-Exactly one of \code{aa_calls} or \code{mh_calls} must be provided. Frequency is
+Exactly one of \code{aa_calls} or \code{allele_table} must be provided. Frequency is
 estimated either from within-sample read-count proportions
 (\code{read_count_prop}) or from presence/absence (\code{presence_absence}).
 }
 \examples{
 aa_path <- system.file(
-  "extdata", "example_amino_acid_calls.tsv",
+  "extdata", "example_aa_calls.tsv",
   package = "PGEcore"
 )
 estimate_allele_frequency_naive(aa_calls = aa_path)

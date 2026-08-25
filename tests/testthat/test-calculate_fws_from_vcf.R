@@ -6,22 +6,22 @@ test_that("derive_gds_path replaces vcf suffixes", {
   expect_equal(derive_gds_path("x.vcf", "custom.gds"), "custom.gds")
 })
 
-test_that("gds_needs_conversion respects force and mtimes", {
+test_that("gds_needs_conversion respects overwrite and mtimes", {
   vcf <- tempfile(fileext = ".vcf")
   gds <- tempfile(fileext = ".gds")
   on.exit(unlink(c(vcf, gds)), add = TRUE)
   writeLines("##fileformat=VCFv4.2", vcf)
-  expect_true(gds_needs_conversion(vcf, gds, force = FALSE))
-  expect_true(gds_needs_conversion(vcf, gds, force = TRUE))
+  expect_true(gds_needs_conversion(vcf, gds, overwrite = FALSE))
+  expect_true(gds_needs_conversion(vcf, gds, overwrite = TRUE))
   writeLines("gds", gds)
   Sys.setFileTime(gds, file.mtime(vcf) + 10)
-  expect_false(gds_needs_conversion(vcf, gds, force = FALSE))
-  expect_true(gds_needs_conversion(vcf, gds, force = TRUE))
+  expect_false(gds_needs_conversion(vcf, gds, overwrite = FALSE))
+  expect_true(gds_needs_conversion(vcf, gds, overwrite = TRUE))
 })
 
 test_that("calculate_fws_from_vcf requires SeqArray and moimix", {
   err <- tryCatch(
-    calculate_fws_from_vcf(input = tempfile()),
+    calculate_fws_from_vcf(vcf = tempfile()),
     error = function(e) conditionMessage(e)
   )
   expect_true(grepl("SeqArray|moimix|not found", err))
@@ -32,7 +32,7 @@ test_that("calculate_fws_from_vcf errors when the VCF is missing", {
   skip_if_not_installed("moimix")
   missing <- file.path(tempdir(), "no-such-file.vcf")
   expect_error(
-    calculate_fws_from_vcf(input = missing),
+    calculate_fws_from_vcf(vcf = missing),
     "not found"
   )
 })

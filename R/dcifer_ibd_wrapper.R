@@ -499,7 +499,7 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 #' **iterators**) must be installed separately.
 #'
 #' @param allele_table Path to allele TSV.
-#' @param btwn_host_rel_output Path for relatedness TSV.
+#' @param relatedness_output Path for relatedness TSV.
 #' @param coi_table Optional COI TSV.
 #' @param allele_freq_table Optional allele-frequency TSV.
 #' @param specimen_name_col,target_name_col,target_value_col Column names.
@@ -513,10 +513,10 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 #' @param seed Random seed.
 #' @param verbose Print parallel worker output.
 #'
-#' @return The relatedness tibble (also written to `btwn_host_rel_output`).
+#' @return The relatedness tibble (also written to `relatedness_output`).
 #' @export
 dcifer_ibd_wrapper <- function(allele_table,
-                               btwn_host_rel_output,
+                               relatedness_output,
                                coi_table = NULL,
                                allele_freq_table = NULL,
                                specimen_name_col = "specimen_name",
@@ -536,9 +536,9 @@ dcifer_ibd_wrapper <- function(allele_table,
     "parallel IBD estimation via dcifer_ibd_wrapper()"
   )
 
-  if (is.null(allele_table) || is.null(btwn_host_rel_output)) {
+  if (is.null(allele_table) || is.null(relatedness_output)) {
     stop(
-      "--allele_table and --btwn_host_rel_output are required",
+      "--allele_table and --relatedness_output are required",
       call. = FALSE
     )
   }
@@ -634,6 +634,6 @@ dcifer_ibd_wrapper <- function(allele_table,
     )
   }
 
-  write_dcifer_ibd_output(dcifer_res, btwn_host_rel_output)
+  write_dcifer_ibd_output(dcifer_res, relatedness_output)
   dcifer_res
 }

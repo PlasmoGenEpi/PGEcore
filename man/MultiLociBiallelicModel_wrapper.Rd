@@ -6,7 +6,7 @@
 \usage{
 MultiLociBiallelicModel_wrapper(
   aa_calls,
-  loci_group_table,
+  loci_groups,
   mlaf_output,
   aa_sample_occurence_cut_off = 0
 )
@@ -15,7 +15,7 @@ MultiLociBiallelicModel_wrapper(
 \item{aa_calls}{Path to amino-acid calls TSV (\code{specimen_name}, \code{gene_id},
 \code{aa_position}, \code{ref_aa}, \code{aa}).}
 
-\item{loci_group_table}{Path to loci groups TSV (\code{group_id}, \code{gene_id},
+\item{loci_groups}{Path to loci groups TSV (\code{group_id}, \code{gene_id},
 \code{aa_position}).}
 
 \item{mlaf_output}{Output TSV (\code{group_id}, \code{variant}, \code{freq}).}

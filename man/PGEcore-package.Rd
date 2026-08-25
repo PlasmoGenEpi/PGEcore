@@ -12,6 +12,7 @@ Provides R functions and command-line interfaces for malaria genomics analysis. 
 Useful links:
 \itemize{
   \item \url{https://github.com/PlasmoGenEpi/PGEcore}
+  \item \url{https://plasmogenepi.github.io/PGEcore/}
   \item Report bugs at \url{https://github.com/PlasmoGenEpi/PGEcore/issues}
 }
 

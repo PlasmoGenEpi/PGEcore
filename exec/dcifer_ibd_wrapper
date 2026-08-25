@@ -103,7 +103,7 @@ opts <- list(
     help = "Print detailed process output"
   ),
   make_option(
-    "--btwn_host_rel_output",
+    "--relatedness_output",
     help = paste0(
       "Path of TSV file to contain relatedness results, with the columns: ",
       "specimen_name, btwn_host_rel. Depending on parameters, it may also ",
@@ -114,9 +114,9 @@ opts <- list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
-if (is.null(arg$allele_table) || is.null(arg$btwn_host_rel_output)) {
+if (is.null(arg$allele_table) || is.null(arg$relatedness_output)) {
   stop(
-    "Missing required arguments: --allele_table and --btwn_host_rel_output",
+    "Missing required arguments: --allele_table and --relatedness_output",
     call. = FALSE
   )
 }
@@ -124,7 +124,7 @@ if (is.null(arg$allele_table) || is.null(arg$btwn_host_rel_output)) {
 invisible(
   dcifer_ibd_wrapper(
     allele_table = arg$allele_table,
-    btwn_host_rel_output = arg$btwn_host_rel_output,
+    relatedness_output = arg$relatedness_output,
     coi_table = arg$coi_table,
     allele_freq_table = arg$allele_freq_table,
     specimen_name_col = arg$specimen_name_col,

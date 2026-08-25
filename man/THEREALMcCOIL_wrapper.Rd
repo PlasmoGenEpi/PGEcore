@@ -5,7 +5,7 @@
 \title{Estimate COI and allele frequencies with THEREALMcCOIL}
 \usage{
 THEREALMcCOIL_wrapper(
-  snp_calls_input,
+  snp_calls,
   slaf_output,
   coi_output,
   model = "categorical",
@@ -25,7 +25,7 @@ THEREALMcCOIL_wrapper(
 )
 }
 \arguments{
-\item{snp_calls_input}{TSV of SNP calls with at least \code{specimen_name},
+\item{snp_calls}{TSV of SNP calls with at least \code{specimen_name},
 \code{snp_name}, \code{pos}, \code{seq_base}, \code{reads} (and typically \code{target_name}, \code{he}).}
 
 \item{slaf_output}{Output TSV of allele frequencies (\code{variant}, \code{freq}).}

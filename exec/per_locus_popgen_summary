@@ -34,7 +34,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--out",
+    "--output",
     default = "per_locus_popgen_summary.tsv",
     help = "the output path of the results"
   ),
@@ -60,7 +60,7 @@ invisible(
     specimen_name_col = arg$specimen_name_col,
     target_name_col = arg$target_name_col,
     target_value_col = arg$target_value_col,
-    out = arg$out,
+    output = arg$output,
     msa_method = arg$msa_method
   )
 )

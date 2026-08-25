@@ -145,7 +145,7 @@ calculate_stats_by_target_name <- function(locus_data, msa_method = "Muscle") {
 #' @param specimen_name_col Specimen ID column name.
 #' @param target_name_col Locus column name.
 #' @param target_value_col Allele/sequence column name.
-#' @param out Optional output TSV path. Defaults to
+#' @param output Optional output TSV path. Defaults to
 #'   `"per_locus_popgen_summary.tsv"`. If `NULL`, results are returned without
 #'   writing.
 #' @param msa_method Alignment method: `"Muscle"` (default), `"ClustalW"`, or
@@ -158,7 +158,7 @@ per_locus_popgen_summary <- function(allele_table,
                                      specimen_name_col = "specimen_name",
                                      target_name_col = "target_name",
                                      target_value_col = "seq",
-                                     out = "per_locus_popgen_summary.tsv",
+                                     output = "per_locus_popgen_summary.tsv",
                                      msa_method = "Muscle") {
   options(dplyr.summarise.inform = FALSE)
   if (!(msa_method %in% c("ClustalW", "ClustalOmega", "Muscle"))) {
@@ -180,8 +180,8 @@ per_locus_popgen_summary <- function(allele_table,
   )
   res <- calculate_stats_by_target_name(locus_data, msa_method = msa_method)
   colnames(res) <- tolower(colnames(res))
-  if (!is.null(out)) {
-    readr::write_tsv(res, out)
+  if (!is.null(output)) {
+    readr::write_tsv(res, output)
   }
   res
 }

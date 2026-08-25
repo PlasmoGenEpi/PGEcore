@@ -12,7 +12,7 @@ malariaem_wrapper(
   test_size = "min",
   freq_output = "gt_freq_summary_all.tsv",
   phase_output = "gt_phase_summary_all.tsv",
-  seed = "1"
+  seed = 1L
 )
 }
 \arguments{

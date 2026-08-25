@@ -4,13 +4,7 @@
 \alias{run_FreqEstimationModel}
 \title{Run FreqEstimationModel MCMC for one group}
 \usage{
-run_FreqEstimationModel(
-  sample_matrix_list,
-  COI,
-  threads,
-  seed,
-  num_chains = 3L
-)
+run_FreqEstimationModel(sample_matrix_list, COI, threads, seed, n_chains = 3L)
 }
 \arguments{
 \item{sample_matrix_list}{Output of \code{\link[=create_FEM_input]{create_FEM_input()}}.}
@@ -21,7 +15,7 @@ run_FreqEstimationModel(
 
 \item{seed}{Random seed.}
 
-\item{num_chains}{Number of MCMC chains to run. At least two are needed to
+\item{n_chains}{Number of MCMC chains to run. At least two are needed to
 compute the Gelman-Rubin R-hat convergence diagnostic.}
 }
 \value{

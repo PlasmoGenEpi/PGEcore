@@ -1,12 +1,12 @@
 #' Read SNP call data for THEREALMcCOIL
 #'
-#' @param snp_calls_input Path to an independent, collapsed SNP call TSV.
+#' @param snp_calls Path to an independent, collapsed SNP call TSV.
 #' @return A data frame with `specimen_name`, `snp_name`, `seq_base`, `reads`.
 #' @keywords internal
-read_and_preprocess_snp_call <- function(snp_calls_input) {
+read_and_preprocess_snp_call <- function(snp_calls) {
   required_cols <- c("specimen_name", "snp_name", "reads", "seq_base")
   df_snp_call <- readr::read_tsv(
-    snp_calls_input,
+    snp_calls,
     col_types = readr::cols(specimen_name = readr::col_character())
   )
   validate_required_columns(df_snp_call, required_cols, "SNP data")
@@ -424,7 +424,7 @@ mccoil_blank <- function(x) {
 #' C MCMC routines (`McCOIL_categorical`, `McCOIL_prop`) are linked at package
 #' install time.
 #'
-#' @param snp_calls_input TSV of SNP calls with at least `specimen_name`,
+#' @param snp_calls TSV of SNP calls with at least `specimen_name`,
 #'   `snp_name`, `pos`, `seq_base`, `reads` (and typically `target_name`, `he`).
 #' @param slaf_output Output TSV of allele frequencies (`variant`, `freq`).
 #' @param coi_output Output TSV of COI estimates (`specimen_name`, `coi`).
@@ -450,7 +450,7 @@ mccoil_blank <- function(x) {
 #' @return A list with `slaf`, `coi` and `convergence` (invisibly after writing
 #'   outputs).
 #' @export
-THEREALMcCOIL_wrapper <- function(snp_calls_input,
+THEREALMcCOIL_wrapper <- function(snp_calls,
                                   slaf_output,
                                   coi_output,
                                   model = "categorical",
@@ -467,8 +467,8 @@ THEREALMcCOIL_wrapper <- function(snp_calls_input,
                                   seed = 321L,
                                   n_chains = 3L,
                                   convergence_output = "convergence_diag.tsv") {
-  if (mccoil_blank(snp_calls_input)) {
-    stop("--snp_calls_input must be set", call. = FALSE)
+  if (mccoil_blank(snp_calls)) {
+    stop("--snp_calls must be set", call. = FALSE)
   }
   if (mccoil_blank(slaf_output)) {
     stop("--slaf_output must be set", call. = FALSE)
@@ -482,7 +482,7 @@ THEREALMcCOIL_wrapper <- function(snp_calls_input,
   # Fail before the MCMC runs rather than after, when diagnostics are written.
   check_suggested_pkg("posterior", "MCMC convergence diagnostics")
 
-  df <- read_and_preprocess_snp_call(snp_calls_input)
+  df <- read_and_preprocess_snp_call(snp_calls)
   work_dir <- tempfile("McCOIL_")
   dir.create(work_dir)
   on.exit(clean_up_mccoil(work_dir), add = TRUE)

@@ -35,7 +35,7 @@ test_that("translate_loci_of_interest translates a plus-strand codon", {
     allele_table = allele_table,
     ref_bed = ref_bed,
     loci_of_interest = loci,
-    output_directory = out_dir
+    output_dir = out_dir
   )
   expect_true(
     file.exists(file.path(out_dir, "amino_acid_calls.tsv.gz"))
@@ -79,7 +79,7 @@ test_that("translate_loci_of_interest rejects loci that are not length 3", {
         gene_id = "G1",
         aa_position = 1
       ),
-      output_directory = out_dir
+      output_dir = out_dir
     ),
     "length 3"
   )

@@ -7,12 +7,12 @@ idm_blank <- function(x) {
 
 #' Prepare allele-table input for the Incomplete Data Model
 #'
-#' @param allele_table_input Path to allele TSV.
+#' @param allele_table Path to allele TSV.
 #' @return Tibble with `specimen_name`, `locus`, `variants`.
 #' @keywords internal
-prepare_input_4_allele_table <- function(allele_table_input) {
+prepare_input_4_allele_table <- function(allele_table) {
   df <- readr::read_tsv(
-    allele_table_input,
+    allele_table,
     col_types = readr::cols(
       .default = readr::col_character(),
       specimen_name = readr::col_character(),
@@ -29,7 +29,7 @@ prepare_input_4_allele_table <- function(allele_table_input) {
     !is.na(seq),
     !is.na(reads)
   )
-  stop_on_validate_fails(df, rules, "allele_table_input")
+  stop_on_validate_fails(df, rules, "allele_table")
   df |>
     dplyr::mutate(
       locus = .data$target_name,
@@ -41,12 +41,12 @@ prepare_input_4_allele_table <- function(allele_table_input) {
 
 #' Prepare amino-acid-call input for the Incomplete Data Model
 #'
-#' @param aa_calls_input Path to amino-acid TSV.
+#' @param aa_calls Path to amino-acid TSV.
 #' @return Tibble with `specimen_name`, `locus`, `variants`.
 #' @keywords internal
-prepare_input_4_aa_calls <- function(aa_calls_input) {
+prepare_input_4_aa_calls <- function(aa_calls) {
   df <- readr::read_tsv(
-    aa_calls_input,
+    aa_calls,
     col_types = readr::cols(
       .default = readr::col_character(),
       specimen_name = readr::col_character(),
@@ -67,7 +67,7 @@ prepare_input_4_aa_calls <- function(aa_calls_input) {
     !is.na(ref_aa),
     !is.na(aa)
   )
-  stop_on_validate_fails(df, rules, "aa_calls_input")
+  stop_on_validate_fails(df, rules, "aa_calls")
   df |>
     dplyr::mutate(
       locus = stringr::str_c(.data$gene_id, .data$aa_position, sep = ":"),
@@ -143,14 +143,14 @@ write_idm_output <- function(res, slaf_output, allele_table = FALSE) {
 #' Estimate single-locus allele frequencies with the Incomplete Data Model
 #'
 #' File-oriented entry point used by the `IDM_wrapper` CLI. Provide exactly one
-#' of `allele_table_input` or `aa_calls_input`.
+#' of `allele_table` or `aa_calls`.
 #'
 #' Vendored MLE code is from Hashemi & Schneider (2024) and requires the
 #' suggested packages **Rmpfr** and **openxlsx**.
 #'
-#' @param allele_table_input Path to allele TSV (`specimen_name`, `target_name`,
+#' @param allele_table Path to allele TSV (`specimen_name`, `target_name`,
 #'   `seq`, `reads`), or `""` / `NULL` if using amino-acid calls.
-#' @param aa_calls_input Path to amino-acid TSV (`specimen_name`, `target_name`,
+#' @param aa_calls Path to amino-acid TSV (`specimen_name`, `target_name`,
 #'   `gene_id`, `aa_position`, `ref_aa`, `aa`), or `""` / `NULL` if using an
 #'   allele table.
 #' @param slaf_output Output TSV path (`variant`, `freq`; allele-table input is
@@ -161,8 +161,8 @@ write_idm_output <- function(res, slaf_output, allele_table = FALSE) {
 #'
 #' @return The SLAF tibble (invisibly after writing `slaf_output`).
 #' @export
-IDM_wrapper <- function(allele_table_input = "",
-                        aa_calls_input = "",
+IDM_wrapper <- function(allele_table = "",
+                        aa_calls = "",
                         slaf_output,
                         model = "IDM",
                         lambda_initial = 1.0,
@@ -170,12 +170,12 @@ IDM_wrapper <- function(allele_table_input = "",
   if (idm_blank(slaf_output)) {
     stop("Missing required arguments: --slaf_output", call. = FALSE)
   }
-  n_inputs <- as.integer(!idm_blank(allele_table_input)) +
-    as.integer(!idm_blank(aa_calls_input))
+  n_inputs <- as.integer(!idm_blank(allele_table)) +
+    as.integer(!idm_blank(aa_calls))
   if (n_inputs != 1L) {
     stop(
-      "One and only one of the args --allele_table_input and ",
-      "--aa_calls_input must be provided.",
+      "One and only one of the args --allele_table and ",
+      "--aa_calls must be provided.",
       call. = FALSE
     )
   }
@@ -185,10 +185,10 @@ IDM_wrapper <- function(allele_table_input = "",
   check_suggested_pkg("Rmpfr", "Incomplete Data Model MLE via IDM_wrapper()")
   check_suggested_pkg("openxlsx", "Incomplete Data Model data import via IDM_wrapper()")
 
-  if (!idm_blank(aa_calls_input)) {
-    df <- prepare_input_4_aa_calls(aa_calls_input)
+  if (!idm_blank(aa_calls)) {
+    df <- prepare_input_4_aa_calls(aa_calls)
   } else {
-    df <- prepare_input_4_allele_table(allele_table_input)
+    df <- prepare_input_4_allele_table(allele_table)
   }
   res <- run_idm_mle_across_loci(
     df,
@@ -199,7 +199,7 @@ IDM_wrapper <- function(allele_table_input = "",
   write_idm_output(
     res,
     slaf_output,
-    allele_table = idm_blank(aa_calls_input)
+    allele_table = idm_blank(aa_calls)
   )
   invisible(res)
 }

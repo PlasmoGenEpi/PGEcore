@@ -5,18 +5,18 @@
 \title{Estimate COI using naive allele-count methods}
 \usage{
 estimate_coi_naive(
-  input_path,
-  output_path = NULL,
+  allele_table,
+  output = NULL,
   method = "integer_method",
   integer_threshold = 1,
   quantile_threshold = 0.05
 )
 }
 \arguments{
-\item{input_path}{Path to a TSV of allele calls with columns
+\item{allele_table}{Path to a TSV of allele calls with columns
 \code{specimen_name}, \code{target_name}, \code{reads}, and \code{seq}.}
 
-\item{output_path}{Optional path to write a TSV with columns
+\item{output}{Optional path to write a TSV with columns
 \code{specimen_name} and \code{coi}. If \code{NULL}, results are returned without writing.}
 
 \item{method}{One of \code{"integer_method"} or \code{"quantile_method"}.

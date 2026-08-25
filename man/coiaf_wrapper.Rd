@@ -4,10 +4,10 @@
 \alias{coiaf_wrapper}
 \title{Run COIAF from input and output file paths}
 \usage{
-coiaf_wrapper(snp_data, output, plmaf = NULL, seq_error = 0.01, max_coi = 25)
+coiaf_wrapper(snp_calls, output, plmaf = NULL, seq_error = 0.01, max_coi = 25)
 }
 \arguments{
-\item{snp_data}{Path to SNP data TSV.}
+\item{snp_calls}{Path to SNP data TSV.}
 
 \item{output}{Path for output TSV.}
 

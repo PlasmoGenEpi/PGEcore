@@ -7,7 +7,7 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    "--aa_table",
+    "--aa_calls",
     type = "character",
     help = paste0(
       "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ",
@@ -15,7 +15,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--loci_groups_input",
+    "--loci_groups",
     type = "character",
     help = paste0(
       "Path to a TSV file containing loci group definitions, with the ",
@@ -23,7 +23,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--output_path",
+    "--output",
     type = "character",
     help = paste0(
       "Path to write an output TSV file containing prevalence and frequency estimates ",
@@ -31,7 +31,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--recalc_single_locus_output_path",
+    "--single_locus_output",
     type = "character",
     help = paste0(
       "An optional output for the re-calculated single locus frequences/prevalences from the multilocus, ",
@@ -68,14 +68,14 @@ opts <- list(
 args <- parse_args(OptionParser(option_list = opts))
 
 missing <- character()
-if (is.null(args$aa_table)) {
-  missing <- c(missing, "--aa_table")
+if (is.null(args$aa_calls)) {
+  missing <- c(missing, "--aa_calls")
 }
-if (is.null(args$loci_groups_input)) {
-  missing <- c(missing, "--loci_groups_input")
+if (is.null(args$loci_groups)) {
+  missing <- c(missing, "--loci_groups")
 }
-if (is.null(args$output_path)) {
-  missing <- c(missing, "--output_path")
+if (is.null(args$output)) {
+  missing <- c(missing, "--output")
 }
 if (length(missing) > 0) {
   stop(
@@ -87,10 +87,10 @@ if (length(missing) > 0) {
 
 invisible(
   multilocus_prevfreq_naive(
-    aa_table = args$aa_table,
-    loci_groups_input = args$loci_groups_input,
-    output_path = args$output_path,
-    recalc_single_locus_output_path = args$recalc_single_locus_output_path,
+    aa_calls = args$aa_calls,
+    loci_groups = args$loci_groups,
+    output = args$output,
+    single_locus_output = args$single_locus_output,
     method = args$method,
     wsaf_cut_off = args$wsaf_cut_off
   )

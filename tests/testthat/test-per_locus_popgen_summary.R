@@ -33,7 +33,7 @@ test_that("per_locus_popgen_summary summarises identical alleles without MSA", {
     ),
     tmp_in
   )
-  res <- per_locus_popgen_summary(tmp_in, out = tmp_out)
+  res <- per_locus_popgen_summary(tmp_in, output = tmp_out)
   expect_true(file.exists(tmp_out))
   expect_equal(res$target_name, "L1")
   expect_equal(res$nucleotide_diversity, 0)

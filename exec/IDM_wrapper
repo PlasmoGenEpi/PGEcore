@@ -7,7 +7,7 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    "--allele_table_input",
+    "--allele_table",
     type = "character",
     default = "",
     help = paste0(
@@ -17,7 +17,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--aa_calls_input",
+    "--aa_calls",
     type = "character",
     default = "",
     help = paste0(
@@ -75,8 +75,8 @@ if (is.null(arg$slaf_output)) {
 
 invisible(
   IDM_wrapper(
-    allele_table_input = arg$allele_table_input,
-    aa_calls_input = arg$aa_calls_input,
+    allele_table = arg$allele_table,
+    aa_calls = arg$aa_calls,
     slaf_output = arg$slaf_output,
     model = arg$model,
     lambda_initial = arg$lambda_initial,

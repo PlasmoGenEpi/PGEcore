@@ -64,8 +64,8 @@ opts <- list(
   make_option(
     "--seed",
     help = "seed",
-    type = "character",
-    default = "1"
+    type = "integer",
+    default = 1
   )
 )
 

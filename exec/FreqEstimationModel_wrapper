@@ -21,7 +21,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--groups",
+    "--loci_groups",
     help = paste0(
       "TSV containing which regions should be analyzed for each group, with the columns: ",
       "group_id, gene_id, aa_position. Required."
@@ -40,7 +40,7 @@ opts <- list(
     default = 1
   ),
   make_option(
-    "--num_chains",
+    "--n_chains",
     type = "integer",
     default = 3,
     help = paste0(
@@ -68,9 +68,9 @@ opts <- list(
 
 arg <- parse_args(OptionParser(option_list = opts))
 if (is.null(arg$aa_calls) || is.null(arg$coi) ||
-    is.null(arg$groups) || is.null(arg$mlaf_output)) {
+    is.null(arg$loci_groups) || is.null(arg$mlaf_output)) {
   stop(
-    "Missing required arguments: --aa_calls, --coi, --groups, --mlaf_output",
+    "Missing required arguments: --aa_calls, --coi, --loci_groups, --mlaf_output",
     call. = FALSE
   )
 }
@@ -79,11 +79,11 @@ invisible(
   FreqEstimationModel_wrapper(
     aa_calls = arg$aa_calls,
     coi = arg$coi,
-    groups = arg$groups,
+    loci_groups = arg$loci_groups,
     mlaf_output = arg$mlaf_output,
     threads = arg$threads,
     seed = arg$seed,
-    num_chains = arg$num_chains,
+    n_chains = arg$n_chains,
     convergence_output = arg$convergence_output
   )
 )
