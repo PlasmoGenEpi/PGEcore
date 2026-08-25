@@ -25,9 +25,9 @@ dcifer_slaf_wrapper(
 
 \item{specimen_name_col, target_name_col, target_value_col}{Column names.}
 
-\item{tol, qstart}{Passed to \code{\link[dcifer:calcAfreq]{dcifer::calcAfreq()}}.}
+\item{tol, qstart}{Passed to \code{dcifer::calcAfreq()}.}
 
-\item{coi_lrank}{Rank of the locus used by \code{\link[dcifer:getCOI]{dcifer::getCOI()}} when
+\item{coi_lrank}{Rank of the locus used by \code{dcifer::getCOI()} when
 \code{coi_table} is not supplied.}
 }
 \value{

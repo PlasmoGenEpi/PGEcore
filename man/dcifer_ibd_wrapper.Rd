@@ -41,8 +41,8 @@ dcifer_ibd_wrapper(
 
 \item{alpha}{Significance level.}
 
-\item{use_estm}{If \code{TRUE}, use \code{\link[dcifer:ibdEstM]{dcifer::ibdEstM()}} instead of
-\code{\link[dcifer:IBDpair]{dcifer::ibdPair()}}.}
+\item{use_estm}{If \code{TRUE}, use \code{dcifer::ibdEstM()} instead of
+\code{dcifer::ibdPair()}.}
 
 \item{threads}{Number of parallel workers.}
 

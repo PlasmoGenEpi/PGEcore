@@ -126,8 +126,8 @@ prepare_dcifer_slaf_output <- function(allele_freqs_list,
 #' @param slaf_output Path for SLAF TSV output.
 #' @param coi_table Optional path to COI TSV.
 #' @param specimen_name_col,target_name_col,target_value_col Column names.
-#' @param tol,qstart Passed to [dcifer::calcAfreq()].
-#' @param coi_lrank Rank of the locus used by [dcifer::getCOI()] when
+#' @param tol,qstart Passed to `dcifer::calcAfreq()`.
+#' @param coi_lrank Rank of the locus used by `dcifer::getCOI()` when
 #'   `coi_table` is not supplied.
 #'
 #' @return The SLAF tibble (also written to `slaf_output`).

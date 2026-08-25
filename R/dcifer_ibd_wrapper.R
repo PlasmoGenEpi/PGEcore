@@ -507,8 +507,8 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 #' @param pop_name_col Optional population column in metadata.
 #' @param rnull Relatedness null for hypothesis testing.
 #' @param alpha Significance level.
-#' @param use_estm If `TRUE`, use [dcifer::ibdEstM()] instead of
-#'   [dcifer::ibdPair()].
+#' @param use_estm If `TRUE`, use `dcifer::ibdEstM()` instead of
+#'   `dcifer::ibdPair()`.
 #' @param threads Number of parallel workers.
 #' @param seed Random seed.
 #' @param verbose Print parallel worker output.
