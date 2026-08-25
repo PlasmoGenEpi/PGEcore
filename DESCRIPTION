@@ -37,7 +37,8 @@ Description: Provides R functions and command-line interfaces for malaria
     their specialised dependencies; those must be installed separately when
     needed.
 License: MIT + file LICENSE
-URL: https://github.com/PlasmoGenEpi/PGEcore
+URL: https://github.com/PlasmoGenEpi/PGEcore,
+    https://plasmogenepi.github.io/PGEcore/
 BugReports: https://github.com/PlasmoGenEpi/PGEcore/issues
 Encoding: UTF-8
 Language: en-US
@@ -77,6 +78,7 @@ Suggests:
     openxlsx,
     parallelly,
     pegas,
+    pkgdown,
     plyr,
     posterior,
     pwalign,
@@ -89,3 +91,4 @@ Suggests:
     variantstring
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/Needs/website: pkgdown

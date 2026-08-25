@@ -48,9 +48,10 @@ coi_calls <- readr::read_tsv("my_coi_calls.tsv", show_col_types = FALSE)
 count_samples_by_coi(coi_calls)
 ```
 
-Function names usually match the CLI name (`count_samples_by_coi`,
-`estimate_coi_naive`, …). Some wrappers also export a short `run_*` alias
-(for example `run_moire`).
+Function names match the CLI name (`count_samples_by_coi`, `moire_wrapper`,
+…). That is the API to start with. A small number of wrappers also export an
+in-memory `run_*` helper (`run_coiaf`, `run_moire`, `run_malariaem`) for when
+you already have data frames or model objects in R; see `?run_moire`.
 
 ```{r}
 ?count_samples_by_coi

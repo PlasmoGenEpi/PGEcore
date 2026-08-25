@@ -12,3 +12,6 @@
 ^\.cursor$
 ^.*\.tar\.gz$
 ^vignettes/*\.html$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

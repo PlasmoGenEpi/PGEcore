@@ -13,6 +13,9 @@ Analyses are available both as **R functions** and as **command-line tools**,
 so you can use PGEcore interactively, in your own scripts, or as a shared
 library across workflow pipelines (for example Nextflow or WDL).
 
+Package documentation (reference + vignettes):
+[https://plasmogenepi.github.io/PGEcore/](https://plasmogenepi.github.io/PGEcore/)
+
 > **PGEcore does not install the specialised software it wraps.** Optional
 > dependencies (for example the `dcifer` package) must be installed separately
 > when you need those tools.
@@ -41,8 +44,8 @@ library(PGEcore)
 
 count_samples_by_coi("my_coi_calls.tsv", output = "coi_distribution.tsv")
 
-# Or pass data frames already in memory
-# dcifer_slaf_wrapper(allele_table = allele_df, slaf_output = "slaf.tsv")  # requires dcifer
+# Specialist wrappers use the same file paths as the CLI
+# dcifer_slaf_wrapper(allele_table = "alleles.tsv", slaf_output = "slaf.tsv")
 ```
 
 ```r
@@ -104,7 +107,7 @@ Full column notes and which tools consume each format: vignette **`input-formats
 | `estimate_allele_frequency_naive` | Pure R | — |
 | `estimate_allele_prevalence_naive` | Pure R | — |
 | `allele_per_locus_summary` | Pure R | — |
-| `coiaf_wrapper` / `run_coiaf` | Wrapper | `coiaf` |
+| `coiaf_wrapper` | Wrapper | `coiaf` |
 | `filter_biallelic_calls` | Pure R | — |
 | `filter_to_highest_diversity_independent_snp_call` | Pure R | — |
 | `slaf_from_mhaps_freqs` | Pure R | — |
@@ -119,8 +122,8 @@ Full column notes and which tools consume each format: vignette **`input-formats
 | `translate_loci_of_interest` | Wrapper | `Biostrings`, `pwalign` |
 | `per_locus_popgen_summary` | Wrapper | `ape`, `msa`, `pegas` (+ Muscle/Clustal on PATH) |
 | `calculate_fws_from_vcf` | Wrapper | `moimix`, `SeqArray` |
-| `moire_wrapper` / `run_moire` | Wrapper | `moire`, `posterior` |
-| `malariaem_wrapper` / `run_malariaem` | Wrapper | `malaria.em` |
+| `moire_wrapper` | Wrapper | `moire`, `posterior` |
+| `malariaem_wrapper` | Wrapper | `malaria.em` |
 | `dcifer_slaf_wrapper` | Wrapper | `dcifer` |
 | `dcifer_ibd_wrapper` | Wrapper | `dcifer` (+ parallel helpers) |
 | `snpslice_wrapper` | Wrapper | `snp.slicer`, `variantstring` |
@@ -128,6 +131,11 @@ Full column notes and which tools consume each format: vignette **`input-formats
 | `IDM_wrapper` | Vendored algorithm | `Rmpfr`, `openxlsx` |
 | `MultiLociBiallelicModel_wrapper` | Vendored algorithm | `variantstring` |
 | `THEREALMcCOIL_wrapper` | Vendored C (`src/`) | `posterior` |
+
+Use the name in the first column from R (`library(PGEcore); moire_wrapper(...)`)
+or from the CLI (`Rscript exec/moire_wrapper ...`). A few wrappers also expose an
+in-memory helper if you already have objects in R rather than files:
+`run_coiaf`, `run_moire`, and `run_malariaem` (see `?run_moire`).
 
 ## Optional dependencies
 
