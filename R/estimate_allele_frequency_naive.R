@@ -113,19 +113,50 @@ format_naive_af_output <- function(out, from_aa) {
 #' estimated either from within-sample read-count proportions
 #' (`read_count_prop`) or from presence/absence (`presence_absence`).
 #'
-#' @param aa_calls Optional path to a TSV of amino acid calls with columns
-#'   `specimen_name`, `gene_id`, `aa_position`, `aa`, and `reads`.
-#' @param allele_table Optional path to a TSV of microhaplotype genotypes with
-#'   columns `specimen_name`, `target_name`, `seq`, and `reads`.
+#' ## Inputs
+#'
+#' - **`aa_calls`** (optional): AA calls (`specimen_name`, `gene_id`,
+#'   `aa_position`, `aa`, `reads`). See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`allele_table`** (optional): Allele table (`specimen_name`,
+#'   `target_name`, `seq`, `reads`). See the same vignette.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): Allele-frequency TSV. For AA input, `variant` is
+#'   a STAVE-style `gene_id:aa_position:aa` string plus `freq` (and count
+#'   columns for `presence_absence`). For microhaplotype input: `target_name`,
+#'   `seq`, `freq` (plus counts for `presence_absence`). If `NULL`, results are
+#'   returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' estimate_allele_frequency_naive(
+#'   aa_calls = "aa_calls.tsv",
+#'   output = "allele_frequency.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/estimate_allele_frequency_naive \
+#'   --aa_calls aa_calls.tsv \
+#'   --output allele_frequency.tsv
+#' ```
+#'
+#' @param aa_calls Optional path to an AA calls TSV. See *Inputs*.
+#' @param allele_table Optional path to an allele table TSV. See *Inputs*.
 #' @param method Estimation method: `"presence_absence"` (default) or
 #'   `"read_count_prop"`.
-#' @param output Optional output TSV path. If `NULL`, results are returned
-#'   without writing a file.
+#' @param output Optional output TSV path. Default for the CLI is
+#'   `allele_frequency.tsv`.
 #'
 #' @return A tibble of estimated allele frequencies. For amino acid input the
 #'   `variant` column is a STAVE-style `gene_id:aa_position:aa` string. For
 #'   microhaplotype input columns include `target_name`, `seq`, and `freq`
 #'   (plus count columns for `presence_absence`).
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examples
 #' aa_path <- system.file(

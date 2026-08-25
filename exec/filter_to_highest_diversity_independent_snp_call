@@ -8,14 +8,11 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--snp_calls",
-    help = paste(
-      "TSV containing at least the columns: specimen_name, target_name,",
-      "chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic"
-    )
+    help = "SNP calls TSV (specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic). See vignette input-formats."
   ),
   make_option(
     "--snp_calls_output",
-    help = "the output filename path for the output filtered file"
+    help = "Filtered SNP calls TSV output (includes he)."
   ),
   make_option(
     "--mindist_between_snps",

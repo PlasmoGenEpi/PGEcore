@@ -9,8 +9,8 @@ opts <- list(
   make_option(
     "--allele_table",
     help = paste0(
-      "TSV containing allele present/absent per specimen, with the ",
-      "columns: specimen_name, target_name, seq"
+      "Allele table TSV (specimen_name, target_name, seq). ",
+      "See vignette input-formats."
     )
   ),
   make_option(
@@ -199,66 +199,57 @@ opts <- list(
     "--coi_output",
     default = "coi_output.tsv",
     help = paste0(
-      "TSV file for COI (complexity of infection) summary. ",
-      "This file will contain summarized COI information for each sample."
+      "Output COI TSV (specimen_name, coi, ...). Default: %default"
     )
   ),
   make_option(
     "--he_output",
     default = "he_output.tsv",
     help = paste0(
-      "TSV file for He (expected heterozygosity) summary. ",
-      "This file will provide He values calculated across all loci."
+      "Output He TSV (target_name, he, ...). Default: %default"
     )
   ),
   make_option(
     "--allele_freq_output",
     default = "allele_freq_output.tsv",
     help = paste0(
-      "TSV file for allele frequency summary. ",
-      "This file will include allele frequencies for all loci."
+      "Output allele-frequency TSV (target_name, seq, freq, ...). ",
+      "Default: %default"
     )
   ),
   make_option(
     "--relatedness_output",
     default = "relatedness_output.tsv",
     help = paste0(
-      "TSV file for relatedness summary. ",
-      "This file will contain pairwise relatedness estimates for all samples."
+      "Output within-host relatedness TSV (specimen_name, within_host_rel, ...). ",
+      "Default: %default"
     )
   ),
   make_option(
     "--effective_coi_output",
     default = "effective_coi_output.tsv",
     help = paste0(
-      "TSV file for effective COI summary. ",
-      "This file will provide the effective complexity of infection estimates."
+      "Output effective COI TSV (specimen_name, ecoi, ...). Default: %default"
     )
   ),
   make_option(
     "--mcmc_results_output",
     help = paste0(
-      "Optionally can export the full results of moire, which can be helpful ",
-      "for debugging or quality assurance (e.g. checking if MCMC properly converged)"
+      "Optional RDS path for the full MOIRe MCMC result object."
     )
   ),
   make_option(
     "--convergence_output",
     default = "convergence_diag.tsv",
     help = paste0(
-      "TSV file for MCMC convergence diagnostics, with one row per estimated ",
-      "parameter and the columns: variable, mean, median, sd, q5, q95, rhat, ",
-      "ess_bulk, ess_tail. Default set to convergence_diag.tsv."
+      "Output MCMC convergence diagnostics TSV. Default: %default"
     )
   ),
   make_option(
     "--acceptance_rates_output",
     default = NULL,
     help = paste0(
-      "Optional TSV file for parallel tempering swap (exchange) acceptance ",
-      "rates, with one row per chain and temperature rung and the columns: ",
-      "chain, rung, temperature, swap_acceptance_rate. Only meaningful when ",
-      "parallel tempering is used (--pt_chains > 1)."
+      "Optional PT swap-acceptance rates TSV (when --pt_chains > 1)."
     )
   )
 )

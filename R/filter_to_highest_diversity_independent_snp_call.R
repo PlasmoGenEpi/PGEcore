@@ -220,9 +220,35 @@ filter_highest_diversity_snps_core <- function(snp_table_in,
 #' Ranks SNPs by expected heterozygosity, then greedily keeps loci that are at
 #' least `mindist_between_snps` apart on the same chromosome.
 #'
-#' @param snp_calls Path to a SNP TSV, or a data frame, with columns
-#'   `specimen_name`, `target_name`, `chrom`, `pos`, `snp_name`, `ref_base`,
-#'   `seq_base`, `reads`, and `is_biallelic`.
+#' ## Inputs
+#'
+#' - **`snp_calls`**: SNP calls (`specimen_name`, `target_name`, `chrom`,
+#'   `pos`, `snp_name`, `ref_base`, `seq_base`, `reads`, `is_biallelic`), as a
+#'   file path or data frame. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`snp_calls_output`** (optional): Filtered SNP calls TSV including an
+#'   `he` column. If `NULL`, results are returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' filter_to_highest_diversity_independent_snp_call(
+#'   snp_calls = "snp_calls.tsv",
+#'   snp_calls_output = "filtered_snp_calls.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/filter_to_highest_diversity_independent_snp_call \
+#'   --snp_calls snp_calls.tsv \
+#'   --snp_calls_output filtered_snp_calls.tsv
+#' ```
+#'
+#' @param snp_calls Path to a SNP calls TSV, or a data frame with the same
+#'   columns. See *Inputs*.
 #' @param snp_calls_output Optional output TSV path.
 #' @param mindist_between_snps Minimum distance between kept SNPs (default
 #'   `10000`).
@@ -237,6 +263,8 @@ filter_highest_diversity_snps_core <- function(snp_table_in,
 #'   of zero.
 #'
 #' @return Filtered SNP table including an `he` column.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 filter_to_highest_diversity_independent_snp_call <- function(snp_calls,

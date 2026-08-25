@@ -11,9 +11,9 @@ opts <- list(
     type = "character",
     default = "",
     help = paste0(
-      "TSV containing allele calls, with the columns: specimen_name, ",
-      "target_name, seq, reads. ",
-      "Default: %default"
+      "Allele table TSV (specimen_name, target_name, seq, reads). ",
+      "See vignette input-formats. Provide exactly one of --allele_table or ",
+      "--aa_calls. Default: %default"
     )
   ),
   make_option(
@@ -21,9 +21,9 @@ opts <- list(
     type = "character",
     default = "",
     help = paste0(
-      "TSV containing amino acid calls, with the columns: specimen_name, ",
-      "target_name, gene_id, aa_position, ref_aa, aa. Optional",
-      "Default: %default"
+      "AA calls TSV (specimen_name, gene_id, aa_position, aa, ...). ",
+      "See vignette input-formats. Provide exactly one of --allele_table or ",
+      "--aa_calls. Default: %default"
     )
   ),
   make_option(
@@ -61,9 +61,8 @@ opts <- list(
     "--slaf_output",
     type = "character",
     help = paste0(
-      "Output TSV containing single locus allele frequencies, with the ",
-      "columns: variant, freq. ",
-      "Required"
+      "Output SLAF TSV (target_name, seq, freq for allele-table input; ",
+      "variant, freq for aa_calls). Required."
     )
   )
 )

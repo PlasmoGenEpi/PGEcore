@@ -38,15 +38,42 @@ calculate_coi_distribution <- function(coi_table) {
 
 #' Count specimens by complexity of infection (COI)
 #'
-#' Reads a TSV of per-specimen COI calls, rounds COI to integers, and returns
-#' (and optionally writes) the count and proportion of specimens at each COI.
+#' Reads per-specimen COI values, rounds them to integers, and returns the
+#' count and proportion of specimens at each COI level.
 #'
-#' @param coi_table Path to a TSV with columns `specimen_name` and `coi`, or a
-#'   data frame with those columns.
-#' @param output Optional output TSV path. If `NULL`, results are returned
-#'   without writing a file. Default for the CLI is `coi_distribution.tsv`.
+#' ## Inputs
+#'
+#' - **`coi_table`**: COI table (`specimen_name`, `coi`), as a file path or
+#'   data frame. See `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): TSV with columns `coi`, `n`, and `proportion`.
+#'   If `NULL`, results are returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' count_samples_by_coi(
+#'   coi_table = "coi_table.tsv",
+#'   output = "coi_distribution.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/count_samples_by_coi \
+#'   --coi_table coi_table.tsv \
+#'   --output coi_distribution.tsv
+#' ```
+#'
+#' @param coi_table Path to a COI table TSV, or a data frame with the same
+#'   columns. See *Inputs*.
+#' @param output Optional output TSV path. Default for the CLI is
+#'   `coi_distribution.tsv`.
 #'
 #' @return A tibble with columns `coi`, `n`, and `proportion`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examples
 #' coi_path <- system.file("extdata", "example_coi_table.tsv", package = "PGEcore")

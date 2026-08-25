@@ -10,24 +10,23 @@ opts <- list(
     "--aa_calls",
     type = "character",
     help = paste0(
-      "TSV containing aminoacid calls per specimen, with the columns: ",
-      "specimen_name, gene_id, aa_position, ref_aa, and aa."
+      "AA calls TSV (specimen_name, gene_id, aa_position, ref_aa, aa). ",
+      "See vignette input-formats."
     )
   ),
   make_option(
     "--loci_groups",
     type = "character",
     help = paste0(
-      "TSV containing loci groups, with the columns: group_id, gene_id, ",
-      "aa_position."
+      "Loci groups TSV (group_id, gene_id, aa_position). ",
+      "See vignette input-formats."
     )
   ),
   make_option(
     "--mlaf_output",
     type = "character",
     help = paste0(
-      "TSV to contain multilocus allele frequency estimates, with the ",
-      "columns group_id, variant, and freq"
+      "Output MLAF TSV (group_id, variant, freq)."
     )
   ),
   make_option(

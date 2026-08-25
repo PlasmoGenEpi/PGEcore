@@ -9,26 +9,22 @@ opts <- list(
   make_option(
     "--allele_table",
     help = paste0(
-      "TSV containing alleles, with columns identifying specimens, ",
-      "target names, and target values. The names of these columns are given ",
-      "by the --specimen_name_col, --target_name_col, and --target_value_col ",
-      "arguments, respectively. Required."
+      "Allele table TSV (specimen_name, target_name, seq, reads). ",
+      "See vignette input-formats. Required."
     )
   ),
   make_option(
     "--coi_table",
     help = paste0(
-      "TSV containing specimen COIs, with a coi column and a column with ",
-      "specimen IDs named according to --specimen_name_col. Optional."
+      "Optional COI table TSV (specimen_name, coi). ",
+      "See vignette input-formats."
     )
   ),
   make_option(
     "--allele_freq_table",
     help = paste0(
-      "TSV containing single locus allele frequencies, with a column with ",
-      "target names, named according to --target_name_col, a column with ",
-      "target values, named according to --target_value_col, and freq and ",
-      "total columns. Optional."
+      "Optional SLAF TSV (target_name, seq, freq). ",
+      "See vignette input-formats."
     )
   ),
   make_option(
@@ -52,9 +48,8 @@ opts <- list(
   make_option(
     "--specimen_metadata",
     help = paste0(
-      "TSV containing specimen metadata. It should have a specimen name ",
-      "column, named according to --specimen_name_col, and a population ",
-      "name column. named according to --pop_name_col. Optional."
+      "Optional specimen metadata TSV (specimen_name plus population column). ",
+      "Used with --pop_name_col."
     )
   ),
   make_option(
@@ -105,10 +100,8 @@ opts <- list(
   make_option(
     "--relatedness_output",
     help = paste0(
-      "Path of TSV file to contain relatedness results, with the columns: ",
-      "specimen_name, btwn_host_rel. Depending on parameters, it may also ",
-      "contain columns for p_value, CI_lower, CI_upper, and/or strain_pair. ",
-      "Required."
+      "Output relatedness TSV (specimen_name_a, specimen_name_b, ",
+      "btwn_host_rel; optionally p_value, CI_*, strain_pair). Required."
     )
   )
 )

@@ -30,14 +30,43 @@ read_in_amino_acid_calls <- function(amino_acid_calls_fnp) {
 #' Keeps loci (`gene_id`, `aa_position`, `ref_aa`) with at most two distinct
 #' `aa` alleles. Optionally writes non-biallelic loci to a second file.
 #'
-#' @param aa_calls Path to a TSV, or a data frame, with columns
-#'   `gene_id`, `aa_position`, `ref_aa`, and `aa`.
+#' ## Inputs
+#'
+#' - **`aa_calls`**: AA calls (`gene_id`, `aa_position`, `ref_aa`, `aa`), as a
+#'   file path or data frame. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): Biallelic AA calls TSV (includes `allele_calls`).
+#' - **`nonbiallelic_output`** (optional): Non-biallelic loci TSV (includes
+#'   `allele_calls`).
+#'
+#' ## Running
+#'
+#' ```r
+#' filter_biallelic_calls(
+#'   aa_calls = "aa_calls.tsv",
+#'   output = "biallelic_aa_calls.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/filter_biallelic_calls \
+#'   --aa_calls aa_calls.tsv \
+#'   --output biallelic_aa_calls.tsv
+#' ```
+#'
+#' @param aa_calls Path to an AA calls TSV, or a data frame with the same
+#'   columns. See *Inputs*.
 #' @param output Optional path for the biallelic output TSV.
 #' @param nonbiallelic_output Optional path for loci with more than two alleles.
 #' @param overwrite If `FALSE` (default), refuse to overwrite existing outputs.
 #'
 #' @return A list with tibbles `biallelic` and `nonbiallelic`. Each includes an
 #'   `allele_calls` column with the distinct allele count per locus.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examples
 #' path <- system.file("extdata", "example_aa_calls.tsv", package = "PGEcore")

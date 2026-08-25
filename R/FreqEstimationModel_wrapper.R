@@ -444,24 +444,63 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 
 #' Estimate multilocus allele frequencies with FreqEstimationModel
 #'
-#' File-oriented entry point used by the `FreqEstimationModel_wrapper` CLI.
-#' Optional **FreqEstimationModel**, **variantstring**, **posterior**, and
-#' parallel helpers (**foreach**, **doMC**, plus **plyr**, **coda**, **abind**)
-#' must be installed separately.
+#' Estimates multilocus haplotype frequencies from amino-acid calls and COI.
+#' Requires **FreqEstimationModel**, **variantstring**, **posterior**, and
+#' parallel helpers (**foreach**, **doMC**, **plyr**, **coda**, **abind**)
+#' (Suggests).
 #'
-#' @param aa_calls Path to amino-acid call TSV.
-#' @param coi Path to COI TSV, or a numeric average COI.
-#' @param loci_groups Path to group TSV (`group_id`, `gene_id`, `aa_position`).
-#' @param mlaf_output Output TSV path.
+#' ## Inputs
+#'
+#' - **`aa_calls`**: Amino-acid calls TSV. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`coi`**: Path to a COI table TSV, **or** a numeric average COI.
+#' - **`loci_groups`**: Loci-groups TSV (`group_id`, `gene_id`, `aa_position`).
+#'
+#' ## Outputs
+#'
+#' - **`mlaf_output`**: Multilocus allele frequencies (`variant`, `freq`,
+#'   `median_freq`, `CI_2.5`, `CI_97.5`, `sample_total`, `group_id`, …).
+#' - **`convergence_output`**: Per-group MCMC diagnostics (`group_id`,
+#'   `variable`, `mean`, `median`, `sd`, `q5`, `q95`, `rhat`, `ess_bulk`,
+#'   `ess_tail`).
+#'
+#' ## Running
+#'
+#' ```r
+#' FreqEstimationModel_wrapper(
+#'   aa_calls = "aa_calls.tsv",
+#'   coi = "coi_table.tsv",
+#'   loci_groups = "loci_groups.tsv",
+#'   mlaf_output = "mlaf.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/FreqEstimationModel_wrapper \
+#'   --aa_calls aa_calls.tsv \
+#'   --coi coi_table.tsv \
+#'   --loci_groups loci_groups.tsv \
+#'   --mlaf_output mlaf.tsv
+#' ```
+#'
+#' Requires **FreqEstimationModel**, **variantstring**, **posterior**, and
+#' parallel Suggests packages.
+#'
+#' @param aa_calls Path to amino-acid call TSV. See *Inputs*.
+#' @param coi Path to COI table TSV, or a numeric average COI. See *Inputs*.
+#' @param loci_groups Path to loci-groups TSV. See *Inputs*.
+#' @param mlaf_output Output TSV path. See *Outputs*.
 #' @param threads Number of threads.
 #' @param seed Random seed.
 #' @param n_chains Number of MCMC chains to run per group. At least two are
 #'   needed to compute the Gelman-Rubin R-hat convergence diagnostic.
 #' @param convergence_output Output TSV path for per-group MCMC convergence
-#'   diagnostics, with the columns `group_id`, `variable`, `mean`, `median`,
-#'   `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`.
+#'   diagnostics. See *Outputs*.
 #'
 #' @return The formatted output data frame (also written to `mlaf_output`).
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 FreqEstimationModel_wrapper <- function(aa_calls,
                                         coi,

@@ -11,14 +11,14 @@ option_list <- list(
     type = "character",
     default = NULL,
     metavar = "FILE",
-    help = "Input VCF file (.vcf or .vcf.gz) [required]"
+    help = "Input VCF (.vcf or .vcf.gz) with FORMAT/AD."
   ),
   make_option(
     c("-o", "--output"),
     type = "character",
     default = "fws_result.tsv",
     metavar = "FILE",
-    help = "Output TSV of Fws results [default: %default]"
+    help = "Fws TSV output (specimen_name, fws). Default: %default"
   ),
   make_option(
     c("-g", "--gds"),

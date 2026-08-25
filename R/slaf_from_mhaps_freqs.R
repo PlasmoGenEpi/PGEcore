@@ -70,15 +70,48 @@ process_input_loci_of_interest_per_microhaps <- function(loci_of_interest_per_mi
 #' sum to one. Collapsed output averages evenly across overlapping targets
 #' (taking `max(sample_total)`).
 #'
-#' @param mhaps_slaf Path or data frame with columns `target_name`, `seq`,
-#'   `freq`, and `sample_total`.
-#' @param loci_of_interest_per_microhaps Path or data frame with columns
-#'   `target_name`, `gene_id`, `aa_position`, `seq`, and `aa`.
-#' @param slaf_output Optional path for collapsed SLAF TSV (`variant`, `freq`,
+#' ## Inputs
+#'
+#' - **`mhaps_slaf`**: Microhaplotype SLAF (`target_name`, `seq`, `freq`,
+#'   `sample_total`), as a file path or data frame. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`loci_of_interest_per_microhaps`**: Translated loci per microhaplotype
+#'   (`target_name`, `gene_id`, `aa_position`, `seq`, `aa`), as a file path or
+#'   data frame.
+#'
+#' ## Outputs
+#'
+#' - **`slaf_output`** (optional): Collapsed SLAF TSV (`variant`, `freq`,
 #'   `sample_total`).
+#' - **`per_target_slaf_output`** (optional): Per-target SLAF TSV
+#'   (`target_name`, `variant`, `freq`, `sample_total`).
+#'
+#' ## Running
+#'
+#' ```r
+#' slaf_from_mhaps_freqs(
+#'   mhaps_slaf = "mhaps_slaf.tsv",
+#'   loci_of_interest_per_microhaps = "loci_of_interest_per_microhaps.tsv",
+#'   slaf_output = "slaf.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/slaf_from_mhaps_freqs \
+#'   --mhaps_slaf mhaps_slaf.tsv \
+#'   --loci_of_interest_per_microhaps loci_of_interest_per_microhaps.tsv \
+#'   --slaf_output slaf.tsv
+#' ```
+#'
+#' @param mhaps_slaf Path or data frame of microhaplotype SLAF. See *Inputs*.
+#' @param loci_of_interest_per_microhaps Path or data frame of translated loci.
+#'   See *Inputs*.
+#' @param slaf_output Optional path for collapsed SLAF TSV.
 #' @param per_target_slaf_output Optional path for per-target SLAF TSV.
 #'
 #' @return A list with tibbles `slaf` (collapsed) and `per_target_slaf`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 slaf_from_mhaps_freqs <- function(mhaps_slaf,

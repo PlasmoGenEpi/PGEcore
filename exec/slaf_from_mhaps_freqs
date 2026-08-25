@@ -8,33 +8,19 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--mhaps_slaf",
-    help = paste(
-      "TSV containing the columns: target_name, seq, freq, sample_total.",
-      "The target_name and seq columns should match up with the columns in",
-      "loci_of_interest_per_microhaps"
-    )
+    help = "Microhaplotype SLAF TSV (target_name, seq, freq, sample_total). See vignette input-formats."
   ),
   make_option(
     "--loci_of_interest_per_microhaps",
-    help = paste(
-      "TSV containing the columns: target_name, seq, gene_id, aa_position, aa.",
-      "The target_name and seq columns should match up with the columns in",
-      "mhaps_slaf"
-    )
+    help = "Translated loci per microhaplotype TSV (target_name, gene_id, aa_position, seq, aa)."
   ),
   make_option(
     "--slaf_output",
-    help = paste(
-      "the output for the single locus allele frequency, will collapse",
-      "frequencies across overlapping targets"
-    )
+    help = "Collapsed single-locus allele frequency TSV output (variant, freq, sample_total)."
   ),
   make_option(
     "--per_target_slaf_output",
-    help = paste(
-      "optional output for the single lcous allele frequency calculated",
-      "per target"
-    )
+    help = "Optional per-target SLAF TSV output."
   )
 )
 

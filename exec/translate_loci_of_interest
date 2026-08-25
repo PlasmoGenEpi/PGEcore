@@ -8,30 +8,19 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--allele_table",
-    help = paste(
-      "TSV containing the columns: specimen_name, target_name, reads, seq"
-    )
+    help = "Allele table TSV (specimen_name, target_name, seq, reads). See vignette input-formats."
   ),
   make_option(
     "--ref_bed",
-    help = paste(
-      "a bed file containing the reference location of the ref_seq, no column",
-      "names but the first 6 columns should be chrom, start, end, target_name,",
-      "length, strand, ref_seq"
-    )
+    help = "Panel BED TSV with ref_seq (#chrom, start, end, target_name, length, strand, ref_seq)."
   ),
   make_option(
     "--loci_of_interest",
-    help = paste(
-      "a bed file containing the loci of interest to translate, is genomic",
-      "location of the codon position so all loci should be of size 3, should",
-      "correspond to the same, should have columns, #chrom, start, end, name,",
-      "length, strand, gene, gene_id, aa_position"
-    )
+    help = "Codon BED (#chrom, start, end, name, length, strand, gene, gene_id, aa_position); length == 3."
   ),
   make_option(
     "--output_dir",
-    help = "the output directory to write results to"
+    help = "Output directory for amino acid calls and related TSVs."
   ),
   make_option(
     "--select_target_names",

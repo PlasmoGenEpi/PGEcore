@@ -13,11 +13,9 @@ estimate_coi_naive(
 )
 }
 \arguments{
-\item{allele_table}{Path to a TSV of allele calls with columns
-\code{specimen_name}, \code{target_name}, \code{reads}, and \code{seq}.}
+\item{allele_table}{Path to an allele table TSV. See \emph{Inputs}.}
 
-\item{output}{Optional path to write a TSV with columns
-\code{specimen_name} and \code{coi}. If \code{NULL}, results are returned without writing.}
+\item{output}{Optional output TSV path.}
 
 \item{method}{One of \code{"integer_method"} or \code{"quantile_method"}.
 Default: \code{"integer_method"}.}
@@ -38,6 +36,35 @@ counts in decreasing order. With \code{method = "integer_method"}, the
 \code{method = "quantile_method"}, the value at \code{quantile_threshold} is used
 instead (scaling naturally with the number of observed allele rows).
 }
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table (\code{specimen_name}, \code{target_name}, \code{seq},
+\code{reads}). See \code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): COI table TSV with columns \code{specimen_name} and
+\code{coi}. If \code{NULL}, results are returned without writing a file.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{estimate_coi_naive(
+  allele_table = "allele_table.tsv",
+  output = "coi_table.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/estimate_coi_naive \\
+  --allele_table allele_table.tsv \\
+  --output coi_table.tsv
+}\if{html}{\out{</div>}}
+}
+}
 \examples{
 allele_path <- system.file(
   "extdata", "example_allele_table.tsv",
@@ -45,4 +72,7 @@ allele_path <- system.file(
 )
 estimate_coi_naive(allele_path, method = "integer_method")
 
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

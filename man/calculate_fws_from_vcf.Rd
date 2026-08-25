@@ -14,12 +14,11 @@ calculate_fws_from_vcf(
 )
 }
 \arguments{
-\item{vcf}{Input VCF path (\code{.vcf} or \code{.vcf.gz}).}
+\item{vcf}{Input VCF path. See \emph{Inputs}.}
 
 \item{output}{Output TSV path. Defaults to \code{"fws_result.tsv"}.}
 
-\item{gds}{Optional GDS path. If \code{NULL}, derived by replacing \code{.vcf} /
-\code{.vcf.gz} with \code{.gds}.}
+\item{gds}{Optional GDS path. If \code{NULL}, derived from the VCF path.}
 
 \item{population_name}{Optional population label added as a column.}
 
@@ -34,7 +33,41 @@ A tibble with \code{specimen_name}, \code{fws}, and optionally
 \description{
 Converts the VCF to GDS with \strong{SeqArray} when the GDS is missing, older
 than the VCF, or \code{overwrite} is \code{TRUE}, then runs \code{moimix::getFws()}.
+The VCF must carry per-sample allelic depths (\code{FORMAT/AD}).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{vcf}}: Input VCF path (\code{.vcf} or \code{.vcf.gz}) with \code{FORMAT/AD}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}}: Fws TSV with columns \code{specimen_name}, \code{fws}, and optionally
+\code{population_name}. Defaults to \code{"fws_result.tsv"}.
+\item \strong{\code{gds}} (optional): GDS path used/created beside the VCF. If \code{NULL},
+derived by replacing \code{.vcf} / \code{.vcf.gz} with \code{.gds}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{calculate_fws_from_vcf(
+  vcf = "calls.vcf.gz",
+  output = "fws_result.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/calculate_fws_from_vcf \\
+  --vcf calls.vcf.gz \\
+  --output fws_result.tsv
+}\if{html}{\out{</div>}}
+
 Requires \strong{moimix} and \strong{SeqArray} (Suggests). \code{moimix} is installed from
-GitHub (\code{bahlolab/moimix}), not CRAN. The VCF must carry per-sample allelic
-depths (\code{FORMAT/AD}).
+GitHub (\code{bahlolab/moimix}), not CRAN.
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

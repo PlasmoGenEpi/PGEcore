@@ -126,10 +126,33 @@ estimate_coi_naive_from_alleles <- function(df_alleles,
 #' `method = "quantile_method"`, the value at `quantile_threshold` is used
 #' instead (scaling naturally with the number of observed allele rows).
 #'
-#' @param allele_table Path to a TSV of allele calls with columns
-#'   `specimen_name`, `target_name`, `reads`, and `seq`.
-#' @param output Optional path to write a TSV with columns
-#'   `specimen_name` and `coi`. If `NULL`, results are returned without writing.
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table (`specimen_name`, `target_name`, `seq`,
+#'   `reads`). See `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): COI table TSV with columns `specimen_name` and
+#'   `coi`. If `NULL`, results are returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' estimate_coi_naive(
+#'   allele_table = "allele_table.tsv",
+#'   output = "coi_table.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/estimate_coi_naive \
+#'   --allele_table allele_table.tsv \
+#'   --output coi_table.tsv
+#' ```
+#'
+#' @param allele_table Path to an allele table TSV. See *Inputs*.
+#' @param output Optional output TSV path.
 #' @param method One of `"integer_method"` or `"quantile_method"`.
 #'   Default: `"integer_method"`.
 #' @param integer_threshold Positive integer index into the ordered allele
@@ -138,6 +161,8 @@ estimate_coi_naive_from_alleles <- function(df_alleles,
 #'   Values near zero yield higher COI estimates. Default: `0.05`.
 #'
 #' @return A tibble with columns `specimen_name` and `coi`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examples
 #' allele_path <- system.file(

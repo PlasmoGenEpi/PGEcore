@@ -9,26 +9,17 @@ opts <- list(
   make_option(
     "--aa_calls",
     type = "character",
-    help = paste0(
-      "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ",
-      "gene, pos, reads, aa"
-    )
+    help = "AA calls TSV (specimen_name, gene_id, aa_position, reads, aa). See vignette input-formats."
   ),
   make_option(
     "--loci_groups",
     type = "character",
-    help = paste0(
-      "Path to a TSV file containing loci group definitions, with the ",
-      "columns: group_id, gene_id, aa_position"
-    )
+    help = "Loci groups TSV (group_id, gene_id, aa_position). See vignette input-formats."
   ),
   make_option(
     "--output",
     type = "character",
-    help = paste0(
-      "Path to write an output TSV file containing prevalence and frequency estimates ",
-      "for all variants in the data"
-    )
+    help = "Multilocus prev/freq TSV output (group_id, variant, prev, freq, sample_total)."
   )
 )
 

@@ -14,10 +14,9 @@ vcf_to_snp_calls(
 )
 }
 \arguments{
-\item{vcf}{Path to a VCF (\code{.vcf} or \code{.vcf.gz}) with \code{FORMAT/AD}.}
+\item{vcf}{Path to a VCF with \code{FORMAT/AD}. See \emph{Inputs}.}
 
-\item{snp_calls_output}{Output TSV path; gzip-compressed if it ends in \code{.gz}.
-If \code{NULL}, results are returned without writing.}
+\item{snp_calls_output}{Optional output SNP calls TSV path.}
 
 \item{biallelic}{If \code{TRUE}, keep only sites with exactly one simple ALT.}
 
@@ -35,4 +34,35 @@ also written to that path.
 Reverse of \code{\link[=snp_calls_to_vcf]{snp_calls_to_vcf()}}: emits one row per \verb{(specimen, SNP, observed allele)} where allelic depth is at least \code{min_reads}. Only simple SNP alleles
 (single-base REF and ALT in \verb{\{A,C,G,T\}}) are kept. \code{pos} is 0-based. \code{strand}
 is always \code{+}. \code{target_name} is included only when INFO carries \verb{TARGET=}.
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{vcf}}: Path to a VCF (\code{.vcf} or \code{.vcf.gz}) with \code{FORMAT/AD}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{snp_calls_output}} (optional): SNP calls TSV; gzip-compressed if it
+ends in \code{.gz}. If \code{NULL}, results are returned without writing.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{vcf_to_snp_calls(
+  vcf = "calls.vcf.gz",
+  snp_calls_output = "snp_calls.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/vcf_to_snp_calls \\
+  --vcf calls.vcf.gz \\
+  --snp_calls_output snp_calls.tsv
+}\if{html}{\out{</div>}}
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

@@ -8,12 +8,7 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--allele_table",
-    help = paste(
-      "TSV containing alleles, with columns identifying specimens,",
-      "target names, and target values. The names of these columns are given",
-      "by the --specimen_name_col, --target_name_col, and --target_value_col",
-      "arguments, respectively. Required."
-    )
+    help = "Allele table TSV (specimen_name, target_name, seq by default). See vignette input-formats."
   ),
   make_option(
     "--specimen_name_col",
@@ -36,7 +31,7 @@ opts <- list(
   make_option(
     "--output",
     default = "per_locus_popgen_summary.tsv",
-    help = "the output path of the results"
+    help = "Per-locus popgen summary TSV output. Default: %default"
   ),
   make_option(
     "--msa_method",

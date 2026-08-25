@@ -2,20 +2,41 @@
 #'
 #' Processes SNP read-count data and optionally population-level minor allele
 #' frequencies (PLMAF), then estimates COI with both the frequency and variant
-#' methods from the **coiaf** package.
+#' methods from the **coiaf** package (Suggests; not installed with PGEcore).
 #'
-#' The **coiaf** package is an optional dependency (Suggests). It is not
-#' installed automatically with PGEcore.
+#' ## Inputs
 #'
-#' @param snp_calls A data frame with columns `specimen_name`, `snp_name`,
-#'   `reads`, and `seq_base`.
-#' @param plmaf Optional data frame with columns `snp_name`, `seq_base`, and
-#'   `plmaf`. If `NULL`, PLMAF is calculated from `snp_calls`.
+#' - **`snp_calls`**: SNP-calls data frame (`specimen_name`, `snp_name`,
+#'   `reads`, `seq_base`). See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`plmaf`**: Optional PLMAF data frame (`snp_name`, `seq_base`, `plmaf`).
+#'   If `NULL`, PLMAF is calculated from `snp_calls`.
+#'
+#' ## Outputs
+#'
+#' - Returns a data frame with `specimen_name`, `coi_freq`, and `coi_variant`
+#'   (not written to disk). For file I/O, use [coiaf_wrapper()].
+#'
+#' ## Running
+#'
+#' ```r
+#' run_coiaf(snp_calls = snp_df, plmaf = plmaf_df)
+#' ```
+#'
+#' File and CLI users should call [coiaf_wrapper()] /
+#' `Rscript exec/coiaf_wrapper ...`.
+#'
+#' Requires **coiaf** (Suggests).
+#'
+#' @param snp_calls SNP-calls data frame. See *Inputs*.
+#' @param plmaf Optional PLMAF data frame. See *Inputs*.
 #' @param seq_error Sequencing error rate (default: `0.01`).
 #' @param max_coi Maximum COI to consider (default: `25`).
 #'
 #' @return A data frame with columns `specimen_name`, `coi_freq`, and
 #'   `coi_variant`.
+#'
+#' @seealso [coiaf_wrapper()], `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
@@ -143,17 +164,48 @@ run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
     )
 }
 
-#' Run COIAF from input and output file paths
+#' Estimate COI with coiaf from SNP-call and output paths
 #'
-#' File-oriented entry point used by the `coiaf_wrapper` CLI.
+#' Reads SNP calls (and optional PLMAF), runs [run_coiaf()], and writes COI
+#' estimates. Requires **coiaf** (Suggests).
 #'
-#' @param snp_calls Path to SNP data TSV.
-#' @param output Path for output TSV.
-#' @param plmaf Optional path to PLMAF TSV.
+#' ## Inputs
+#'
+#' - **`snp_calls`**: Path to SNP-calls TSV. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`plmaf`**: Optional path to PLMAF TSV (`snp_name`, `seq_base`, `plmaf`).
+#'
+#' ## Outputs
+#'
+#' - **`output`**: TSV with `specimen_name`, `coi_freq`, and `coi_variant`.
+#'
+#' ## Running
+#'
+#' ```r
+#' coiaf_wrapper(
+#'   snp_calls = "snp_calls.tsv",
+#'   output = "coi_estimates.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/coiaf_wrapper \
+#'   --snp_calls snp_calls.tsv \
+#'   --output coi_estimates.tsv
+#' ```
+#'
+#' Requires **coiaf** (Suggests).
+#'
+#' @param snp_calls Path to SNP-calls TSV. See *Inputs*.
+#' @param output Output TSV path. See *Outputs*.
+#' @param plmaf Optional path to PLMAF TSV. See *Inputs*.
 #' @param seq_error Sequencing error rate (default: `0.01`).
 #' @param max_coi Maximum COI to consider (default: `25`).
 #'
 #' @return The result tibble (also written to `output`).
+#'
+#' @seealso [run_coiaf()], `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 coiaf_wrapper <- function(snp_calls,
                           output,

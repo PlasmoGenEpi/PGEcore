@@ -16,11 +16,10 @@ snp_calls_to_vcf(
 )
 }
 \arguments{
-\item{snp_calls}{Path to a SNP-calls TSV, or a data frame, with columns
-\code{specimen_name}, \code{chrom}, \code{pos}, \code{snp_name}, \code{strand}, \code{ref_base},
-\code{seq_base}, and \code{reads}. \code{pos} is 0-based (emitted as 1-based VCF \code{POS}).}
+\item{snp_calls}{Path to a SNP calls TSV, or a data frame with the same
+columns. See \emph{Inputs}.}
 
-\item{genome}{Path to a reference genome FASTA used for \verb{##contig} lengths.}
+\item{genome}{Path to a reference genome FASTA. See \emph{Inputs}.}
 
 \item{vcf_output}{Output VCF path; gzip-compressed if it ends in \code{.gz}.}
 
@@ -41,6 +40,43 @@ Invisibly returns \code{TRUE}.
 Converts pileup SNP calls (raw or collapsed) into a VCF with per-sample
 allelic depths (\code{FORMAT/AD}). Reads are summed per \verb{(specimen, SNP, allele)}
 across overlapping targets. \code{REF}/\code{ALT} are written on the forward (genome)
-strand. Monomorphic sites are skipped. Requires \strong{Biostrings} (Suggests) to
-read \code{--genome} contig lengths.
+strand. Monomorphic sites are skipped.
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{snp_calls}}: SNP calls (\code{specimen_name}, \code{chrom}, \code{pos}, \code{snp_name},
+\code{strand}, \code{ref_base}, \code{seq_base}, \code{reads}), as a file path or data frame.
+\code{pos} is 0-based (emitted as 1-based VCF \code{POS}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{genome}}: Reference genome FASTA used for \verb{##contig} lengths.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{vcf_output}}: Output VCF path; gzip-compressed if it ends in \code{.gz}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{snp_calls_to_vcf(
+  snp_calls = "snp_calls.tsv",
+  genome = "genome.fasta",
+  vcf_output = "calls.vcf.gz"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/snp_calls_to_vcf \\
+  --snp_calls snp_calls.tsv \\
+  --genome genome.fasta \\
+  --vcf_output calls.vcf.gz
+}\if{html}{\out{</div>}}
+
+Requires \strong{Biostrings} (Suggests) to read \code{--genome} contig lengths.
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

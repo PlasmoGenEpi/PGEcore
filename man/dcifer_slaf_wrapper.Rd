@@ -17,13 +17,14 @@ dcifer_slaf_wrapper(
 )
 }
 \arguments{
-\item{allele_table}{Path to allele TSV.}
+\item{allele_table}{Path to allele table TSV. See \emph{Inputs}.}
 
-\item{slaf_output}{Path for SLAF TSV output.}
+\item{slaf_output}{Path for SLAF TSV output. See \emph{Outputs}.}
 
-\item{coi_table}{Optional path to COI TSV.}
+\item{coi_table}{Optional path to COI table TSV. See \emph{Inputs}.}
 
-\item{specimen_name_col, target_name_col, target_value_col}{Column names.}
+\item{specimen_name_col, target_name_col, target_value_col}{Column names in
+\code{allele_table} / \code{coi_table}.}
 
 \item{tol, qstart}{Passed to \code{dcifer::calcAfreq()}.}
 
@@ -34,6 +35,43 @@ dcifer_slaf_wrapper(
 The SLAF tibble (also written to \code{slaf_output}).
 }
 \description{
-File-oriented entry point used by the \code{dcifer_slaf_wrapper} CLI. The
-\strong{dcifer} package is an optional dependency (Suggests).
+Estimates per-locus allele frequencies from an allele table (optionally with
+a COI table). Requires \strong{dcifer} (Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table TSV. See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{coi_table}}: Optional COI table TSV. If omitted, COI is inferred with
+\code{dcifer::getCOI()}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{slaf_output}}: Single-locus allele frequencies (default columns
+\code{target_name}, \code{seq}, \code{freq}, \code{sample_total}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{dcifer_slaf_wrapper(
+  allele_table = "allele_table.tsv",
+  slaf_output = "slaf.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/dcifer_slaf_wrapper \\
+  --allele_table allele_table.tsv \\
+  --slaf_output slaf.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{dcifer} (Suggests).
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")},
+\code{\link[=dcifer_ibd_wrapper]{dcifer_ibd_wrapper()}}
 }

@@ -8,19 +8,15 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--snp_calls",
-    help = paste(
-      "TSV of SNP calls from pileup_specific_snps.R (raw snp_calls.tsv.gz or",
-      "collapsed_snp_calls.tsv.gz). Required columns: specimen_name, chrom, pos,",
-      "snp_name, strand, ref_base, seq_base, reads"
-    )
+    help = "SNP calls TSV (specimen_name, chrom, pos, snp_name, strand, ref_base, seq_base, reads). See vignette input-formats."
   ),
   make_option(
     "--genome",
-    help = "Reference genome FASTA; used to write accurate ##contig=<ID=,length=> headers"
+    help = "Reference genome FASTA for ##contig lengths."
   ),
   make_option(
     "--vcf_output",
-    help = "Output VCF path; gzip-compressed if it ends in .gz"
+    help = "Output VCF path; gzip-compressed if it ends in .gz."
   ),
   make_option(
     "--biallelic",

@@ -9,8 +9,8 @@ opts <- list(
   make_option(
     "--allele_table",
     help = paste0(
-      "TSV containing alleles present in each specimen, with columns: ",
-      "specimen_name, target_name, seq"
+      "Allele table TSV (specimen_name, target_name, seq). ",
+      "See vignette input-formats."
     ),
     type = "character",
     default = NULL
@@ -24,8 +24,7 @@ opts <- list(
   make_option(
     "--target_groups",
     help = paste0(
-      "TSV containing the targets that should be analyzed for specific groups (eg pfdhr/pfdhps), with columns: ",
-      "group_id, target_name"
+      "Optional groups TSV (group_id, target_name) when --subset_targets TRUE."
     ),
     type = "character",
     default = NULL
@@ -51,13 +50,13 @@ opts <- list(
   ),
   make_option(
     "--freq_output",
-    help = "Path to frequency output file",
+    help = "Output genotype-frequency TSV (gt_id, target_name, seq, freq, freq_se).",
     type = "character",
     default = "gt_freq_summary_all.tsv"
   ),
   make_option(
     "--phase_output",
-    help = "Path to phasing output file",
+    help = "Output phasing TSV (specimen_name, target_name, seq, gt_id, posterior_est, phase_id).",
     type = "character",
     default = "gt_phase_summary_all.tsv"
   ),

@@ -25,12 +25,11 @@ THEREALMcCOIL_wrapper(
 )
 }
 \arguments{
-\item{snp_calls}{TSV of SNP calls with at least \code{specimen_name},
-\code{snp_name}, \code{pos}, \code{seq_base}, \code{reads} (and typically \code{target_name}, \code{he}).}
+\item{snp_calls}{Path to SNP-calls TSV. See \emph{Inputs}.}
 
-\item{slaf_output}{Output TSV of allele frequencies (\code{variant}, \code{freq}).}
+\item{slaf_output}{Output TSV of allele frequencies. See \emph{Outputs}.}
 
-\item{coi_output}{Output TSV of COI estimates (\code{specimen_name}, \code{coi}).}
+\item{coi_output}{Output TSV of COI estimates. See \emph{Outputs}.}
 
 \item{model}{\code{"categorical"} (heterozygous/homozygous calls) or
 \code{"proportional"} (allele frequency / read-count data).}
@@ -61,15 +60,53 @@ with COI and allele frequencies.}
 \item{n_chains}{Number of independent MCMC chains. More than one chain is
 required for the Gelman-Rubin R-hat diagnostic.}
 
-\item{convergence_output}{Output TSV of MCMC convergence diagnostics, one
-row per parameter.}
+\item{convergence_output}{Output TSV of MCMC convergence diagnostics. See
+\emph{Outputs}.}
 }
 \value{
 A list with \code{slaf}, \code{coi} and \code{convergence} (invisibly after writing
 outputs).
 }
 \description{
-File-oriented entry point used by the \code{THEREALMcCOIL_wrapper} CLI. Compiled
-C MCMC routines (\code{McCOIL_categorical}, \code{McCOIL_prop}) are linked at package
-install time.
+Runs THEREALMcCOIL MCMC on SNP calls to estimate per-specimen COI and
+single-locus allele frequencies. Compiled C routines (\code{McCOIL_categorical},
+\code{McCOIL_prop}) are linked at package install time. Requires \strong{posterior}
+(Suggests) for convergence diagnostics.
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{snp_calls}}: SNP-calls TSV (at least \code{specimen_name}, \code{snp_name},
+\code{reads}, \code{seq_base}; typically also \code{target_name}, \code{pos}, \code{he}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{slaf_output}}: Single-locus allele frequencies (\code{variant}, \code{freq}).
+\item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi}).
+\item \strong{\code{convergence_output}}: MCMC diagnostics (\code{variable}, \code{mean}, \code{median},
+\code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{THEREALMcCOIL_wrapper(
+  snp_calls = "snp_calls.tsv",
+  slaf_output = "slaf.tsv",
+  coi_output = "coi.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/THEREALMcCOIL_wrapper \\
+  --snp_calls snp_calls.tsv \\
+  --slaf_output slaf.tsv \\
+  --coi_output coi.tsv
+}\if{html}{\out{</div>}}
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

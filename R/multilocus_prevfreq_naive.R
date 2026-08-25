@@ -410,19 +410,50 @@ build_naive_multilocus_calls_for_group <- function(aa_calls, group_df, wsaf_cut_
 #' samples). Prevalence and frequency are then estimated with `wsaf_prop` or
 #' `presence_absence`.
 #'
-#' @param aa_calls Path to a TSV of amino acid calls with columns
-#'   `specimen_name`, `gene`, `gene_id`, `aa_position`, `reads`, and `aa`.
-#' @param loci_groups Path to a TSV of loci groups with columns
-#'   `group_id`, `gene_id`, and `aa_position`.
-#' @param output Optional path for the multilocus prev/freq TSV. If
-#'   `NULL`, results are returned without writing.
-#' @param single_locus_output Optional path for single-locus
-#'   prev/freq recalculated from the inferred multilocus calls.
+#' ## Inputs
+#'
+#' - **`aa_calls`**: AA calls (`specimen_name`, `gene`, `gene_id`,
+#'   `aa_position`, `reads`, `aa`). See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`loci_groups`**: Loci groups (`group_id`, `gene_id`, `aa_position`).
+#'   See the same vignette.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): Multilocus prev/freq TSV (includes `group_id`,
+#'   `variant`, `prev`, `freq`). If `NULL`, results are returned without writing.
+#' - **`single_locus_output`** (optional): Single-locus prev/freq recalculated
+#'   from the inferred multilocus calls.
+#'
+#' ## Running
+#'
+#' ```r
+#' multilocus_prevfreq_naive(
+#'   aa_calls = "aa_calls.tsv",
+#'   loci_groups = "loci_groups.tsv",
+#'   output = "multilocus_prevfreq.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/multilocus_prevfreq_naive \
+#'   --aa_calls aa_calls.tsv \
+#'   --loci_groups loci_groups.tsv \
+#'   --output multilocus_prevfreq.tsv
+#' ```
+#'
+#' @param aa_calls Path to an AA calls TSV. See *Inputs*.
+#' @param loci_groups Path to a loci groups TSV. See *Inputs*.
+#' @param output Optional path for the multilocus prev/freq TSV.
+#' @param single_locus_output Optional path for single-locus prev/freq
+#'   recalculated from the inferred multilocus calls.
 #' @param method `"wsaf_prop"` (default) or `"presence_absence"`.
 #' @param wsaf_cut_off WSAF threshold used to infer a dominant haplotype when
 #'   more than one locus is heterozygous. Default: `0.70`.
 #'
 #' @return A tibble of multilocus prevalence and frequency estimates.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examples
 #' aa_path <- system.file(

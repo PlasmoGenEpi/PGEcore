@@ -8,10 +8,7 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     c("--aa_calls"),
-    help = paste0(
-      "TSV containing amino acid calls, with the columns: specimen_name, ",
-      "target_name, gene_id, aa_position, ref_aa, aa, reads"
-    ),
+    help = "AA calls TSV (specimen_name, gene_id, aa_position, aa). See vignette input-formats.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -23,10 +20,7 @@ opts <- list(
   ),
   make_option(
     c("--allele_table"),
-    help = paste0(
-      "TSV containing microhaplotype genotypes, with the columns: ",
-      "specimen_name, target_name, seq, reads"
-    ),
+    help = "Allele table TSV (specimen_name, target_name, seq). See vignette input-formats.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -38,9 +32,7 @@ opts <- list(
   ),
   make_option(
     c("-o", "--output"),
-    help = paste0(
-      "Output file name. Default: %default"
-    ),
+    help = "Prevalence TSV output. Default: %default",
     type = "character",
     default = "prevalence.tsv"
   )

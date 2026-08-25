@@ -89,16 +89,45 @@ format_naive_prev_output <- function(prevalence, from_aa) {
 #' Exactly one of `aa_calls` or `allele_table` must be provided. Prevalence is the
 #' fraction of specimens carrying each allele at a locus.
 #'
-#' @param aa_calls Optional path to a TSV of amino acid calls with columns
-#'   `specimen_name`, `gene_id`, `aa_position`, and `aa`.
-#' @param allele_table Optional path to a TSV of microhaplotype genotypes with
-#'   columns `specimen_name`, `target_name`, and `seq`.
-#' @param output Optional output TSV path. If `NULL`, results are returned
-#'   without writing a file.
+#' ## Inputs
+#'
+#' - **`aa_calls`** (optional): AA calls (`specimen_name`, `gene_id`,
+#'   `aa_position`, `aa`). See `vignette("input-formats", package = "PGEcore")`.
+#' - **`allele_table`** (optional): Allele table (`specimen_name`,
+#'   `target_name`, `seq`). See the same vignette.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): Prevalence TSV. For AA input: `variant`, `prev`,
+#'   `sample_count`, `sample_total`. For microhaplotype input: `target_name`,
+#'   `seq`, `prev`, `sample_count`, `sample_total`. If `NULL`, results are
+#'   returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' estimate_allele_prevalence_naive(
+#'   aa_calls = "aa_calls.tsv",
+#'   output = "prevalence.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/estimate_allele_prevalence_naive \
+#'   --aa_calls aa_calls.tsv \
+#'   --output prevalence.tsv
+#' ```
+#'
+#' @param aa_calls Optional path to an AA calls TSV. See *Inputs*.
+#' @param allele_table Optional path to an allele table TSV. See *Inputs*.
+#' @param output Optional output TSV path. Default for the CLI is
+#'   `prevalence.tsv`.
 #'
 #' @return A tibble of allele prevalences. For amino acid input: `variant`,
 #'   `prev`, `sample_count`, `sample_total`. For microhaplotype input:
 #'   `target_name`, `seq`, `prev`, `sample_count`, `sample_total`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examples
 #' aa_path <- system.file(

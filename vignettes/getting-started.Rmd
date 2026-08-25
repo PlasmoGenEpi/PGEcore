@@ -49,9 +49,13 @@ count_samples_by_coi(coi_table)
 ```
 
 Function names match the CLI name (`count_samples_by_coi`, `moire_wrapper`,
-…). That is the API to start with. A small number of wrappers also export an
-in-memory `run_*` helper (`run_coiaf`, `run_moire`, `run_malariaem`) for when
-you already have data frames or model objects in R; see `?run_moire`.
+…). That is the API to start with. Each tool’s help page has the same
+structure—**Inputs**, **Outputs**, and **Running** (R + CLI examples). Shared
+table layouts live in `vignette("input-formats", package = "PGEcore")`.
+
+A small number of wrappers also export an in-memory `run_*` helper
+(`run_coiaf`, `run_moire`, `run_malariaem`) for when you already have data
+frames or model objects in R; see `?run_moire`.
 
 ```{r}
 ?count_samples_by_coi

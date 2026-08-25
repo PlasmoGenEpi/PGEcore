@@ -7,14 +7,11 @@
 multilocus_prevfreq_naive_variantstring(aa_calls, loci_groups, output = NULL)
 }
 \arguments{
-\item{aa_calls}{Path to a TSV of amino acid calls with columns
-\code{specimen_name}, \code{gene_id}, \code{aa_position}, \code{reads}, and \code{aa}.}
+\item{aa_calls}{Path to an AA calls TSV. See \emph{Inputs}.}
 
-\item{loci_groups}{Path to a TSV of loci groups with columns
-\code{group_id}, \code{gene_id}, and \code{aa_position}.}
+\item{loci_groups}{Path to a loci groups TSV. See \emph{Inputs}.}
 
-\item{output}{Optional path for the prev/freq TSV. If \code{NULL}, results
-are returned without writing.}
+\item{output}{Optional path for the prev/freq TSV.}
 }
 \value{
 A tibble with columns \code{group_id}, \code{variant}, \code{prev}, \code{freq}, and
@@ -27,8 +24,41 @@ unambiguous component genotypes, and estimates prevalence and frequency of
 each component against the full dataset.
 }
 \details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{aa_calls}}: AA calls (\code{specimen_name}, \code{gene_id}, \code{aa_position},
+\code{reads}, \code{aa}). See \code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{loci_groups}}: Loci groups (\code{group_id}, \code{gene_id}, \code{aa_position}).
+See the same vignette.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): Prev/freq TSV with columns \code{group_id},
+\code{variant}, \code{prev}, \code{freq}, and \code{sample_total}. If \code{NULL}, results are
+returned without writing.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{multilocus_prevfreq_naive_variantstring(
+  aa_calls = "aa_calls.tsv",
+  loci_groups = "loci_groups.tsv",
+  output = "multilocus_prevfreq.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/multilocus_prevfreq_naive_variantstring \\
+  --aa_calls aa_calls.tsv \\
+  --loci_groups loci_groups.tsv \\
+  --output multilocus_prevfreq.tsv
+}\if{html}{\out{</div>}}
+
 Requires the optional \strong{variantstring} package (Suggests). It is not
 installed automatically with PGEcore.
+}
 }
 \examples{
 \dontshow{if (requireNamespace("variantstring", quietly = TRUE)) withAutoprint(\{ # examplesIf}
@@ -42,4 +72,7 @@ groups_path <- system.file(
 )
 multilocus_prevfreq_naive_variantstring(aa_path, groups_path)
 \dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

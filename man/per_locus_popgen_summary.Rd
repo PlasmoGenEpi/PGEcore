@@ -14,7 +14,7 @@ per_locus_popgen_summary(
 )
 }
 \arguments{
-\item{allele_table}{Path to a TSV of alleles.}
+\item{allele_table}{Path to an allele table TSV. See \emph{Inputs}.}
 
 \item{specimen_name_col}{Specimen ID column name.}
 
@@ -23,8 +23,7 @@ per_locus_popgen_summary(
 \item{target_value_col}{Allele/sequence column name.}
 
 \item{output}{Optional output TSV path. Defaults to
-\code{"per_locus_popgen_summary.tsv"}. If \code{NULL}, results are returned without
-writing.}
+\code{"per_locus_popgen_summary.tsv"}.}
 
 \item{msa_method}{Alignment method: \code{"Muscle"} (default), \code{"ClustalW"}, or
 \code{"ClustalOmega"}.}
@@ -34,13 +33,47 @@ A tibble of per-locus statistics with lower-case column names.
 }
 \description{
 Groups allele sequences by locus and computes population-genetic summaries.
-Requires \strong{ape}, \strong{msa}, and \strong{pegas} (Suggests). \strong{msa} calls an
-external aligner; install the binary for \code{msa_method} on \code{PATH}:
 }
 \details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table (default columns \code{specimen_name},
+\code{target_name}, \code{seq}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): Per-locus stats TSV with lower-case column names
+(e.g. \code{target_name}, \code{nucleotide_diversity}, \code{segregating_sites},
+\code{tajima_d}, …). Defaults to \code{"per_locus_popgen_summary.tsv"}. If \code{NULL},
+results are returned without writing.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{per_locus_popgen_summary(
+  allele_table = "allele_table.tsv",
+  output = "per_locus_popgen_summary.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/per_locus_popgen_summary \\
+  --allele_table allele_table.tsv \\
+  --output per_locus_popgen_summary.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{ape}, \strong{msa}, and \strong{pegas} (Suggests). \strong{msa} calls an
+external aligner; install the binary for \code{msa_method} on \code{PATH}:
 \itemize{
 \item \code{"Muscle"} — \code{muscle}
 \item \code{"ClustalW"} — \code{clustalw}
 \item \code{"ClustalOmega"} — \code{clustalo}
 }
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

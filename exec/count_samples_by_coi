@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     c("-i", "--coi_table"),
-    help = "TSV containing coi calls, with the columns: specimen_name, coi ",
+    help = "COI table TSV (specimen_name, coi). See vignette input-formats.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -20,7 +20,7 @@ opts <- list(
   ),
   make_option(
     c("-o", "--output"),
-    help = "Output file name. Default: %default",
+    help = "Output TSV (coi, n, proportion). Default: %default",
     type = "character",
     default = "coi_distribution.tsv"
   )

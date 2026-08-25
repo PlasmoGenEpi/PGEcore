@@ -12,13 +12,12 @@ add_ref_seqs_with_full_genome_ref_fasta(
 )
 }
 \arguments{
-\item{ref_bed}{Path to a TSV BED table with a header, or a data frame, with
-columns \verb{#chrom}, \code{start}, \code{end}, \code{target_name}, \code{length}, and \code{strand}.}
+\item{ref_bed}{Path to a panel BED TSV, or a data frame with the same
+columns. See \emph{Inputs}.}
 
-\item{genome_fasta}{Path to a genome FASTA.}
+\item{genome_fasta}{Path to a genome FASTA. See \emph{Inputs}.}
 
-\item{output}{Optional output TSV path. If \code{NULL}, results are returned
-without writing.}
+\item{output}{Optional output TSV path.}
 
 \item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{output}.}
 }
@@ -28,6 +27,43 @@ A tibble of \code{ref_bed} with a \code{ref_seq} column.
 \description{
 For each BED interval, extracts \code{length} bases starting at 0-based \code{start}
 (Biostrings 1-based \code{start + 1}) from the contig named in \verb{#chrom}. Minus-
-strand intervals are reverse-complemented. Requires \strong{Biostrings} (Suggests).
-Genome FASTA names are truncated at the first whitespace.
+strand intervals are reverse-complemented. Genome FASTA names are truncated
+at the first whitespace.
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{ref_bed}}: Panel BED TSV with header (\verb{#chrom}, \code{start}, \code{end},
+\code{target_name}, \code{length}, \code{strand}), as a file path or data frame.
+\item \strong{\code{genome_fasta}}: Genome FASTA to extract intervals from.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): \code{ref_bed} TSV with a \code{ref_seq} column. If \code{NULL},
+results are returned without writing.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{add_ref_seqs_with_full_genome_ref_fasta(
+  ref_bed = "ref_bed.tsv",
+  genome_fasta = "genome.fasta",
+  output = "ref_bed_with_seq.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/add_ref_seqs_with_full_genome_ref_fasta \\
+  --ref_bed ref_bed.tsv \\
+  --genome_fasta genome.fasta \\
+  --output ref_bed_with_seq.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{Biostrings} (Suggests).
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

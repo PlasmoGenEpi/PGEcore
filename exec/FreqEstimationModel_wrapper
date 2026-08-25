@@ -9,22 +9,22 @@ opts <- list(
   make_option(
     "--aa_calls",
     help = paste0(
-      "TSV containing amino acid calls, with the columns: specimen_name, ",
-      "target_name, gene_id, aa_position, ref_aa, aa. Required."
+      "AA calls TSV (specimen_name, gene_id, aa_position, aa, ...). ",
+      "See vignette input-formats. Required."
     )
   ),
   make_option(
     "--coi",
     help = paste0(
-      "TSV containing COI for each specimen, with the columns: specimen_name, ",
-      "coi, or numeric input of COI. Required."
+      "COI table TSV (specimen_name, coi) or a numeric average COI. ",
+      "See vignette input-formats. Required."
     )
   ),
   make_option(
     "--loci_groups",
     help = paste0(
-      "TSV containing which regions should be analyzed for each group, with the columns: ",
-      "group_id, gene_id, aa_position. Required."
+      "Loci groups TSV (group_id, gene_id, aa_position). ",
+      "See vignette input-formats. Required."
     )
   ),
   make_option(
@@ -51,17 +51,15 @@ opts <- list(
   make_option(
     "--mlaf_output",
     help = paste0(
-      "Output TSV to contain multilocus allele frequencies, with the columns: ",
-      "variant, freq, median_freq, CI_2.5, CI_97.5, prev, sample_total. Required."
+      "Output MLAF TSV (variant, freq, ...). Required."
     )
   ),
   make_option(
     "--convergence_output",
     default = "convergence_diag.tsv",
     help = paste0(
-      "Output TSV to contain per-group MCMC convergence diagnostics, with the ",
-      "columns: group_id, variable, mean, median, sd, q5, q95, rhat, ess_bulk, ",
-      "ess_tail. Optional."
+      "Output per-group MCMC convergence diagnostics TSV. Optional. ",
+      "Default: %default"
     )
   )
 )

@@ -210,18 +210,47 @@ write_mlp_vs_prev <- function(df_prev, output) {
 #' unambiguous component genotypes, and estimates prevalence and frequency of
 #' each component against the full dataset.
 #'
+#' ## Inputs
+#'
+#' - **`aa_calls`**: AA calls (`specimen_name`, `gene_id`, `aa_position`,
+#'   `reads`, `aa`). See `vignette("input-formats", package = "PGEcore")`.
+#' - **`loci_groups`**: Loci groups (`group_id`, `gene_id`, `aa_position`).
+#'   See the same vignette.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): Prev/freq TSV with columns `group_id`,
+#'   `variant`, `prev`, `freq`, and `sample_total`. If `NULL`, results are
+#'   returned without writing.
+#'
+#' ## Running
+#'
+#' ```r
+#' multilocus_prevfreq_naive_variantstring(
+#'   aa_calls = "aa_calls.tsv",
+#'   loci_groups = "loci_groups.tsv",
+#'   output = "multilocus_prevfreq.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/multilocus_prevfreq_naive_variantstring \
+#'   --aa_calls aa_calls.tsv \
+#'   --loci_groups loci_groups.tsv \
+#'   --output multilocus_prevfreq.tsv
+#' ```
+#'
 #' Requires the optional **variantstring** package (Suggests). It is not
 #' installed automatically with PGEcore.
 #'
-#' @param aa_calls Path to a TSV of amino acid calls with columns
-#'   `specimen_name`, `gene_id`, `aa_position`, `reads`, and `aa`.
-#' @param loci_groups Path to a TSV of loci groups with columns
-#'   `group_id`, `gene_id`, and `aa_position`.
-#' @param output Optional path for the prev/freq TSV. If `NULL`, results
-#'   are returned without writing.
+#' @param aa_calls Path to an AA calls TSV. See *Inputs*.
+#' @param loci_groups Path to a loci groups TSV. See *Inputs*.
+#' @param output Optional path for the prev/freq TSV.
 #'
 #' @return A tibble with columns `group_id`, `variant`, `prev`, `freq`, and
 #'   `sample_total`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examplesIf requireNamespace("variantstring", quietly = TRUE)
 #' aa_path <- system.file(

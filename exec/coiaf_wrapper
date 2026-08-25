@@ -10,21 +10,21 @@ option_list <- list(
     c("--snp_calls"),
     type = "character",
     default = NULL,
-    help = "Path to SNP data file (TSV format) [required]",
+    help = "SNP calls TSV (specimen_name, snp_name, reads, seq_base). See vignette input-formats. [required]",
     metavar = "FILE"
   ),
   make_option(
     c("--plmaf"),
     type = "character",
     default = NULL,
-    help = "Path to population-level minor allele frequency file (TSV format) [optional]",
+    help = "Optional PLMAF TSV (snp_name, seq_base, plmaf). See vignette input-formats.",
     metavar = "FILE"
   ),
   make_option(
     c("--output"),
     type = "character",
     default = NULL,
-    help = "Path for output file (TSV format) [required]",
+    help = "Output COI TSV (specimen_name, coi_freq, coi_variant). [required]",
     metavar = "FILE"
   ),
   make_option(

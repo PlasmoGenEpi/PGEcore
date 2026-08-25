@@ -9,15 +9,12 @@ opts <- list(
   make_option(
     "--allele_table",
     type = "character",
-    help = paste0(
-      "Path to a TSV file containing allele calls, with the columns: specimen_name, ",
-      "target_name, reads, seq"
-    )
+    help = "Allele table TSV (specimen_name, target_name, seq, reads). See vignette input-formats."
   ),
   make_option(
     "--output",
     type = "character",
-    help = "Path to write a TSV file containing results, with the columns: specimen_name, coi"
+    help = "COI table TSV output (specimen_name, coi)."
   ),
   make_option(
     "--method",

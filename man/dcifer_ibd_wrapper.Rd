@@ -23,17 +23,18 @@ dcifer_ibd_wrapper(
 )
 }
 \arguments{
-\item{allele_table}{Path to allele TSV.}
+\item{allele_table}{Path to allele table TSV. See \emph{Inputs}.}
 
-\item{relatedness_output}{Path for relatedness TSV.}
+\item{relatedness_output}{Path for relatedness TSV. See \emph{Outputs}.}
 
-\item{coi_table}{Optional COI TSV.}
+\item{coi_table}{Optional path to COI table TSV. See \emph{Inputs}.}
 
-\item{allele_freq_table}{Optional allele-frequency TSV.}
+\item{allele_freq_table}{Optional path to allele-frequency TSV. See \emph{Inputs}.}
 
-\item{specimen_name_col, target_name_col, target_value_col}{Column names.}
+\item{specimen_name_col, target_name_col, target_value_col}{Column names in
+the allele / COI / frequency tables.}
 
-\item{specimen_metadata}{Optional metadata TSV.}
+\item{specimen_metadata}{Optional metadata TSV. See \emph{Inputs}.}
 
 \item{pop_name_col}{Optional population column in metadata.}
 
@@ -54,7 +55,49 @@ dcifer_ibd_wrapper(
 The relatedness tibble (also written to \code{relatedness_output}).
 }
 \description{
-File-oriented entry point used by the \code{dcifer_ibd_wrapper} CLI. Optional
-\strong{dcifer} plus parallel helpers (\strong{doParallel}, \strong{parallelly}, \strong{foreach},
-\strong{iterators}) must be installed separately.
+Estimates pairwise relatedness from an allele table (optionally with COI,
+allele frequencies, and population metadata). Requires \strong{dcifer} and
+parallel helpers (\strong{doParallel}, \strong{parallelly}, \strong{foreach}, \strong{iterators})
+(Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table TSV. See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{coi_table}}: Optional COI table TSV. If omitted, COI is inferred.
+\item \strong{\code{allele_freq_table}}: Optional SLAF TSV (\code{target_name}, \code{seq}, \code{freq}).
+If omitted, frequencies are estimated from the allele table.
+\item \strong{\code{specimen_metadata}}: Optional metadata TSV for population-specific
+runs (with \code{pop_name_col}).
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{relatedness_output}}: Relatedness TSV with \code{specimen_name_a},
+\code{specimen_name_b}, \code{btwn_host_rel}, and optionally \code{p_value},
+\code{CI_lower}, \code{CI_upper}, and/or \code{strain_pair}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{dcifer_ibd_wrapper(
+  allele_table = "allele_table.tsv",
+  relatedness_output = "relatedness.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/dcifer_ibd_wrapper \\
+  --allele_table allele_table.tsv \\
+  --relatedness_output relatedness.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{dcifer} and parallel Suggests packages.
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")},
+\code{\link[=dcifer_slaf_wrapper]{dcifer_slaf_wrapper()}}
 }

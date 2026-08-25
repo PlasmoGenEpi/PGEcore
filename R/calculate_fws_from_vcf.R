@@ -37,20 +37,48 @@ gds_needs_conversion <- function(vcf_path, gds_path, overwrite = FALSE) {
 #'
 #' Converts the VCF to GDS with **SeqArray** when the GDS is missing, older
 #' than the VCF, or `overwrite` is `TRUE`, then runs `moimix::getFws()`.
-#' Requires **moimix** and **SeqArray** (Suggests). `moimix` is installed from
-#' GitHub (`bahlolab/moimix`), not CRAN. The VCF must carry per-sample allelic
-#' depths (`FORMAT/AD`).
+#' The VCF must carry per-sample allelic depths (`FORMAT/AD`).
 #'
-#' @param vcf Input VCF path (`.vcf` or `.vcf.gz`).
+#' ## Inputs
+#'
+#' - **`vcf`**: Input VCF path (`.vcf` or `.vcf.gz`) with `FORMAT/AD`.
+#'
+#' ## Outputs
+#'
+#' - **`output`**: Fws TSV with columns `specimen_name`, `fws`, and optionally
+#'   `population_name`. Defaults to `"fws_result.tsv"`.
+#' - **`gds`** (optional): GDS path used/created beside the VCF. If `NULL`,
+#'   derived by replacing `.vcf` / `.vcf.gz` with `.gds`.
+#'
+#' ## Running
+#'
+#' ```r
+#' calculate_fws_from_vcf(
+#'   vcf = "calls.vcf.gz",
+#'   output = "fws_result.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/calculate_fws_from_vcf \
+#'   --vcf calls.vcf.gz \
+#'   --output fws_result.tsv
+#' ```
+#'
+#' Requires **moimix** and **SeqArray** (Suggests). `moimix` is installed from
+#' GitHub (`bahlolab/moimix`), not CRAN.
+#'
+#' @param vcf Input VCF path. See *Inputs*.
 #' @param output Output TSV path. Defaults to `"fws_result.tsv"`.
-#' @param gds Optional GDS path. If `NULL`, derived by replacing `.vcf` /
-#'   `.vcf.gz` with `.gds`.
+#' @param gds Optional GDS path. If `NULL`, derived from the VCF path.
 #' @param population_name Optional population label added as a column.
 #' @param overwrite If `TRUE`, rebuild the GDS even when it is up to date.
 #' @param verbose If `TRUE`, print progress messages.
 #'
 #' @return A tibble with `specimen_name`, `fws`, and optionally
 #'   `population_name`, sorted by `fws`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 calculate_fws_from_vcf <- function(vcf,

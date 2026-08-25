@@ -16,19 +16,19 @@ malariaem_wrapper(
 )
 }
 \arguments{
-\item{allele_table}{Path to allele TSV (\code{specimen_name}, \code{target_name}, \code{seq}).}
+\item{allele_table}{Path to allele table TSV. See \emph{Inputs}.}
 
 \item{subset_targets}{Logical; subset by \code{target_groups}.}
 
-\item{target_groups}{Optional path to groups TSV.}
+\item{target_groups}{Optional path to groups TSV. See \emph{Inputs}.}
 
 \item{max_size}{COI cutoff (legacy CLI default \code{"8"}).}
 
 \item{test_size}{COI size to test, or \code{"min"}.}
 
-\item{freq_output}{Frequency summary path.}
+\item{freq_output}{Frequency summary path. See \emph{Outputs}.}
 
-\item{phase_output}{Phase summary path.}
+\item{phase_output}{Phase summary path. See \emph{Outputs}.}
 
 \item{seed}{Random seed.}
 }
@@ -36,5 +36,47 @@ malariaem_wrapper(
 The object returned by \code{\link[=run_malariaem]{run_malariaem()}}.
 }
 \description{
-File-oriented entry point used by the \code{malariaem_wrapper} CLI.
+Reads an allele table, builds the EM matrix, and calls \code{\link[=run_malariaem]{run_malariaem()}}.
+Requires \strong{malaria.em} (Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table TSV (\code{specimen_name}, \code{target_name},
+\code{seq}). See \code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{target_groups}}: Optional groups TSV (\code{group_id}, \code{target_name}) when
+\code{subset_targets = TRUE}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{freq_output}}: Genotype-frequency TSV (\code{gt_id}, \code{target_name}, \code{seq},
+\code{freq}, \code{freq_se}).
+\item \strong{\code{phase_output}}: Phasing TSV (\code{specimen_name}, \code{target_name}, \code{seq},
+\code{gt_id}, \code{posterior_est}, \code{phase_id}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{malariaem_wrapper(
+  allele_table = "allele_table.tsv",
+  freq_output = "gt_freq_summary_all.tsv",
+  phase_output = "gt_phase_summary_all.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/malariaem_wrapper \\
+  --allele_table allele_table.tsv \\
+  --freq_output gt_freq_summary_all.tsv \\
+  --phase_output gt_phase_summary_all.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{malaria.em} (Suggests).
+}
+}
+\seealso{
+\code{\link[=run_malariaem]{run_malariaem()}},
+\code{vignette("input-formats", package = "PGEcore")}
 }

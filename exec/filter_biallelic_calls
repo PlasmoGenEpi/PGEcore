@@ -8,15 +8,15 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--aa_calls",
-    help = "table with amino acid calls"
+    help = "AA calls TSV (gene_id, aa_position, ref_aa, aa). See vignette input-formats."
   ),
   make_option(
     "--output",
-    help = "the out file to write to"
+    help = "Biallelic AA calls TSV output."
   ),
   make_option(
     "--nonbiallelic_output",
-    help = "only process these targets"
+    help = "Non-biallelic AA calls TSV output (optional)."
   ),
   make_option(
     "--overwrite",

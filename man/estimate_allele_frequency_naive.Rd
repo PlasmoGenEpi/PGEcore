@@ -12,17 +12,15 @@ estimate_allele_frequency_naive(
 )
 }
 \arguments{
-\item{aa_calls}{Optional path to a TSV of amino acid calls with columns
-\code{specimen_name}, \code{gene_id}, \code{aa_position}, \code{aa}, and \code{reads}.}
+\item{aa_calls}{Optional path to an AA calls TSV. See \emph{Inputs}.}
 
-\item{allele_table}{Optional path to a TSV of microhaplotype genotypes with
-columns \code{specimen_name}, \code{target_name}, \code{seq}, and \code{reads}.}
+\item{allele_table}{Optional path to an allele table TSV. See \emph{Inputs}.}
 
 \item{method}{Estimation method: \code{"presence_absence"} (default) or
 \code{"read_count_prop"}.}
 
-\item{output}{Optional output TSV path. If \code{NULL}, results are returned
-without writing a file.}
+\item{output}{Optional output TSV path. Default for the CLI is
+\code{allele_frequency.tsv}.}
 }
 \value{
 A tibble of estimated allele frequencies. For amino acid input the
@@ -35,6 +33,41 @@ Exactly one of \code{aa_calls} or \code{allele_table} must be provided. Frequenc
 estimated either from within-sample read-count proportions
 (\code{read_count_prop}) or from presence/absence (\code{presence_absence}).
 }
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{aa_calls}} (optional): AA calls (\code{specimen_name}, \code{gene_id},
+\code{aa_position}, \code{aa}, \code{reads}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{allele_table}} (optional): Allele table (\code{specimen_name},
+\code{target_name}, \code{seq}, \code{reads}). See the same vignette.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): Allele-frequency TSV. For AA input, \code{variant} is
+a STAVE-style \code{gene_id:aa_position:aa} string plus \code{freq} (and count
+columns for \code{presence_absence}). For microhaplotype input: \code{target_name},
+\code{seq}, \code{freq} (plus counts for \code{presence_absence}). If \code{NULL}, results are
+returned without writing a file.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{estimate_allele_frequency_naive(
+  aa_calls = "aa_calls.tsv",
+  output = "allele_frequency.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/estimate_allele_frequency_naive \\
+  --aa_calls aa_calls.tsv \\
+  --output allele_frequency.tsv
+}\if{html}{\out{</div>}}
+}
+}
 \examples{
 aa_path <- system.file(
   "extdata", "example_aa_calls.tsv",
@@ -42,4 +75,7 @@ aa_path <- system.file(
 )
 estimate_allele_frequency_naive(aa_calls = aa_path)
 
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

@@ -8,18 +8,12 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--allele_table",
-    help = paste0(
-      "TSV containing allele present/absent per specimen, with the ",
-      "columns: specimen_name, target_name, seq"
-    )
+    help = "Allele table TSV (specimen_name, target_name, seq). See vignette input-formats."
   ),
   make_option(
     "--output",
     default = "allele_summary_by_target.tsv",
-    help = paste0(
-      "Output TSV path for the per-locus allele summary. ",
-      "Default: allele_summary_by_target.tsv"
-    )
+    help = "Per-locus allele summary TSV output. Default: %default"
   )
 )
 

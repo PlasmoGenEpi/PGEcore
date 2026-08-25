@@ -12,14 +12,12 @@ slaf_from_mhaps_freqs(
 )
 }
 \arguments{
-\item{mhaps_slaf}{Path or data frame with columns \code{target_name}, \code{seq},
-\code{freq}, and \code{sample_total}.}
+\item{mhaps_slaf}{Path or data frame of microhaplotype SLAF. See \emph{Inputs}.}
 
-\item{loci_of_interest_per_microhaps}{Path or data frame with columns
-\code{target_name}, \code{gene_id}, \code{aa_position}, \code{seq}, and \code{aa}.}
+\item{loci_of_interest_per_microhaps}{Path or data frame of translated loci.
+See \emph{Inputs}.}
 
-\item{slaf_output}{Optional path for collapsed SLAF TSV (\code{variant}, \code{freq},
-\code{sample_total}).}
+\item{slaf_output}{Optional path for collapsed SLAF TSV.}
 
 \item{per_target_slaf_output}{Optional path for per-target SLAF TSV.}
 }
@@ -31,4 +29,44 @@ Joins microhaplotype allele frequencies to translated amino acid calls,
 aggregates frequencies per amino acid allele, and renormalises so frequencies
 sum to one. Collapsed output averages evenly across overlapping targets
 (taking \code{max(sample_total)}).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{mhaps_slaf}}: Microhaplotype SLAF (\code{target_name}, \code{seq}, \code{freq},
+\code{sample_total}), as a file path or data frame. See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{loci_of_interest_per_microhaps}}: Translated loci per microhaplotype
+(\code{target_name}, \code{gene_id}, \code{aa_position}, \code{seq}, \code{aa}), as a file path or
+data frame.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{slaf_output}} (optional): Collapsed SLAF TSV (\code{variant}, \code{freq},
+\code{sample_total}).
+\item \strong{\code{per_target_slaf_output}} (optional): Per-target SLAF TSV
+(\code{target_name}, \code{variant}, \code{freq}, \code{sample_total}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{slaf_from_mhaps_freqs(
+  mhaps_slaf = "mhaps_slaf.tsv",
+  loci_of_interest_per_microhaps = "loci_of_interest_per_microhaps.tsv",
+  slaf_output = "slaf.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/slaf_from_mhaps_freqs \\
+  --mhaps_slaf mhaps_slaf.tsv \\
+  --loci_of_interest_per_microhaps loci_of_interest_per_microhaps.tsv \\
+  --slaf_output slaf.tsv
+}\if{html}{\out{</div>}}
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

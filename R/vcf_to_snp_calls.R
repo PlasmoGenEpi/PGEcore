@@ -24,9 +24,32 @@ info_target <- function(info) {
 #' (single-base REF and ALT in `{A,C,G,T}`) are kept. `pos` is 0-based. `strand`
 #' is always `+`. `target_name` is included only when INFO carries `TARGET=`.
 #'
-#' @param vcf Path to a VCF (`.vcf` or `.vcf.gz`) with `FORMAT/AD`.
-#' @param snp_calls_output Output TSV path; gzip-compressed if it ends in `.gz`.
-#'   If `NULL`, results are returned without writing.
+#' ## Inputs
+#'
+#' - **`vcf`**: Path to a VCF (`.vcf` or `.vcf.gz`) with `FORMAT/AD`.
+#'
+#' ## Outputs
+#'
+#' - **`snp_calls_output`** (optional): SNP calls TSV; gzip-compressed if it
+#'   ends in `.gz`. If `NULL`, results are returned without writing.
+#'
+#' ## Running
+#'
+#' ```r
+#' vcf_to_snp_calls(
+#'   vcf = "calls.vcf.gz",
+#'   snp_calls_output = "snp_calls.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/vcf_to_snp_calls \
+#'   --vcf calls.vcf.gz \
+#'   --snp_calls_output snp_calls.tsv
+#' ```
+#'
+#' @param vcf Path to a VCF with `FORMAT/AD`. See *Inputs*.
+#' @param snp_calls_output Optional output SNP calls TSV path.
 #' @param biallelic If `TRUE`, keep only sites with exactly one simple ALT.
 #' @param min_reads Minimum AD reads for an allele to be emitted.
 #' @param overwrite If `FALSE` (default), refuse to overwrite `snp_calls_output`.
@@ -34,6 +57,8 @@ info_target <- function(info) {
 #'
 #' @return A tibble of SNP calls. When `snp_calls_output` is set, the table is
 #'   also written to that path.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 vcf_to_snp_calls <- function(vcf,

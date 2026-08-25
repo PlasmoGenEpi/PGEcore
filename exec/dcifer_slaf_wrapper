@@ -9,17 +9,15 @@ opts <- list(
   make_option(
     "--allele_table",
     help = paste0(
-      "TSV containing alleles, with columns identifying specimens, ",
-      "target names, and target values. The names of these columns are given ",
-      "by the --specimen_name_col, --target_name_col, and --target_value_col ",
-      "arguments, respectively. Required."
+      "Allele table TSV (specimen_name, target_name, seq, reads). ",
+      "See vignette input-formats. Required."
     )
   ),
   make_option(
     "--coi_table",
     help = paste0(
-      "TSV containing specimen COIs, with a coi column and a column with ",
-      "specimen IDs named according to --specimen_name_col. Optional."
+      "Optional COI table TSV (specimen_name, coi). ",
+      "See vignette input-formats."
     )
   ),
   make_option(
@@ -71,9 +69,8 @@ opts <- list(
   make_option(
     "--slaf_output",
     help = paste0(
-      "Path of TSV file to contain single locus allele frequencies, with ",
-      "columns with names matching --target_name_col and --target_value_col, ",
-      "and a freq column. Required."
+      "Output SLAF TSV (target_name, seq, freq, sample_total by default). ",
+      "Required."
     )
   )
 )

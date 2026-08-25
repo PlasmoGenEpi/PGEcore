@@ -160,19 +160,47 @@ collapse_snp_allele_table <- function(allele_table_to_collapse,
 #'
 #' Aligns each unique haplotype to its panel reference with an overlap
 #' pairwise alignment, then extracts bases at SNP-of-interest coordinates.
+#'
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table (`specimen_name`, `target_name`, `reads`,
+#'   `seq`), as a file path or data frame. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`ref_bed`**: Panel BED with `ref_seq` (`#chrom`, `start`, `end`,
+#'   `target_name`, `length`, `strand`, `ref_seq`).
+#' - **`snps_of_interest`**: SNP BED (`#chrom`, `start`, `end`, `name`,
+#'   `length`, `strand`); each SNP must span one base (`end - start == 1`).
+#'
+#' ## Outputs
+#'
+#' - **`output_dir`**: Directory receiving `snp_calls.tsv.gz`,
+#'   `collapsed_snp_calls.tsv.gz`, `snps_covered_by_target_samples_info.tsv`,
+#'   and optionally `allele_table_out_uncallable.tsv`.
+#'
+#' ## Running
+#'
+#' ```r
+#' pileup_specific_snps(
+#'   allele_table = "allele_table.tsv",
+#'   ref_bed = "ref_bed_with_seq.tsv",
+#'   snps_of_interest = "snps.bed",
+#'   output_dir = "pileup_out"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/pileup_specific_snps \
+#'   --allele_table allele_table.tsv \
+#'   --ref_bed ref_bed_with_seq.tsv \
+#'   --snps_of_interest snps.bed \
+#'   --output_dir pileup_out
+#' ```
+#'
 #' Requires **Biostrings** and **pwalign** (Suggests).
 #'
-#' Writes `snp_calls.tsv.gz`, `collapsed_snp_calls.tsv.gz`,
-#' `snps_covered_by_target_samples_info.tsv`, and optionally
-#' `allele_table_out_uncallable.tsv` under `output_dir`.
-#'
-#' @param allele_table Path or data frame with columns `specimen_name`,
-#'   `target_name`, `reads`, and `seq`.
-#' @param ref_bed Path or data frame with columns `#chrom`, `start`, `end`,
-#'   `target_name`, `length`, `strand`, and `ref_seq`.
-#' @param snps_of_interest Path or data frame with columns `#chrom`, `start`,
-#'   `end`, `name`, `length`, and `strand`. Each SNP must span one base
-#'   (`end - start == 1`).
+#' @param allele_table Path or data frame of allele table. See *Inputs*.
+#' @param ref_bed Path or data frame of panel BED with `ref_seq`. See *Inputs*.
+#' @param snps_of_interest Path or data frame of SNP BED. See *Inputs*.
 #' @param output_dir Directory to write results. Created if missing.
 #' @param select_target_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of targets to keep.
@@ -185,6 +213,8 @@ collapse_snp_allele_table <- function(allele_table_to_collapse,
 #'
 #' @return A named list with `snp_calls`, `collapsed_snp_calls`,
 #'   `snps_covered_by_target_samples_info`, and `uncallable`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 pileup_specific_snps <- function(allele_table,

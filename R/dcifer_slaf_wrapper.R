@@ -119,18 +119,52 @@ prepare_dcifer_slaf_output <- function(allele_freqs_list,
 
 #' Estimate single-locus allele frequencies with Dcifer
 #'
-#' File-oriented entry point used by the `dcifer_slaf_wrapper` CLI. The
-#' **dcifer** package is an optional dependency (Suggests).
+#' Estimates per-locus allele frequencies from an allele table (optionally with
+#' a COI table). Requires **dcifer** (Suggests).
 #'
-#' @param allele_table Path to allele TSV.
-#' @param slaf_output Path for SLAF TSV output.
-#' @param coi_table Optional path to COI TSV.
-#' @param specimen_name_col,target_name_col,target_value_col Column names.
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table TSV. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`coi_table`**: Optional COI table TSV. If omitted, COI is inferred with
+#'   `dcifer::getCOI()`.
+#'
+#' ## Outputs
+#'
+#' - **`slaf_output`**: Single-locus allele frequencies (default columns
+#'   `target_name`, `seq`, `freq`, `sample_total`).
+#'
+#' ## Running
+#'
+#' ```r
+#' dcifer_slaf_wrapper(
+#'   allele_table = "allele_table.tsv",
+#'   slaf_output = "slaf.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/dcifer_slaf_wrapper \
+#'   --allele_table allele_table.tsv \
+#'   --slaf_output slaf.tsv
+#' ```
+#'
+#' Requires **dcifer** (Suggests).
+#'
+#' @param allele_table Path to allele table TSV. See *Inputs*.
+#' @param slaf_output Path for SLAF TSV output. See *Outputs*.
+#' @param coi_table Optional path to COI table TSV. See *Inputs*.
+#' @param specimen_name_col,target_name_col,target_value_col Column names in
+#'   `allele_table` / `coi_table`.
 #' @param tol,qstart Passed to `dcifer::calcAfreq()`.
 #' @param coi_lrank Rank of the locus used by `dcifer::getCOI()` when
 #'   `coi_table` is not supplied.
 #'
 #' @return The SLAF tibble (also written to `slaf_output`).
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`,
+#'   [dcifer_ibd_wrapper()]
+#'
 #' @export
 dcifer_slaf_wrapper <- function(allele_table,
                                 slaf_output,

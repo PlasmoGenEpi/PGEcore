@@ -11,14 +11,12 @@ estimate_allele_prevalence_naive(
 )
 }
 \arguments{
-\item{aa_calls}{Optional path to a TSV of amino acid calls with columns
-\code{specimen_name}, \code{gene_id}, \code{aa_position}, and \code{aa}.}
+\item{aa_calls}{Optional path to an AA calls TSV. See \emph{Inputs}.}
 
-\item{allele_table}{Optional path to a TSV of microhaplotype genotypes with
-columns \code{specimen_name}, \code{target_name}, and \code{seq}.}
+\item{allele_table}{Optional path to an allele table TSV. See \emph{Inputs}.}
 
-\item{output}{Optional output TSV path. If \code{NULL}, results are returned
-without writing a file.}
+\item{output}{Optional output TSV path. Default for the CLI is
+\code{prevalence.tsv}.}
 }
 \value{
 A tibble of allele prevalences. For amino acid input: \code{variant},
@@ -29,6 +27,39 @@ A tibble of allele prevalences. For amino acid input: \code{variant},
 Exactly one of \code{aa_calls} or \code{allele_table} must be provided. Prevalence is the
 fraction of specimens carrying each allele at a locus.
 }
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{aa_calls}} (optional): AA calls (\code{specimen_name}, \code{gene_id},
+\code{aa_position}, \code{aa}). See \code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{allele_table}} (optional): Allele table (\code{specimen_name},
+\code{target_name}, \code{seq}). See the same vignette.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): Prevalence TSV. For AA input: \code{variant}, \code{prev},
+\code{sample_count}, \code{sample_total}. For microhaplotype input: \code{target_name},
+\code{seq}, \code{prev}, \code{sample_count}, \code{sample_total}. If \code{NULL}, results are
+returned without writing a file.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{estimate_allele_prevalence_naive(
+  aa_calls = "aa_calls.tsv",
+  output = "prevalence.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/estimate_allele_prevalence_naive \\
+  --aa_calls aa_calls.tsv \\
+  --output prevalence.tsv
+}\if{html}{\out{</div>}}
+}
+}
 \examples{
 aa_path <- system.file(
   "extdata", "example_aa_calls.tsv",
@@ -36,4 +67,7 @@ aa_path <- system.file(
 )
 estimate_allele_prevalence_naive(aa_calls = aa_path)
 
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

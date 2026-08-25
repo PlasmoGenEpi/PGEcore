@@ -142,24 +142,54 @@ write_idm_output <- function(res, slaf_output, allele_table = FALSE) {
 
 #' Estimate single-locus allele frequencies with the Incomplete Data Model
 #'
-#' File-oriented entry point used by the `IDM_wrapper` CLI. Provide exactly one
-#' of `allele_table` or `aa_calls`.
+#' Estimates single-locus allele frequencies with the Incomplete Data Model
+#' (or original model). Provide exactly one of `allele_table` or `aa_calls`.
+#' Vendored MLE code is from Hashemi & Schneider (2024). Requires **Rmpfr** and
+#' **openxlsx** (Suggests).
 #'
-#' Vendored MLE code is from Hashemi & Schneider (2024) and requires the
-#' suggested packages **Rmpfr** and **openxlsx**.
+#' ## Inputs
 #'
-#' @param allele_table Path to allele TSV (`specimen_name`, `target_name`,
-#'   `seq`, `reads`), or `""` / `NULL` if using amino-acid calls.
-#' @param aa_calls Path to amino-acid TSV (`specimen_name`, `target_name`,
-#'   `gene_id`, `aa_position`, `ref_aa`, `aa`), or `""` / `NULL` if using an
-#'   allele table.
-#' @param slaf_output Output TSV path (`variant`, `freq`; allele-table input is
-#'   written as `target_name`, `seq`, `freq`).
+#' - **`allele_table`**: Allele table TSV, or `""` / `NULL` if using
+#'   `aa_calls`. See `vignette("input-formats", package = "PGEcore")`.
+#' - **`aa_calls`**: Amino-acid calls TSV, or `""` / `NULL` if using
+#'   `allele_table`.
+#'
+#' ## Outputs
+#'
+#' - **`slaf_output`**: Single-locus allele frequencies. Allele-table input is
+#'   written as `target_name`, `seq`, `freq`; AA-call input as `variant`,
+#'   `freq`.
+#'
+#' ## Running
+#'
+#' ```r
+#' IDM_wrapper(
+#'   allele_table = "allele_table.tsv",
+#'   slaf_output = "slaf.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/IDM_wrapper \
+#'   --allele_table allele_table.tsv \
+#'   --slaf_output slaf.tsv
+#' ```
+#'
+#' Requires **Rmpfr** and **openxlsx** (Suggests).
+#'
+#' @param allele_table Path to allele table TSV, or `""` / `NULL` if using
+#'   amino-acid calls. See *Inputs*.
+#' @param aa_calls Path to amino-acid calls TSV, or `""` / `NULL` if using an
+#'   allele table. See *Inputs*.
+#' @param slaf_output Output TSV path. See *Outputs*.
 #' @param model `"IDM"` (incomplete-data model) or `"OM"` (original model).
 #' @param lambda_initial Initial lambda for the numerical iteration.
 #' @param eps_initial Initial epsilon for the numerical iteration.
 #'
 #' @return The SLAF tibble (invisibly after writing `slaf_output`).
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 IDM_wrapper <- function(allele_table = "",
                         aa_calls = "",

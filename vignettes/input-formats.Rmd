@@ -15,9 +15,13 @@ knitr::opts_chunk$set(
 ```
 
 PGEcore tools read and write **TSV** tables with agreed column names so outputs
-from one step can be inputs to another. Bundled examples live in
-`inst/extdata/` after you install the package (or in that folder in the source
-tree).
+from one step can be inputs to another. Function and CLI arguments use the same
+schema names as the sections below (`allele_table`, `aa_calls`, `snp_calls`,
+`coi_table`, `loci_groups`, …). Tool help pages describe *which* tables they
+need; this vignette is the place for column layouts and examples.
+
+Bundled examples live in `inst/extdata/` after you install the package (or in
+that folder in the source tree).
 
 ```{r}
 library(PGEcore)

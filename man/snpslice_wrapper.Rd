@@ -30,17 +30,16 @@ snpslice_wrapper(
 )
 }
 \arguments{
-\item{allele_table}{Path to allele TSV with counts.}
+\item{allele_table}{Path to allele / AA-calls TSV with counts. See \emph{Inputs}.}
 
-\item{loci_groups}{Path to loci-group TSV.}
+\item{loci_groups}{Path to loci-groups TSV. See \emph{Inputs}.}
 
-\item{mlaf_output}{Path for multilocus allele-frequency TSV.}
+\item{mlaf_output}{Path for multilocus allele-frequency TSV. See \emph{Outputs}.}
 
-\item{coi_output}{Path for COI TSV.}
+\item{coi_output}{Path for COI TSV. See \emph{Outputs}.}
 
-\item{convergence_output}{Path for the MCMC convergence-diagnostics TSV, with
-one row per parameter (\code{logpost}, \code{n_strains}, \code{kstar}, \code{ktrunc}, and \code{coi}
-per specimen).}
+\item{convergence_output}{Path for MCMC convergence-diagnostics TSV. See
+\emph{Outputs}.}
 
 \item{specimen_name_col, target_name_col, target_value_col, target_count_col}{Column names in \code{allele_table}.}
 
@@ -76,8 +75,53 @@ for the Gelman-Rubin R-hat diagnostic.}
 Invisibly, a list with \code{mlaf}, \code{coi}, and \code{convergence} tibbles.
 }
 \description{
-File-oriented entry point used by the \code{snpslice_wrapper} CLI. Optional
-\strong{snp.slicer} and \strong{variantstring} (1.x) must be installed separately. A
-\strong{snp.slicer} version providing multi-chain sampling, the \code{estimate}
-argument, and \code{\link[snp.slicer:convergence_diagnostics]{snp.slicer::convergence_diagnostics()}} is required.
+Estimates multilocus allele frequencies and per-specimen COI. Requires
+\strong{snp.slicer} (with multi-chain sampling, \code{estimate}, and
+\code{\link[snp.slicer:convergence_diagnostics]{snp.slicer::convergence_diagnostics()}}) and \strong{variantstring} 1.x
+(Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele / AA-style table with counts. Default column
+names map AA-call fields (\code{aa_locus}, \code{aa}, \code{reads}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{loci_groups}}: Loci-groups TSV (\code{group_id} plus a locus column
+matching \code{target_name_col}).
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{mlaf_output}}: Multilocus allele frequencies (\code{group_id}, \code{variant},
+\code{freq}, …).
+\item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi}; uncertainty
+columns when \code{estimator = "posterior"}).
+\item \strong{\code{convergence_output}}: MCMC diagnostics (\code{variable}, \code{mean}, \code{median},
+\code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{snpslice_wrapper(
+  allele_table = "aa_calls.tsv",
+  loci_groups = "loci_groups.tsv",
+  mlaf_output = "mlaf.tsv",
+  coi_output = "coi.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/snpslice_wrapper \\
+  --allele_table aa_calls.tsv \\
+  --loci_groups loci_groups.tsv \\
+  --mlaf_output mlaf.tsv \\
+  --coi_output coi.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{snp.slicer} and \strong{variantstring} (Suggests).
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }
