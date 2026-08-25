@@ -60,11 +60,14 @@ opts <- list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
-arg <- drop_null_args(arg)
-check_optparse_required_args(
-  arg,
-  c("allele_table", "ref_bed", "snps_of_interest", "output_directory")
-)
+missing <- character()
+if (is.null(arg$allele_table)) missing <- c(missing, "--allele_table")
+if (is.null(arg$ref_bed)) missing <- c(missing, "--ref_bed")
+if (is.null(arg$snps_of_interest)) missing <- c(missing, "--snps_of_interest")
+if (is.null(arg$output_directory)) missing <- c(missing, "--output_directory")
+if (length(missing) > 0) {
+  stop("Missing required arguments: ", paste(missing, collapse = ", "), call. = FALSE)
+}
 
 invisible(
   pileup_specific_snps(
