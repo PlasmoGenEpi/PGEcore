@@ -5,26 +5,23 @@
 \title{Estimate multilocus prevalence and frequency with naive phasing}
 \usage{
 multilocus_prevfreq_naive(
-  aa_table,
-  loci_groups_input,
-  output_path = NULL,
-  recalc_single_locus_output_path = NULL,
+  aa_calls,
+  loci_groups,
+  output = NULL,
+  single_locus_output = NULL,
   method = "wsaf_prop",
   wsaf_cut_off = 0.7
 )
 }
 \arguments{
-\item{aa_table}{Path to a TSV of amino acid calls with columns
-\code{specimen_name}, \code{gene}, \code{gene_id}, \code{aa_position}, \code{reads}, and \code{aa}.}
+\item{aa_calls}{Path to an AA calls TSV. See \emph{Inputs}.}
 
-\item{loci_groups_input}{Path to a TSV of loci groups with columns
-\code{group_id}, \code{gene_id}, and \code{aa_position}.}
+\item{loci_groups}{Path to a loci groups TSV. See \emph{Inputs}.}
 
-\item{output_path}{Optional path for the multilocus prev/freq TSV. If
-\code{NULL}, results are returned without writing.}
+\item{output}{Optional path for the multilocus prev/freq TSV.}
 
-\item{recalc_single_locus_output_path}{Optional path for single-locus
-prev/freq recalculated from the inferred multilocus calls.}
+\item{single_locus_output}{Optional path for single-locus prev/freq
+recalculated from the inferred multilocus calls.}
 
 \item{method}{\code{"wsaf_prop"} (default) or \code{"presence_absence"}.}
 
@@ -41,9 +38,45 @@ locus has a single allele above \code{wsaf_cut_off} (including monoclonal
 samples). Prevalence and frequency are then estimated with \code{wsaf_prop} or
 \code{presence_absence}.
 }
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{aa_calls}}: AA calls (\code{specimen_name}, \code{gene}, \code{gene_id},
+\code{aa_position}, \code{reads}, \code{aa}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{loci_groups}}: Loci groups (\code{group_id}, \code{gene_id}, \code{aa_position}).
+See the same vignette.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): Multilocus prev/freq TSV (includes \code{group_id},
+\code{variant}, \code{prev}, \code{freq}). If \code{NULL}, results are returned without writing.
+\item \strong{\code{single_locus_output}} (optional): Single-locus prev/freq recalculated
+from the inferred multilocus calls.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{multilocus_prevfreq_naive(
+  aa_calls = "aa_calls.tsv",
+  loci_groups = "loci_groups.tsv",
+  output = "multilocus_prevfreq.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/multilocus_prevfreq_naive \\
+  --aa_calls aa_calls.tsv \\
+  --loci_groups loci_groups.tsv \\
+  --output multilocus_prevfreq.tsv
+}\if{html}{\out{</div>}}
+}
+}
 \examples{
 aa_path <- system.file(
-  "extdata", "example2_amino_acid_calls.tsv",
+  "extdata", "example2_aa_calls.tsv",
   package = "PGEcore"
 )
 groups_path <- system.file(
@@ -52,4 +85,7 @@ groups_path <- system.file(
 )
 multilocus_prevfreq_naive(aa_path, groups_path)
 
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

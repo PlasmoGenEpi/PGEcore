@@ -1,24 +1,55 @@
 #' Add reference sequences from a targeted FASTA onto a panel BED table
 #'
 #' Joins `ref_seq` onto a panel location table by matching FASTA record names
-#' to `target_name`. Requires **Biostrings** (Suggests) to read the FASTA.
+#' to `target_name`.
 #'
-#' @param ref_bed Path to a TSV BED table with a header, or a data frame, with
-#'   columns `#chrom`, `start`, `end`, `target_name`, `length`, and `strand`.
+#' ## Inputs
+#'
+#' - **`ref_bed`**: Panel BED TSV with header (`#chrom`, `start`, `end`,
+#'   `target_name`, `length`, `strand`), as a file path or data frame.
+#' - **`target_fasta`**: FASTA whose record names match `target_name`.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): `ref_bed` TSV with a `ref_seq` column. If `NULL`,
+#'   results are returned without writing.
+#'
+#' ## Running
+#'
+#' ```r
+#' add_ref_seqs_with_targeted_ref_fasta(
+#'   ref_bed = "ref_bed.tsv",
+#'   target_fasta = "targets.fasta",
+#'   output = "ref_bed_with_seq.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/add_ref_seqs_with_targeted_ref_fasta \
+#'   --ref_bed ref_bed.tsv \
+#'   --target_fasta targets.fasta \
+#'   --output ref_bed_with_seq.tsv
+#' ```
+#'
+#' Requires **Biostrings** (Suggests) to read the FASTA.
+#'
+#' @param ref_bed Path to a panel BED TSV, or a data frame with the same
+#'   columns. See *Inputs*.
 #' @param target_fasta Path to a FASTA whose record names match `target_name`.
-#' @param out Optional output TSV path. If `NULL`, results are returned without
-#'   writing.
-#' @param overwrite If `FALSE` (default), refuse to overwrite `out`.
+#' @param output Optional output TSV path.
+#' @param overwrite If `FALSE` (default), refuse to overwrite `output`.
 #'
 #' @return A tibble of `ref_bed` with a `ref_seq` column.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 add_ref_seqs_with_targeted_ref_fasta <- function(ref_bed,
                                                  target_fasta,
-                                                 out = NULL,
+                                                 output = NULL,
                                                  overwrite = FALSE) {
   options(dplyr.summarise.inform = FALSE)
-  stop_if_output_exists(out, overwrite)
+  stop_if_output_exists(output, overwrite)
   check_suggested_pkg(
     "Biostrings",
     "reading targeted reference FASTA via add_ref_seqs_with_targeted_ref_fasta()"
@@ -62,8 +93,8 @@ add_ref_seqs_with_targeted_ref_fasta <- function(ref_bed,
   }
   bed <- dplyr::left_join(bed, dna_tab, by = "target_name")
 
-  if (!is.null(out)) {
-    readr::write_tsv(bed, out)
+  if (!is.null(output)) {
+    readr::write_tsv(bed, output)
   }
   bed
 }

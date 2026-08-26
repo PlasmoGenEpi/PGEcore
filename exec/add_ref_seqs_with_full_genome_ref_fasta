@@ -8,19 +8,15 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--ref_bed",
-    help = paste(
-      "a bed file containing the reference location of the ref_seq, no column",
-      "names but the first 6 columns should be chrom, start, end, target_name,",
-      "length, strand"
-    )
+    help = "Panel BED TSV with header (#chrom, start, end, target_name, length, strand)."
   ),
   make_option(
     "--genome_fasta",
-    help = "a genome fasta file to extract the ref_seq"
+    help = "Genome FASTA to extract ref_seq intervals from."
   ),
   make_option(
-    "--out",
-    help = "the out file to write to"
+    "--output",
+    help = "Panel BED TSV output with ref_seq column."
   ),
   make_option(
     "--overwrite",
@@ -39,8 +35,8 @@ if (is.null(arg$ref_bed)) {
 if (is.null(arg$genome_fasta)) {
   missing <- c(missing, "--genome_fasta")
 }
-if (is.null(arg$out)) {
-  missing <- c(missing, "--out")
+if (is.null(arg$output)) {
+  missing <- c(missing, "--output")
 }
 if (length(missing) > 0) {
   stop(
@@ -54,7 +50,7 @@ invisible(
   add_ref_seqs_with_full_genome_ref_fasta(
     ref_bed = arg$ref_bed,
     genome_fasta = arg$genome_fasta,
-    out = arg$out,
+    output = arg$output,
     overwrite = isTRUE(arg$overwrite)
   )
 )

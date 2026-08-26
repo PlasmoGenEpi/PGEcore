@@ -2,16 +2,16 @@
 % Please edit documentation in R/coiaf.R
 \name{coiaf_wrapper}
 \alias{coiaf_wrapper}
-\title{Run COIAF from input and output file paths}
+\title{Estimate COI with coiaf from SNP-call and output paths}
 \usage{
-coiaf_wrapper(snp_data, output, plmaf = NULL, seq_error = 0.01, max_coi = 25)
+coiaf_wrapper(snp_calls, output, plmaf = NULL, seq_error = 0.01, max_coi = 25)
 }
 \arguments{
-\item{snp_data}{Path to SNP data TSV.}
+\item{snp_calls}{Path to SNP-calls TSV. See \emph{Inputs}.}
 
-\item{output}{Path for output TSV.}
+\item{output}{Output TSV path. See \emph{Outputs}.}
 
-\item{plmaf}{Optional path to PLMAF TSV.}
+\item{plmaf}{Optional path to PLMAF TSV. See \emph{Inputs}.}
 
 \item{seq_error}{Sequencing error rate (default: \code{0.01}).}
 
@@ -21,5 +21,40 @@ coiaf_wrapper(snp_data, output, plmaf = NULL, seq_error = 0.01, max_coi = 25)
 The result tibble (also written to \code{output}).
 }
 \description{
-File-oriented entry point used by the \code{coiaf_wrapper} CLI.
+Reads SNP calls (and optional PLMAF), runs \code{\link[=run_coiaf]{run_coiaf()}}, and writes COI
+estimates. Requires \strong{coiaf} (Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{snp_calls}}: Path to SNP-calls TSV. See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{plmaf}}: Optional path to PLMAF TSV (\code{snp_name}, \code{seq_base}, \code{plmaf}).
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}}: TSV with \code{specimen_name}, \code{coi_freq}, and \code{coi_variant}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{coiaf_wrapper(
+  snp_calls = "snp_calls.tsv",
+  output = "coi_estimates.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/coiaf_wrapper \\
+  --snp_calls snp_calls.tsv \\
+  --output coi_estimates.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{coiaf} (Suggests).
+}
+}
+\seealso{
+\code{\link[=run_coiaf]{run_coiaf()}}, \code{vignette("input-formats", package = "PGEcore")}
 }

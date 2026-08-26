@@ -43,13 +43,42 @@ derive_gt <- function(depths, ploidy, min_reads) {
 #' Converts pileup SNP calls (raw or collapsed) into a VCF with per-sample
 #' allelic depths (`FORMAT/AD`). Reads are summed per `(specimen, SNP, allele)`
 #' across overlapping targets. `REF`/`ALT` are written on the forward (genome)
-#' strand. Monomorphic sites are skipped. Requires **Biostrings** (Suggests) to
-#' read `--genome` contig lengths.
+#' strand. Monomorphic sites are skipped.
 #'
-#' @param snp_calls Path to a SNP-calls TSV, or a data frame, with columns
-#'   `specimen_name`, `chrom`, `pos`, `snp_name`, `strand`, `ref_base`,
-#'   `seq_base`, and `reads`. `pos` is 0-based (emitted as 1-based VCF `POS`).
-#' @param genome Path to a reference genome FASTA used for `##contig` lengths.
+#' ## Inputs
+#'
+#' - **`snp_calls`**: SNP calls (`specimen_name`, `chrom`, `pos`, `snp_name`,
+#'   `strand`, `ref_base`, `seq_base`, `reads`), as a file path or data frame.
+#'   `pos` is 0-based (emitted as 1-based VCF `POS`). See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`genome`**: Reference genome FASTA used for `##contig` lengths.
+#'
+#' ## Outputs
+#'
+#' - **`vcf_output`**: Output VCF path; gzip-compressed if it ends in `.gz`.
+#'
+#' ## Running
+#'
+#' ```r
+#' snp_calls_to_vcf(
+#'   snp_calls = "snp_calls.tsv",
+#'   genome = "genome.fasta",
+#'   vcf_output = "calls.vcf.gz"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/snp_calls_to_vcf \
+#'   --snp_calls snp_calls.tsv \
+#'   --genome genome.fasta \
+#'   --vcf_output calls.vcf.gz
+#' ```
+#'
+#' Requires **Biostrings** (Suggests) to read `--genome` contig lengths.
+#'
+#' @param snp_calls Path to a SNP calls TSV, or a data frame with the same
+#'   columns. See *Inputs*.
+#' @param genome Path to a reference genome FASTA. See *Inputs*.
 #' @param vcf_output Output VCF path; gzip-compressed if it ends in `.gz`.
 #' @param biallelic If `TRUE`, keep only sites with a single ALT.
 #' @param ploidy Ploidy used to render the GT field.
@@ -58,6 +87,8 @@ derive_gt <- function(depths, ploidy, min_reads) {
 #' @param verbose If `TRUE`, print a summary message when finished.
 #'
 #' @return Invisibly returns `TRUE`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 snp_calls_to_vcf <- function(snp_calls,

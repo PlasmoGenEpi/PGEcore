@@ -7,40 +7,83 @@
 FreqEstimationModel_wrapper(
   aa_calls,
   coi,
-  groups,
+  loci_groups,
   mlaf_output,
   threads = 1L,
   seed = 1L,
-  num_chains = 3L,
+  n_chains = 3L,
   convergence_output = "convergence_diag.tsv"
 )
 }
 \arguments{
-\item{aa_calls}{Path to amino-acid call TSV.}
+\item{aa_calls}{Path to amino-acid call TSV. See \emph{Inputs}.}
 
-\item{coi}{Path to COI TSV, or a numeric average COI.}
+\item{coi}{Path to COI table TSV, or a numeric average COI. See \emph{Inputs}.}
 
-\item{groups}{Path to group TSV (\code{group_id}, \code{gene_id}, \code{aa_position}).}
+\item{loci_groups}{Path to loci-groups TSV. See \emph{Inputs}.}
 
-\item{mlaf_output}{Output TSV path.}
+\item{mlaf_output}{Output TSV path. See \emph{Outputs}.}
 
 \item{threads}{Number of threads.}
 
 \item{seed}{Random seed.}
 
-\item{num_chains}{Number of MCMC chains to run per group. At least two are
+\item{n_chains}{Number of MCMC chains to run per group. At least two are
 needed to compute the Gelman-Rubin R-hat convergence diagnostic.}
 
 \item{convergence_output}{Output TSV path for per-group MCMC convergence
-diagnostics, with the columns \code{group_id}, \code{variable}, \code{mean}, \code{median},
-\code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}.}
+diagnostics. See \emph{Outputs}.}
 }
 \value{
 The formatted output data frame (also written to \code{mlaf_output}).
 }
 \description{
-File-oriented entry point used by the \code{FreqEstimationModel_wrapper} CLI.
-Optional \strong{FreqEstimationModel}, \strong{variantstring}, \strong{posterior}, and
-parallel helpers (\strong{foreach}, \strong{doMC}, plus \strong{plyr}, \strong{coda}, \strong{abind})
-must be installed separately.
+Estimates multilocus haplotype frequencies from amino-acid calls and COI.
+Requires \strong{FreqEstimationModel}, \strong{variantstring}, \strong{posterior}, and
+parallel helpers (\strong{foreach}, \strong{doMC}, \strong{plyr}, \strong{coda}, \strong{abind})
+(Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{aa_calls}}: Amino-acid calls TSV. See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{coi}}: Path to a COI table TSV, \strong{or} a numeric average COI.
+\item \strong{\code{loci_groups}}: Loci-groups TSV (\code{group_id}, \code{gene_id}, \code{aa_position}).
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{mlaf_output}}: Multilocus allele frequencies (\code{variant}, \code{freq},
+\code{median_freq}, \code{CI_2.5}, \code{CI_97.5}, \code{sample_total}, \code{group_id}, …).
+\item \strong{\code{convergence_output}}: Per-group MCMC diagnostics (\code{group_id},
+\code{variable}, \code{mean}, \code{median}, \code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk},
+\code{ess_tail}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{FreqEstimationModel_wrapper(
+  aa_calls = "aa_calls.tsv",
+  coi = "coi_table.tsv",
+  loci_groups = "loci_groups.tsv",
+  mlaf_output = "mlaf.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/FreqEstimationModel_wrapper \\
+  --aa_calls aa_calls.tsv \\
+  --coi coi_table.tsv \\
+  --loci_groups loci_groups.tsv \\
+  --mlaf_output mlaf.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{FreqEstimationModel}, \strong{variantstring}, \strong{posterior}, and
+parallel Suggests packages.
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

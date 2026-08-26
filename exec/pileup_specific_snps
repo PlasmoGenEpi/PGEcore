@@ -8,29 +8,19 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--allele_table",
-    help = paste(
-      "TSV containing the columns: specimen_name, target_name, reads, seq"
-    )
+    help = "Allele table TSV (specimen_name, target_name, seq, reads). See vignette input-formats."
   ),
   make_option(
     "--ref_bed",
-    help = paste(
-      "a bed file containing the reference location of the ref_seq, no column",
-      "names but the first 6 columns should be chrom, start, end, target_name,",
-      "length, strand, ref_seq"
-    )
+    help = "Panel BED TSV with ref_seq (#chrom, start, end, target_name, length, strand, ref_seq)."
   ),
   make_option(
     "--snps_of_interest",
-    help = paste(
-      "a bed file containing the snps of interest to calculate pileup, is",
-      "genomic location of the snp position so all snps should be of size 1,",
-      "should have columns, #chrom, start, end, name, length, strand"
-    )
+    help = "SNP BED (#chrom, start, end, name, length, strand); each SNP spans one base."
   ),
   make_option(
-    "--output_directory",
-    help = "the output directory to write results to"
+    "--output_dir",
+    help = "Output directory for snp_calls and related TSVs."
   ),
   make_option(
     "--select_target_names",
@@ -64,7 +54,7 @@ missing <- character()
 if (is.null(arg$allele_table)) missing <- c(missing, "--allele_table")
 if (is.null(arg$ref_bed)) missing <- c(missing, "--ref_bed")
 if (is.null(arg$snps_of_interest)) missing <- c(missing, "--snps_of_interest")
-if (is.null(arg$output_directory)) missing <- c(missing, "--output_directory")
+if (is.null(arg$output_dir)) missing <- c(missing, "--output_dir")
 if (length(missing) > 0) {
   stop("Missing required arguments: ", paste(missing, collapse = ", "), call. = FALSE)
 }
@@ -74,7 +64,7 @@ invisible(
     allele_table = arg$allele_table,
     ref_bed = arg$ref_bed,
     snps_of_interest = arg$snps_of_interest,
-    output_directory = arg$output_directory,
+    output_dir = arg$output_dir,
     select_target_names = arg$select_target_names,
     select_specimen_names = arg$select_specimen_names,
     overwrite_dir = isTRUE(arg$overwrite_dir),

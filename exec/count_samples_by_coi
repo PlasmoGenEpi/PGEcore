@@ -7,8 +7,8 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    c("-i", "--coi_calls"),
-    help = "TSV containing coi calls, with the columns: specimen_name, coi ",
+    c("-i", "--coi_table"),
+    help = "COI table TSV (specimen_name, coi). See vignette input-formats.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -20,15 +20,15 @@ opts <- list(
   ),
   make_option(
     c("-o", "--output"),
-    help = "Output file name. Default: %default",
+    help = "Output TSV (coi, n, proportion). Default: %default",
     type = "character",
     default = "coi_distribution.tsv"
   )
 )
 
 args <- parse_args(OptionParser(option_list = opts))
-if (is.null(args$coi_calls)) {
-  stop("Missing required arguments: --coi_calls", call. = FALSE)
+if (is.null(args$coi_table)) {
+  stop("Missing required arguments: --coi_table", call. = FALSE)
 }
 
-invisible(count_samples_by_coi(coi_calls = args$coi_calls, output = args$output))
+invisible(count_samples_by_coi(coi_table = args$coi_table, output = args$output))

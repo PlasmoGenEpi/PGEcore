@@ -9,8 +9,8 @@ moire_wrapper(
   allow_relatedness = TRUE,
   burnin = 10000L,
   samples_per_chain = 1000L,
-  num_chains = 3L,
-  chains_num_threads = 1L,
+  n_chains = 3L,
+  threads = 1L,
   thin = 1L,
   verbose = FALSE,
   eps_pos_alpha = 1,
@@ -29,19 +29,18 @@ moire_wrapper(
   pt_num_threads = 1L,
   adapt_temp = TRUE,
   max_runtime = Inf,
-  coi_summary = "coi_summary.tsv",
-  he_summary = "he_summary.tsv",
-  allele_freq_summary = "allele_freq_summary.tsv",
-  relatedness_summary = "relatedness_summary.tsv",
-  effective_coi_summary = "effective_coi_summary.tsv",
+  coi_output = "coi_output.tsv",
+  he_output = "he_output.tsv",
+  allele_freq_output = "allele_freq_output.tsv",
+  relatedness_output = "relatedness_output.tsv",
+  effective_coi_output = "effective_coi_output.tsv",
   mcmc_results_output = NULL,
   convergence_output = "convergence_diag.tsv",
   acceptance_rates_output = NULL
 )
 }
 \arguments{
-\item{allele_table}{Path to a TSV with columns \code{specimen_name},
-\code{target_name}, and \code{seq}.}
+\item{allele_table}{Path to allele table TSV. See \emph{Inputs}.}
 
 \item{allow_relatedness}{Logical; allow relatedness within samples.}
 
@@ -49,11 +48,11 @@ moire_wrapper(
 
 \item{samples_per_chain}{Samples per MCMC chain.}
 
-\item{num_chains}{Number of independent MCMC chains. More than one is
+\item{n_chains}{Number of independent MCMC chains. More than one is
 required to compute the Gelman-Rubin R-hat convergence diagnostic. This is
 distinct from \code{pt_chains} (parallel-tempering rungs within a chain).}
 
-\item{chains_num_threads}{Threads used to run the independent chains in
+\item{threads}{Threads used to run the independent chains in
 parallel (MOIRe's \code{num_cores}).}
 
 \item{thin}{Thinning interval for the MCMC sampler; only every \code{thin}-th
@@ -83,32 +82,83 @@ sample is retained.}
 
 \item{max_runtime}{Maximum MCMC runtime.}
 
-\item{coi_summary}{Output path for COI summary TSV.}
+\item{coi_output}{Output path for COI summary TSV. See \emph{Outputs}.}
 
-\item{he_summary}{Output path for He summary TSV.}
+\item{he_output}{Output path for He summary TSV. See \emph{Outputs}.}
 
-\item{allele_freq_summary}{Output path for allele-frequency summary TSV.}
+\item{allele_freq_output}{Output path for allele-frequency summary TSV.
+See \emph{Outputs}.}
 
-\item{relatedness_summary}{Output path for relatedness summary TSV.}
+\item{relatedness_output}{Output path for relatedness summary TSV. See
+\emph{Outputs}.}
 
-\item{effective_coi_summary}{Output path for effective COI summary TSV.}
+\item{effective_coi_output}{Output path for effective COI summary TSV. See
+\emph{Outputs}.}
 
 \item{mcmc_results_output}{Optional RDS path for full MCMC results.}
 
-\item{convergence_output}{Output path for the MCMC convergence diagnostics
-TSV, with one row per estimated parameter and the columns \code{variable},
-\code{mean}, \code{median}, \code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, and \code{ess_tail}.}
+\item{convergence_output}{Output path for MCMC convergence diagnostics.
+See \emph{Outputs}.}
 
-\item{acceptance_rates_output}{Optional output path for a parallel-tempering
-swap (exchange) acceptance rates TSV, with one row per chain and
-temperature rung and the columns \code{chain}, \code{rung}, \code{temperature}, and
-\code{swap_acceptance_rate}. Only meaningful when parallel tempering is used
-(\code{pt_chains > 1}).}
+\item{acceptance_rates_output}{Optional output path for parallel-tempering
+swap acceptance rates. Only meaningful when \code{pt_chains > 1}.}
 }
 \value{
 Invisibly, the MOIRe MCMC result object.
 }
 \description{
-File-oriented entry point used by the \code{moire_wrapper} CLI. Optional
-\strong{moire} (and \strong{checkmate} for input checks) must be installed separately.
+Reads an allele table, runs MOIRe MCMC, and writes COI, He, allele-frequency,
+relatedness, effective-COI, and convergence summaries. Requires \strong{moire},
+\strong{checkmate}, and \strong{posterior} (Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table TSV (\code{specimen_name}, \code{target_name},
+\code{seq}). See \code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{coi_output}}: COI summary (\code{specimen_name}, \code{coi}, …).
+\item \strong{\code{he_output}}: Heterozygosity summary (\code{target_name}, \code{he}, …).
+\item \strong{\code{allele_freq_output}}: Allele frequencies (\code{target_name}, \code{seq},
+\code{freq}, …).
+\item \strong{\code{relatedness_output}}: Within-host relatedness (\code{specimen_name},
+\code{within_host_rel}, …).
+\item \strong{\code{effective_coi_output}}: Effective COI (\code{specimen_name}, \code{ecoi}, …).
+\item \strong{\code{convergence_output}}: MCMC diagnostics (\code{variable}, \code{mean}, \code{median},
+\code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}).
+\item \strong{\code{mcmc_results_output}}: Optional RDS of the full MCMC object.
+\item \strong{\code{acceptance_rates_output}}: Optional PT swap rates when \code{pt_chains > 1}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{moire_wrapper(
+  allele_table = "allele_table.tsv",
+  coi_output = "coi_output.tsv",
+  he_output = "he_output.tsv",
+  allele_freq_output = "allele_freq_output.tsv",
+  relatedness_output = "relatedness_output.tsv",
+  effective_coi_output = "effective_coi_output.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/moire_wrapper \\
+  --allele_table allele_table.tsv \\
+  --coi_output coi_output.tsv \\
+  --he_output he_output.tsv \\
+  --allele_freq_output allele_freq_output.tsv \\
+  --relatedness_output relatedness_output.tsv \\
+  --effective_coi_output effective_coi_output.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{moire}, \strong{checkmate}, and \strong{posterior} (Suggests).
+}
+}
+\seealso{
+\code{\link[=run_moire]{run_moire()}}, \code{vignette("input-formats", package = "PGEcore")}
 }

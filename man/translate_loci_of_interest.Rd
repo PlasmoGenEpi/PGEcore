@@ -8,7 +8,7 @@ translate_loci_of_interest(
   allele_table,
   ref_bed,
   loci_of_interest,
-  output_directory,
+  output_dir,
   select_target_names = NULL,
   select_specimen_names = NULL,
   overwrite_dir = FALSE,
@@ -17,17 +17,13 @@ translate_loci_of_interest(
 )
 }
 \arguments{
-\item{allele_table}{Path or data frame with columns \code{specimen_name},
-\code{target_name}, \code{reads}, and \code{seq}.}
+\item{allele_table}{Path or data frame of allele table. See \emph{Inputs}.}
 
-\item{ref_bed}{Path or data frame with columns \verb{#chrom}, \code{start}, \code{end},
-\code{target_name}, \code{length}, \code{strand}, and \code{ref_seq}.}
+\item{ref_bed}{Path or data frame of panel BED with \code{ref_seq}. See \emph{Inputs}.}
 
-\item{loci_of_interest}{Path or data frame with columns \verb{#chrom}, \code{start},
-\code{end}, \code{name}, \code{length}, \code{strand}, \code{gene}, \code{gene_id}, and \code{aa_position}.
-Each locus must have \code{length == 3}.}
+\item{loci_of_interest}{Path or data frame of codon BED. See \emph{Inputs}.}
 
-\item{output_directory}{Directory to write results. Created if missing.}
+\item{output_dir}{Directory to write results. Created if missing.}
 
 \item{select_target_names}{Optional comma-separated names, path to a
 one-column TSV, or character vector of targets to keep.}
@@ -36,7 +32,7 @@ one-column TSV, or character vector of targets to keep.}
 one-column TSV, or character vector of specimens to keep.}
 
 \item{overwrite_dir}{If \code{FALSE} (default), refuse to replace an existing
-\code{output_directory}.}
+\code{output_dir}.}
 
 \item{output_stop_codons}{If \code{FALSE} (default), treat \code{*} as untranslatable
 (along with \code{X}).}
@@ -52,11 +48,52 @@ A named list with \code{loci_of_interest_for_target_for_microhap},
 \description{
 Aligns each unique haplotype to its panel reference with an overlap
 pairwise alignment, extracts the codon at each locus of interest, and
-translates it. Requires \strong{Biostrings} and \strong{pwalign} (Suggests).
+translates it.
 }
 \details{
-Writes \code{loci_of_interest_for_target_for_microhap.tsv.gz},
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table (\code{specimen_name}, \code{target_name}, \code{reads},
+\code{seq}), as a file path or data frame. See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{ref_bed}}: Panel BED with \code{ref_seq} (\verb{#chrom}, \code{start}, \code{end},
+\code{target_name}, \code{length}, \code{strand}, \code{ref_seq}).
+\item \strong{\code{loci_of_interest}}: Codon BED (\verb{#chrom}, \code{start}, \code{end}, \code{name},
+\code{length}, \code{strand}, \code{gene}, \code{gene_id}, \code{aa_position}); each locus must have
+\code{length == 3}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output_dir}}: Directory receiving
+\code{loci_of_interest_for_target_for_microhap.tsv.gz},
 \code{amino_acid_calls.tsv.gz}, \code{collapsed_amino_acid_calls.tsv.gz},
 \code{loci_covered_by_target_samples_info.tsv}, and optionally
-\code{allele_table_out_untranslatable.tsv} under \code{output_directory}.
+\code{allele_table_out_untranslatable.tsv}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{translate_loci_of_interest(
+  allele_table = "allele_table.tsv",
+  ref_bed = "ref_bed_with_seq.tsv",
+  loci_of_interest = "loci.bed",
+  output_dir = "translate_out"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/translate_loci_of_interest \\
+  --allele_table allele_table.tsv \\
+  --ref_bed ref_bed_with_seq.tsv \\
+  --loci_of_interest loci.bed \\
+  --output_dir translate_out
+}\if{html}{\out{</div>}}
+
+Requires \strong{Biostrings} and \strong{pwalign} (Suggests).
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

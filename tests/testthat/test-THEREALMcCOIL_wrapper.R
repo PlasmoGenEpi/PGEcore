@@ -1,11 +1,11 @@
 test_that("THEREALMcCOIL_wrapper requires input and output paths", {
   expect_error(
     THEREALMcCOIL_wrapper(slaf_output = "s.tsv", coi_output = "c.tsv"),
-    "snp_calls_input"
+    "snp_calls"
   )
   expect_error(
     THEREALMcCOIL_wrapper(
-      snp_calls_input = "in.tsv",
+      snp_calls = "in.tsv",
       slaf_output = NULL,
       coi_output = "c.tsv"
     ),
@@ -13,7 +13,7 @@ test_that("THEREALMcCOIL_wrapper requires input and output paths", {
   )
   expect_error(
     THEREALMcCOIL_wrapper(
-      snp_calls_input = "in.tsv",
+      snp_calls = "in.tsv",
       slaf_output = "s.tsv",
       coi_output = NULL
     ),
@@ -137,7 +137,7 @@ test_that("THEREALMcCOIL_wrapper short MCMC on example data", {
   # The toy run keeps too few draws for stable ESS estimates, so posterior
   # warns about capping them.
   res <- suppressWarnings(THEREALMcCOIL_wrapper(
-    snp_calls_input = path,
+    snp_calls = path,
     slaf_output = slaf,
     coi_output = coi,
     convergence_output = convergence,
@@ -186,7 +186,7 @@ test_that("THEREALMcCOIL_wrapper is reproducible for a given seed", {
     convergence <- tempfile(fileext = ".tsv")
     on.exit(unlink(c(slaf, coi, convergence)), add = TRUE)
     suppressWarnings(THEREALMcCOIL_wrapper(
-      snp_calls_input = path,
+      snp_calls = path,
       slaf_output = slaf,
       coi_output = coi,
       convergence_output = convergence,

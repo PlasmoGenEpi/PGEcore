@@ -26,8 +26,8 @@ create_moire_input <- function(input_path,
                                pt_num_threads,
                                adapt_temp,
                                max_runtime,
-                               num_chains,
-                               chains_num_threads) {
+                               n_chains,
+                               threads) {
   check_suggested_pkg("checkmate", "MOIRe input validation")
 
   message("Reading input data")
@@ -101,8 +101,8 @@ create_moire_input <- function(input_path,
       pt_num_threads = pt_num_threads,
       adapt_temp = adapt_temp,
       max_runtime = max_runtime,
-      num_chains = num_chains,
-      num_cores = chains_num_threads
+      num_chains = n_chains,
+      num_cores = threads
     )
   )
 
@@ -138,13 +138,36 @@ create_moire_input <- function(input_path,
 
 #' Run MOIRe MCMC analysis
 #'
-#' The **moire** package is an optional dependency (Suggests). It is not
-#' installed automatically with PGEcore.
+#' Runs MOIRe MCMC on a prepared `moire_object`. Requires **moire** (Suggests).
+#' For reading allele tables and writing summary TSVs, use [moire_wrapper()].
 #'
-#' @param moire_object List created by [create_moire_input()] (or
-#'   [moire_wrapper()]), with `moire_data` and `moire_parameters`.
+#' ## Inputs
+#'
+#' - **`moire_object`**: List with `moire_data` and `moire_parameters`, as
+#'   created by [create_moire_input()] (via [moire_wrapper()]).
+#'
+#' ## Outputs
+#'
+#' - Returns the object from [moire::run_mcmc()] (not written to disk).
+#'
+#' ## Running
+#'
+#' ```r
+#' run_moire(moire_object)
+#' ```
+#'
+#' File and CLI users should call [moire_wrapper()] /
+#' `Rscript exec/moire_wrapper ...`.
+#'
+#' Requires **moire** (Suggests).
+#'
+#' @param moire_object List with `moire_data` and `moire_parameters`. See
+#'   *Inputs*.
 #'
 #' @return The object returned by [moire::run_mcmc()].
+#'
+#' @seealso [moire_wrapper()], `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 run_moire <- function(moire_object) {
   check_suggested_pkg("moire", "MCMC analysis via run_moire()")
@@ -185,11 +208,11 @@ run_moire <- function(moire_object) {
 #' @keywords internal
 summarize_and_write_moire_results <- function(moire_object,
                                               mcmc_results,
-                                              coi_summary_o,
-                                              he_summary_o,
-                                              allele_freq_summary_o,
-                                              relatedness_summary_o,
-                                              effective_coi_summary_o) {
+                                              coi_output,
+                                              he_output,
+                                              allele_freq_output,
+                                              relatedness_output,
+                                              effective_coi_output) {
   check_suggested_pkg("moire", "summarizing MOIRe MCMC results")
   check_suggested_pkg("checkmate", "MOIRe summary checks")
 
@@ -260,11 +283,11 @@ summarize_and_write_moire_results <- function(moire_object,
   he_summary <- target_name_count |>
     dplyr::full_join(he_summary, by = "target_name")
 
-  readr::write_tsv(coi_summary, coi_summary_o)
-  readr::write_tsv(he_summary, he_summary_o, na = "0")
-  readr::write_tsv(allele_freq_summary, allele_freq_summary_o)
-  readr::write_tsv(relatedness_summary, relatedness_summary_o)
-  readr::write_tsv(effective_coi_summary, effective_coi_summary_o)
+  readr::write_tsv(coi_summary, coi_output)
+  readr::write_tsv(he_summary, he_output, na = "0")
+  readr::write_tsv(allele_freq_summary, allele_freq_output)
+  readr::write_tsv(relatedness_summary, relatedness_output)
+  readr::write_tsv(effective_coi_summary, effective_coi_output)
 }
 
 #' Assemble a named list of every estimated parameter's draws for one chain
@@ -373,18 +396,62 @@ prepare_moire_acceptance_rates_output <- function(mcmc_results) {
 
 #' Run MOIRe from allele-table and output paths
 #'
-#' File-oriented entry point used by the `moire_wrapper` CLI. Optional
-#' **moire** (and **checkmate** for input checks) must be installed separately.
+#' Reads an allele table, runs MOIRe MCMC, and writes COI, He, allele-frequency,
+#' relatedness, effective-COI, and convergence summaries. Requires **moire**,
+#' **checkmate**, and **posterior** (Suggests).
 #'
-#' @param allele_table Path to a TSV with columns `specimen_name`,
-#'   `target_name`, and `seq`.
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table TSV (`specimen_name`, `target_name`,
+#'   `seq`). See `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`coi_output`**: COI summary (`specimen_name`, `coi`, …).
+#' - **`he_output`**: Heterozygosity summary (`target_name`, `he`, …).
+#' - **`allele_freq_output`**: Allele frequencies (`target_name`, `seq`,
+#'   `freq`, …).
+#' - **`relatedness_output`**: Within-host relatedness (`specimen_name`,
+#'   `within_host_rel`, …).
+#' - **`effective_coi_output`**: Effective COI (`specimen_name`, `ecoi`, …).
+#' - **`convergence_output`**: MCMC diagnostics (`variable`, `mean`, `median`,
+#'   `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`).
+#' - **`mcmc_results_output`**: Optional RDS of the full MCMC object.
+#' - **`acceptance_rates_output`**: Optional PT swap rates when `pt_chains > 1`.
+#'
+#' ## Running
+#'
+#' ```r
+#' moire_wrapper(
+#'   allele_table = "allele_table.tsv",
+#'   coi_output = "coi_output.tsv",
+#'   he_output = "he_output.tsv",
+#'   allele_freq_output = "allele_freq_output.tsv",
+#'   relatedness_output = "relatedness_output.tsv",
+#'   effective_coi_output = "effective_coi_output.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/moire_wrapper \
+#'   --allele_table allele_table.tsv \
+#'   --coi_output coi_output.tsv \
+#'   --he_output he_output.tsv \
+#'   --allele_freq_output allele_freq_output.tsv \
+#'   --relatedness_output relatedness_output.tsv \
+#'   --effective_coi_output effective_coi_output.tsv
+#' ```
+#'
+#' Requires **moire**, **checkmate**, and **posterior** (Suggests).
+#'
+#' @param allele_table Path to allele table TSV. See *Inputs*.
 #' @param allow_relatedness Logical; allow relatedness within samples.
 #' @param burnin MCMC burn-in iterations.
 #' @param samples_per_chain Samples per MCMC chain.
-#' @param num_chains Number of independent MCMC chains. More than one is
+#' @param n_chains Number of independent MCMC chains. More than one is
 #'   required to compute the Gelman-Rubin R-hat convergence diagnostic. This is
 #'   distinct from `pt_chains` (parallel-tempering rungs within a chain).
-#' @param chains_num_threads Threads used to run the independent chains in
+#' @param threads Threads used to run the independent chains in
 #'   parallel (MOIRe's `num_cores`).
 #' @param thin Thinning interval for the MCMC sampler; only every `thin`-th
 #'   sample is retained.
@@ -400,29 +467,31 @@ prepare_moire_acceptance_rates_output <- function(mcmc_results) {
 #' @param pt_num_threads Threads for parallel tempering.
 #' @param adapt_temp Logical; adaptive temperature.
 #' @param max_runtime Maximum MCMC runtime.
-#' @param coi_summary Output path for COI summary TSV.
-#' @param he_summary Output path for He summary TSV.
-#' @param allele_freq_summary Output path for allele-frequency summary TSV.
-#' @param relatedness_summary Output path for relatedness summary TSV.
-#' @param effective_coi_summary Output path for effective COI summary TSV.
+#' @param coi_output Output path for COI summary TSV. See *Outputs*.
+#' @param he_output Output path for He summary TSV. See *Outputs*.
+#' @param allele_freq_output Output path for allele-frequency summary TSV.
+#'   See *Outputs*.
+#' @param relatedness_output Output path for relatedness summary TSV. See
+#'   *Outputs*.
+#' @param effective_coi_output Output path for effective COI summary TSV. See
+#'   *Outputs*.
 #' @param mcmc_results_output Optional RDS path for full MCMC results.
-#' @param convergence_output Output path for the MCMC convergence diagnostics
-#'   TSV, with one row per estimated parameter and the columns `variable`,
-#'   `mean`, `median`, `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, and `ess_tail`.
-#' @param acceptance_rates_output Optional output path for a parallel-tempering
-#'   swap (exchange) acceptance rates TSV, with one row per chain and
-#'   temperature rung and the columns `chain`, `rung`, `temperature`, and
-#'   `swap_acceptance_rate`. Only meaningful when parallel tempering is used
-#'   (`pt_chains > 1`).
+#' @param convergence_output Output path for MCMC convergence diagnostics.
+#'   See *Outputs*.
+#' @param acceptance_rates_output Optional output path for parallel-tempering
+#'   swap acceptance rates. Only meaningful when `pt_chains > 1`.
 #'
 #' @return Invisibly, the MOIRe MCMC result object.
+#'
+#' @seealso [run_moire()], `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 moire_wrapper <- function(allele_table,
                           allow_relatedness = TRUE,
                           burnin = 10000L,
                           samples_per_chain = 1000L,
-                          num_chains = 3L,
-                          chains_num_threads = 1L,
+                          n_chains = 3L,
+                          threads = 1L,
                           thin = 1L,
                           verbose = FALSE,
                           eps_pos_alpha = 1,
@@ -441,11 +510,11 @@ moire_wrapper <- function(allele_table,
                           pt_num_threads = 1L,
                           adapt_temp = TRUE,
                           max_runtime = Inf,
-                          coi_summary = "coi_summary.tsv",
-                          he_summary = "he_summary.tsv",
-                          allele_freq_summary = "allele_freq_summary.tsv",
-                          relatedness_summary = "relatedness_summary.tsv",
-                          effective_coi_summary = "effective_coi_summary.tsv",
+                          coi_output = "coi_output.tsv",
+                          he_output = "he_output.tsv",
+                          allele_freq_output = "allele_freq_output.tsv",
+                          relatedness_output = "relatedness_output.tsv",
+                          effective_coi_output = "effective_coi_output.tsv",
                           mcmc_results_output = NULL,
                           convergence_output = "convergence_diag.tsv",
                           acceptance_rates_output = NULL) {
@@ -480,19 +549,19 @@ moire_wrapper <- function(allele_table,
     pt_num_threads,
     adapt_temp,
     max_runtime,
-    num_chains,
-    chains_num_threads
+    n_chains,
+    threads
   )
 
   moire_results <- run_moire(moire_object)
   summarize_and_write_moire_results(
     moire_object,
     moire_results,
-    coi_summary,
-    he_summary,
-    allele_freq_summary,
-    relatedness_summary,
-    effective_coi_summary
+    coi_output,
+    he_output,
+    allele_freq_output,
+    relatedness_output,
+    effective_coi_output
   )
 
   readr::write_tsv(

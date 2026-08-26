@@ -4,10 +4,10 @@
 \alias{read_and_preprocess_snp_call}
 \title{Read SNP call data for THEREALMcCOIL}
 \usage{
-read_and_preprocess_snp_call(snp_calls_input)
+read_and_preprocess_snp_call(snp_calls)
 }
 \arguments{
-\item{snp_calls_input}{Path to an independent, collapsed SNP call TSV.}
+\item{snp_calls}{Path to an independent, collapsed SNP call TSV.}
 }
 \value{
 A data frame with \code{specimen_name}, \code{snp_name}, \code{seq_base}, \code{reads}.

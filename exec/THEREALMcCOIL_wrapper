@@ -7,12 +7,11 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    "--snp_calls_input",
+    "--snp_calls",
     type = "character",
     help = paste0(
-      "TSV containing snp calls, with at least the following columns: ",
-      "specimen_name, target_name, snp_name, pos, seq_base, reads, he. ",
-      "Required"
+      "SNP calls TSV (specimen_name, snp_name, reads, seq_base, ...). ",
+      "See vignette input-formats. Required."
     )
   ),
   make_option(
@@ -148,18 +147,14 @@ opts <- list(
     "--slaf_output",
     type = "character",
     help = paste0(
-      "Output TSV containing single locus allele frequencies, with the ",
-      "columns: variant, freq. ",
-      "Required"
+      "Output SLAF TSV (variant, freq). Required."
     )
   ),
   make_option(
     "--coi_output",
     type = "character",
     help = paste0(
-      "Output TSV containing single locus allele frequencies, with the ",
-      "columns: variant, freq. ",
-      "Required"
+      "Output COI TSV (specimen_name, coi). Required."
     )
   ),
   make_option(
@@ -167,18 +162,14 @@ opts <- list(
     type = "character",
     default = "convergence_diag.tsv",
     help = paste0(
-      "Output TSV containing MCMC convergence diagnostics, with one row per ",
-      "parameter (coi per specimen, freq per locus, and error parameters ",
-      "when --err_method 3) and the columns: variable, mean, median, sd, q5, ",
-      "q95, rhat, ess_bulk, ess_tail. ",
-      "Default: %default"
+      "Output MCMC convergence diagnostics TSV. Default: %default"
     )
   )
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
-if (is.null(arg$snp_calls_input) || !nzchar(arg$snp_calls_input)) {
-  stop("--snp_calls_input must be set", call. = FALSE)
+if (is.null(arg$snp_calls) || !nzchar(arg$snp_calls)) {
+  stop("--snp_calls must be set", call. = FALSE)
 }
 if (is.null(arg$slaf_output) || !nzchar(arg$slaf_output)) {
   stop("--slaf_output must be set", call. = FALSE)
@@ -189,7 +180,7 @@ if (is.null(arg$coi_output) || !nzchar(arg$coi_output)) {
 
 invisible(
   THEREALMcCOIL_wrapper(
-    snp_calls_input = arg$snp_calls_input,
+    snp_calls = arg$snp_calls,
     slaf_output = arg$slaf_output,
     coi_output = arg$coi_output,
     model = arg$model,

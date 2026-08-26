@@ -1,7 +1,7 @@
 test_that("check_optparse_required_args detects missing flags", {
   expect_error(
-    check_optparse_required_args(list(output = "x"), c("snp_data", "output")),
-    "--snp_data"
+    check_optparse_required_args(list(output = "x"), c("snp_calls", "output")),
+    "--snp_calls"
   )
 })
 

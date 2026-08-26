@@ -8,10 +8,7 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     c("--aa_calls"),
-    help = paste0(
-      "TSV containing amino acid calls, with the columns: specimen_name, ",
-      "target_name, gene_id, aa_position, ref_aa, aa, reads"
-    ),
+    help = "AA calls TSV (specimen_name, gene_id, aa_position, aa). See vignette input-formats.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -22,11 +19,8 @@ opts <- list(
     }
   ),
   make_option(
-    c("--mh_calls"),
-    help = paste0(
-      "TSV containing microhaplotype genotypes, with the columns: ",
-      "specimen_name, target_name, seq, reads"
-    ),
+    c("--allele_table"),
+    help = "Allele table TSV (specimen_name, target_name, seq). See vignette input-formats.",
     type = "character",
     default = NULL,
     callback = function(opt, flag_string, value, parser, ...) {
@@ -38,20 +32,18 @@ opts <- list(
   ),
   make_option(
     c("-o", "--output"),
-    help = paste0(
-      "Output file name. Default: %default"
-    ),
+    help = "Prevalence TSV output. Default: %default",
     type = "character",
     default = "prevalence.tsv"
   )
 )
 
 args <- parse_args(OptionParser(option_list = opts))
-input_data_args <- c("aa_calls", "mh_calls")
+input_data_args <- c("aa_calls", "allele_table")
 absent_data_args <- setdiff(input_data_args, names(args))
 if (length(absent_data_args) != 1) {
   stop(
-    "One and only one of the args --aa_calls and --mh_calls should be ",
+    "One and only one of the args --aa_calls and --allele_table should be ",
     "provided.",
     call. = FALSE
   )
@@ -60,7 +52,7 @@ if (length(absent_data_args) != 1) {
 invisible(
   estimate_allele_prevalence_naive(
     aa_calls = args$aa_calls,
-    mh_calls = args$mh_calls,
+    allele_table = args$allele_table,
     output = args$output
   )
 )

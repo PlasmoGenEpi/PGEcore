@@ -4,14 +4,14 @@
 \alias{slaf_from_stave_mlaf}
 \title{Convert STAVE multi-locus allele frequencies to single-locus frequencies}
 \usage{
-slaf_from_stave_mlaf(mlaf_input, output = NULL)
+slaf_from_stave_mlaf(mlaf, output = NULL)
 }
 \arguments{
-\item{mlaf_input}{Path to an MLAF TSV, or a data frame, with columns
-\code{group_id}, \code{variant}, and \code{freq}.}
+\item{mlaf}{Path to an MLAF TSV, or a data frame with the same columns.
+See \emph{Inputs}.}
 
-\item{output}{Optional output TSV path. If \code{NULL}, results are returned
-without writing. CLI default is \code{single_locus_allele_frequencies.tsv}.}
+\item{output}{Optional output TSV path. Default for the CLI is
+\code{single_locus_allele_frequencies.tsv}.}
 }
 \value{
 A tibble with columns \code{variant} and \code{freq} (legacy STAVE conversion
@@ -23,6 +23,39 @@ frequencies per amino acid allele, and emits STAVE-style single-locus
 \code{variant} identifiers via \code{\link[=convert_single_locus_table_to_stave]{convert_single_locus_table_to_stave()}}.
 }
 \details{
-The \strong{variantstring} package is an optional dependency (Suggests). It is
-not installed automatically with PGEcore.
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{mlaf}}: Multilocus allele frequency table (\code{group_id}, \code{variant},
+\code{freq}), as a file path or data frame. See
+\code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): Single-locus allele frequency TSV with columns
+\code{variant} and \code{freq}. If \code{NULL}, results are returned without writing.
+CLI default is \code{single_locus_allele_frequencies.tsv}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{slaf_from_stave_mlaf(
+  mlaf = "mlaf.tsv",
+  output = "single_locus_allele_frequencies.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/slaf_from_stave_mlaf \\
+  --mlaf mlaf.tsv \\
+  --output single_locus_allele_frequencies.tsv
+}\if{html}{\out{</div>}}
+
+Requires the optional \strong{variantstring} package (Suggests). It is not
+installed automatically with PGEcore.
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

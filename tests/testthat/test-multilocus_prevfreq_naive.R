@@ -46,7 +46,7 @@ test_that("generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop spli
 test_that("multilocus_prevfreq_naive rejects invalid method", {
   aa_path <- system.file(
     "extdata",
-    "example2_amino_acid_calls.tsv",
+    "example2_aa_calls.tsv",
     package = "PGEcore"
   )
   groups_path <- system.file(
@@ -66,7 +66,7 @@ test_that("multilocus_prevfreq_naive rejects invalid method", {
 test_that("multilocus_prevfreq_naive works on packaged example data", {
   aa_path <- system.file(
     "extdata",
-    "example2_amino_acid_calls.tsv",
+    "example2_aa_calls.tsv",
     package = "PGEcore"
   )
   groups_path <- system.file(
@@ -98,8 +98,8 @@ test_that("multilocus_prevfreq_naive works on packaged example data", {
   written <- multilocus_prevfreq_naive(
     aa_path,
     groups_path,
-    output_path = tmp_out,
-    recalc_single_locus_output_path = tmp_sl
+    output = tmp_out,
+    single_locus_output = tmp_sl
   )
   expect_true(file.exists(tmp_out))
   expect_true(file.exists(tmp_sl))

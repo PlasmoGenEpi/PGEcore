@@ -7,13 +7,41 @@
 run_moire(moire_object)
 }
 \arguments{
-\item{moire_object}{List created by \code{\link[=create_moire_input]{create_moire_input()}} (or
-\code{\link[=moire_wrapper]{moire_wrapper()}}), with \code{moire_data} and \code{moire_parameters}.}
+\item{moire_object}{List with \code{moire_data} and \code{moire_parameters}. See
+\emph{Inputs}.}
 }
 \value{
 The object returned by \code{\link[moire:run_mcmc]{moire::run_mcmc()}}.
 }
 \description{
-The \strong{moire} package is an optional dependency (Suggests). It is not
-installed automatically with PGEcore.
+Runs MOIRe MCMC on a prepared \code{moire_object}. Requires \strong{moire} (Suggests).
+For reading allele tables and writing summary TSVs, use \code{\link[=moire_wrapper]{moire_wrapper()}}.
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{moire_object}}: List with \code{moire_data} and \code{moire_parameters}, as
+created by \code{\link[=create_moire_input]{create_moire_input()}} (via \code{\link[=moire_wrapper]{moire_wrapper()}}).
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item Returns the object from \code{\link[moire:run_mcmc]{moire::run_mcmc()}} (not written to disk).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{run_moire(moire_object)
+}\if{html}{\out{</div>}}
+
+File and CLI users should call \code{\link[=moire_wrapper]{moire_wrapper()}} /
+\verb{Rscript exec/moire_wrapper ...}.
+
+Requires \strong{moire} (Suggests).
+}
+}
+\seealso{
+\code{\link[=moire_wrapper]{moire_wrapper()}}, \code{vignette("input-formats", package = "PGEcore")}
 }

@@ -4,12 +4,12 @@
 \alias{write_mlp_vs_prev}
 \title{Write a variantstring prev/freq table}
 \usage{
-write_mlp_vs_prev(df_prev, output_path)
+write_mlp_vs_prev(df_prev, output)
 }
 \arguments{
 \item{df_prev}{Data frame with \code{group_id}, \code{variant}, \code{prev}, \code{freq}, \code{sample_total}.}
 
-\item{output_path}{Output TSV path.}
+\item{output}{Output TSV path.}
 }
 \description{
 Write a variantstring prev/freq table

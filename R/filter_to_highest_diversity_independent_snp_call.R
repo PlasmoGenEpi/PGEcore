@@ -220,17 +220,43 @@ filter_highest_diversity_snps_core <- function(snp_table_in,
 #' Ranks SNPs by expected heterozygosity, then greedily keeps loci that are at
 #' least `mindist_between_snps` apart on the same chromosome.
 #'
-#' @param snp_table_in Path to a SNP TSV, or a data frame, with columns
-#'   `specimen_name`, `target_name`, `chrom`, `pos`, `snp_name`, `ref_base`,
-#'   `seq_base`, `reads`, and `is_biallelic`.
-#' @param snp_table_out Optional output TSV path.
+#' ## Inputs
+#'
+#' - **`snp_calls`**: SNP calls (`specimen_name`, `target_name`, `chrom`,
+#'   `pos`, `snp_name`, `ref_base`, `seq_base`, `reads`, `is_biallelic`), as a
+#'   file path or data frame. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`snp_calls_output`** (optional): Filtered SNP calls TSV including an
+#'   `he` column. If `NULL`, results are returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' filter_to_highest_diversity_independent_snp_call(
+#'   snp_calls = "snp_calls.tsv",
+#'   snp_calls_output = "filtered_snp_calls.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/filter_to_highest_diversity_independent_snp_call \
+#'   --snp_calls snp_calls.tsv \
+#'   --snp_calls_output filtered_snp_calls.tsv
+#' ```
+#'
+#' @param snp_calls Path to a SNP calls TSV, or a data frame with the same
+#'   columns. See *Inputs*.
+#' @param snp_calls_output Optional output TSV path.
 #' @param mindist_between_snps Minimum distance between kept SNPs (default
 #'   `10000`).
 #' @param select_target_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of targets to keep.
 #' @param select_specimen_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of specimens to keep.
-#' @param overwrite If `FALSE` (default), refuse to overwrite `snp_table_out`.
+#' @param overwrite If `FALSE` (default), refuse to overwrite `snp_calls_output`.
 #' @param only_biallelic If `TRUE`, restrict to rows where `is_biallelic` is
 #'   `TRUE`.
 #' @param only_informative If `TRUE`, drop SNPs with expected heterozygosity
@@ -238,9 +264,11 @@ filter_highest_diversity_snps_core <- function(snp_table_in,
 #'
 #' @return Filtered SNP table including an `he` column.
 #'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
-filter_to_highest_diversity_independent_snp_call <- function(snp_table_in,
-                                                             snp_table_out = NULL,
+filter_to_highest_diversity_independent_snp_call <- function(snp_calls,
+                                                             snp_calls_output = NULL,
                                                              mindist_between_snps = 10000,
                                                              select_target_names = NULL,
                                                              select_specimen_names = NULL,
@@ -249,21 +277,21 @@ filter_to_highest_diversity_independent_snp_call <- function(snp_table_in,
                                                              only_informative = FALSE) {
   options(dplyr.summarise.inform = FALSE)
 
-  input_label <- "snp_table_in"
-  if (is.character(snp_table_in) && length(snp_table_in) == 1L) {
-    if (!file.exists(snp_table_in)) {
-      stop(snp_table_in, " does not exist", call. = FALSE)
+  input_label <- "snp_calls"
+  if (is.character(snp_calls) && length(snp_calls) == 1L) {
+    if (!file.exists(snp_calls)) {
+      stop(snp_calls, " does not exist", call. = FALSE)
     }
-    input_label <- snp_table_in
+    input_label <- snp_calls
     snp_tbl <- readr::read_tsv(
-      snp_table_in,
+      snp_calls,
       col_types = readr::cols(specimen_name = readr::col_character()),
       show_col_types = FALSE
     )
-  } else if (is.data.frame(snp_table_in)) {
-    snp_tbl <- tibble::as_tibble(snp_table_in)
+  } else if (is.data.frame(snp_calls)) {
+    snp_tbl <- tibble::as_tibble(snp_calls)
   } else {
-    stop("`snp_table_in` must be a file path or a data frame.", call. = FALSE)
+    stop("`snp_calls` must be a file path or a data frame.", call. = FALSE)
   }
 
   validate_required_columns(
@@ -290,7 +318,7 @@ filter_to_highest_diversity_independent_snp_call <- function(snp_table_in,
     select_specs
   )
 
-  stop_if_output_exists(snp_table_out, overwrite)
+  stop_if_output_exists(snp_calls_output, overwrite)
 
   out <- filter_highest_diversity_snps_core(
     snp_tbl,
@@ -299,8 +327,8 @@ filter_to_highest_diversity_independent_snp_call <- function(snp_table_in,
     only_informative = only_informative
   )
 
-  if (!is.null(snp_table_out)) {
-    readr::write_tsv(out, snp_table_out)
+  if (!is.null(snp_calls_output)) {
+    readr::write_tsv(out, snp_calls_output)
   }
   out
 }

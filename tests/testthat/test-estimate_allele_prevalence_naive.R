@@ -18,7 +18,7 @@ test_that("estimate_allele_prevalence_naive validates exclusive inputs", {
   expect_error(
     estimate_allele_prevalence_naive(
       aa_calls = "missing.tsv",
-      mh_calls = "also_missing.tsv"
+      allele_table = "also_missing.tsv"
     ),
     "One and only one"
   )
@@ -27,7 +27,7 @@ test_that("estimate_allele_prevalence_naive validates exclusive inputs", {
 test_that("estimate_allele_prevalence_naive works on packaged example data", {
   aa_path <- system.file(
     "extdata",
-    "example_amino_acid_calls.tsv",
+    "example_aa_calls.tsv",
     package = "PGEcore"
   )
   mh_path <- system.file(
@@ -44,7 +44,7 @@ test_that("estimate_allele_prevalence_naive works on packaged example data", {
   )
   expect_false("gene_id" %in% names(aa_out))
 
-  mh_out <- estimate_allele_prevalence_naive(mh_calls = mh_path)
+  mh_out <- estimate_allele_prevalence_naive(allele_table = mh_path)
   expect_true(
     all(
       c("target_name", "seq", "prev", "sample_count", "sample_total") %in%

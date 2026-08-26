@@ -15,9 +15,13 @@ knitr::opts_chunk$set(
 ```
 
 PGEcore tools read and write **TSV** tables with agreed column names so outputs
-from one step can be inputs to another. Bundled examples live in
-`inst/extdata/` after you install the package (or in that folder in the source
-tree).
+from one step can be inputs to another. Function and CLI arguments use the same
+schema names as the sections below (`allele_table`, `aa_calls`, `snp_calls`,
+`coi_table`, `loci_groups`, …). Tool help pages describe *which* tables they
+need; this vignette is the place for column layouts and examples.
+
+Bundled examples live in `inst/extdata/` after you install the package (or in
+that folder in the source tree).
 
 ```{r}
 library(PGEcore)
@@ -28,13 +32,15 @@ list.files(extdata, pattern = "^example")[1:8]
 The snippets below use those examples only to show **column structure**. In
 normal use, pass paths to **your** files on the CLI or in R.
 
-## COI calls
+## COI table (`coi_table`)
 
 **Columns:** `specimen_name`, `coi`
 
 **Example:** `example_coi_table.tsv`  
 **Used by:** `count_samples_by_coi`, and as optional COI input to several
-wrappers (`dcifer_*`, `FreqEstimationModel_wrapper`, …)
+wrappers (`dcifer_*`, …).  
+**Exception:** `FreqEstimationModel_wrapper` uses `--coi`, which accepts either
+a path to this table or a single numeric average COI.
 
 ```{r}
 readr::read_tsv(
@@ -46,11 +52,11 @@ readr::read_tsv(
 
 ```bash
 Rscript exec/count_samples_by_coi \
-  --coi_calls my_coi_calls.tsv \
+  --coi_table my_coi_table.tsv \
   --output coi_distribution.tsv
 ```
 
-## SNP calls
+## SNP calls (`snp_calls`)
 
 **Minimum columns:** `specimen_name`, `snp_name`, `reads`, `seq_base`
 
@@ -72,12 +78,12 @@ readr::read_tsv(
 
 ```bash
 Rscript exec/THEREALMcCOIL_wrapper \
-  --snp_calls_input my_snp_calls.tsv \
+  --snp_calls my_snp_calls.tsv \
   --slaf_output slaf.tsv \
   --coi_output coi.tsv
 ```
 
-## Allele / microhaplotype table
+## Allele table (`allele_table`)
 
 **Columns:** `specimen_name`, `target_name`, `seq`, `reads`
 
@@ -99,24 +105,24 @@ Rscript exec/dcifer_slaf_wrapper \
   --slaf_output slaf.tsv
 ```
 
-## Amino acid calls
+## AA calls (`aa_calls`)
 
 **Core columns:** `specimen_name`, `gene_id`, `aa_position`, `aa`, `reads`  
 Often also: `target_name`, `aa_locus`, `gene`, `ref_aa`
 
-**Example:** `example_amino_acid_calls.tsv`  
+**Example:** `example_aa_calls.tsv`  
 **Used by:** `estimate_allele_frequency_naive`, `estimate_allele_prevalence_naive`,
 `filter_biallelic_calls`, `multilocus_prevfreq_*`, `snpslice_wrapper`, …
 
 ```{r}
 readr::read_tsv(
-  file.path(extdata, "example_amino_acid_calls.tsv"),
+  file.path(extdata, "example_aa_calls.tsv"),
   show_col_types = FALSE,
   n_max = 3
 )
 ```
 
-## Loci groups
+## Loci groups (`loci_groups`)
 
 **Columns:** `group_id`, `gene_id`, `aa_position` (often `aa_locus` too)
 

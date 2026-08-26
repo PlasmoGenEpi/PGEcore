@@ -6,19 +6,17 @@
 \usage{
 MultiLociBiallelicModel_wrapper(
   aa_calls,
-  loci_group_table,
+  loci_groups,
   mlaf_output,
   aa_sample_occurence_cut_off = 0
 )
 }
 \arguments{
-\item{aa_calls}{Path to amino-acid calls TSV (\code{specimen_name}, \code{gene_id},
-\code{aa_position}, \code{ref_aa}, \code{aa}).}
+\item{aa_calls}{Path to amino-acid calls TSV. See \emph{Inputs}.}
 
-\item{loci_group_table}{Path to loci groups TSV (\code{group_id}, \code{gene_id},
-\code{aa_position}).}
+\item{loci_groups}{Path to loci-groups TSV. See \emph{Inputs}.}
 
-\item{mlaf_output}{Output TSV (\code{group_id}, \code{variant}, \code{freq}).}
+\item{mlaf_output}{Output TSV path. See \emph{Outputs}.}
 
 \item{aa_sample_occurence_cut_off}{Amino-acid calls must occur in more than
 this number of samples to be included (legacy default \code{0}).}
@@ -27,7 +25,45 @@ this number of samples to be included (legacy default \code{0}).}
 The bound MLAF tibble (invisibly after writing \code{mlaf_output}).
 }
 \description{
-File-oriented entry point used by the \code{MultiLociBiallelicModel_wrapper} CLI.
-Requires suggested package \strong{variantstring} 1.x. Samples with any missing
-genotype are dropped (legacy behaviour; the model cannot handle missing data).
+Estimates multilocus haplotype frequencies from amino-acid calls and loci
+groups. Samples with any missing genotype are dropped (legacy behaviour; the
+model cannot handle missing data). Requires \strong{variantstring} 1.x (Suggests).
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{aa_calls}}: Amino-acid calls TSV (\code{specimen_name}, \code{gene_id},
+\code{aa_position}, \code{ref_aa}, \code{aa}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{loci_groups}}: Loci-groups TSV (\code{group_id}, \code{gene_id}, \code{aa_position}).
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{mlaf_output}}: Multilocus allele frequencies (\code{group_id}, \code{variant},
+\code{freq}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{MultiLociBiallelicModel_wrapper(
+  aa_calls = "aa_calls.tsv",
+  loci_groups = "loci_groups.tsv",
+  mlaf_output = "mlaf.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/MultiLociBiallelicModel_wrapper \\
+  --aa_calls aa_calls.tsv \\
+  --loci_groups loci_groups.tsv \\
+  --mlaf_output mlaf.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{variantstring} (Suggests).
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

@@ -225,18 +225,54 @@ run_malariaem_helper <- function(matrix,
 
 #' Run malaria.em and write frequency and phase summaries
 #'
-#' The **malaria.em** package is an optional dependency (Suggests). It is not
-#' installed automatically with PGEcore.
+#' Runs malaria.em haplotype EM on an in-memory allele matrix and writes
+#' genotype-frequency and phasing summaries. Requires **malaria.em** (Suggests).
+#' For reading allele tables from disk, use [malariaem_wrapper()].
 #'
-#' @param matrix Allele matrix (specimens as rows, loci as columns).
+#' ## Inputs
+#'
+#' - **`matrix`**: Allele matrix (specimens as rows, loci as columns; alleles
+#'   space-separated within cells).
+#' - **`target_groups`**: Optional data frame with `group_id` and `target_name`
+#'   when `subset_targets = TRUE`.
+#'
+#' ## Outputs
+#'
+#' - **`freq_output`**: Genotype-frequency TSV (`gt_id`, `target_name`, `seq`,
+#'   `freq`, `freq_se`; plus `group_id` when subsetting).
+#' - **`phase_output`**: Phasing TSV (`specimen_name`, `target_name`, `seq`,
+#'   `gt_id`, `posterior_est`, `phase_id`; plus `group_id` when subsetting).
+#'
+#' ## Running
+#'
+#' ```r
+#' run_malariaem(
+#'   matrix = allele_matrix,
+#'   freq_output = "gt_freq_summary_all.tsv",
+#'   phase_output = "gt_phase_summary_all.tsv"
+#' )
+#' ```
+#'
+#' File and CLI users should call [malariaem_wrapper()] /
+#' `Rscript exec/malariaem_wrapper ...`.
+#'
+#' Requires **malaria.em** (Suggests).
+#'
+#' @param matrix Allele matrix (specimens as rows, loci as columns). See
+#'   *Inputs*.
 #' @param test_size Maximum COI to test, or `"min"` for the minimum allowed.
 #' @param max_size Error if inferred COI range exceeds this cutoff.
 #' @param subset_targets If `TRUE`, run separately for each `group_id`.
-#' @param target_groups Data frame with `group_id` and `target_name`.
-#' @param freq_output Path for genotype-frequency TSV.
-#' @param phase_output Path for phasing TSV.
+#' @param target_groups Data frame with `group_id` and `target_name`. See
+#'   *Inputs*.
+#' @param freq_output Path for genotype-frequency TSV. See *Outputs*.
+#' @param phase_output Path for phasing TSV. See *Outputs*.
 #'
 #' @return A list of malaria.em results (or a named list per group).
+#'
+#' @seealso [malariaem_wrapper()],
+#'   `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 run_malariaem <- function(matrix,
                           test_size = "min",
@@ -316,18 +352,56 @@ run_malariaem <- function(matrix,
 
 #' Run malaria.em from allele-table and output paths
 #'
-#' File-oriented entry point used by the `malariaem_wrapper` CLI.
+#' Reads an allele table, builds the EM matrix, and calls [run_malariaem()].
+#' Requires **malaria.em** (Suggests).
 #'
-#' @param allele_table Path to allele TSV (`specimen_name`, `target_name`, `seq`).
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table TSV (`specimen_name`, `target_name`,
+#'   `seq`). See `vignette("input-formats", package = "PGEcore")`.
+#' - **`target_groups`**: Optional groups TSV (`group_id`, `target_name`) when
+#'   `subset_targets = TRUE`.
+#'
+#' ## Outputs
+#'
+#' - **`freq_output`**: Genotype-frequency TSV (`gt_id`, `target_name`, `seq`,
+#'   `freq`, `freq_se`).
+#' - **`phase_output`**: Phasing TSV (`specimen_name`, `target_name`, `seq`,
+#'   `gt_id`, `posterior_est`, `phase_id`).
+#'
+#' ## Running
+#'
+#' ```r
+#' malariaem_wrapper(
+#'   allele_table = "allele_table.tsv",
+#'   freq_output = "gt_freq_summary_all.tsv",
+#'   phase_output = "gt_phase_summary_all.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/malariaem_wrapper \
+#'   --allele_table allele_table.tsv \
+#'   --freq_output gt_freq_summary_all.tsv \
+#'   --phase_output gt_phase_summary_all.tsv
+#' ```
+#'
+#' Requires **malaria.em** (Suggests).
+#'
+#' @param allele_table Path to allele table TSV. See *Inputs*.
 #' @param subset_targets Logical; subset by `target_groups`.
-#' @param target_groups Optional path to groups TSV.
+#' @param target_groups Optional path to groups TSV. See *Inputs*.
 #' @param max_size COI cutoff (legacy CLI default `"8"`).
 #' @param test_size COI size to test, or `"min"`.
-#' @param freq_output Frequency summary path.
-#' @param phase_output Phase summary path.
+#' @param freq_output Frequency summary path. See *Outputs*.
+#' @param phase_output Phase summary path. See *Outputs*.
 #' @param seed Random seed.
 #'
 #' @return The object returned by [run_malariaem()].
+#'
+#' @seealso [run_malariaem()],
+#'   `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 malariaem_wrapper <- function(allele_table,
                               subset_targets = FALSE,
@@ -336,7 +410,7 @@ malariaem_wrapper <- function(allele_table,
                               test_size = "min",
                               freq_output = "gt_freq_summary_all.tsv",
                               phase_output = "gt_phase_summary_all.tsv",
-                              seed = "1") {
+                              seed = 1L) {
   options(dplyr.summarise.inform = FALSE)
   check_suggested_pkg("malaria.em", "malaria.em via malariaem_wrapper()")
   check_suggested_pkg("checkmate", "malaria.em input validation")

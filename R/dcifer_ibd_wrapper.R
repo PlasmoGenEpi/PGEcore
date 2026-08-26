@@ -494,16 +494,51 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 
 #' Estimate IBD-based relatedness with Dcifer
 #'
-#' File-oriented entry point used by the `dcifer_ibd_wrapper` CLI. Optional
-#' **dcifer** plus parallel helpers (**doParallel**, **parallelly**, **foreach**,
-#' **iterators**) must be installed separately.
+#' Estimates pairwise relatedness from an allele table (optionally with COI,
+#' allele frequencies, and population metadata). Requires **dcifer** and
+#' parallel helpers (**doParallel**, **parallelly**, **foreach**, **iterators**)
+#' (Suggests).
 #'
-#' @param allele_table Path to allele TSV.
-#' @param btwn_host_rel_output Path for relatedness TSV.
-#' @param coi_table Optional COI TSV.
-#' @param allele_freq_table Optional allele-frequency TSV.
-#' @param specimen_name_col,target_name_col,target_value_col Column names.
-#' @param specimen_metadata Optional metadata TSV.
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table TSV. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`coi_table`**: Optional COI table TSV. If omitted, COI is inferred.
+#' - **`allele_freq_table`**: Optional SLAF TSV (`target_name`, `seq`, `freq`).
+#'   If omitted, frequencies are estimated from the allele table.
+#' - **`specimen_metadata`**: Optional metadata TSV for population-specific
+#'   runs (with `pop_name_col`).
+#'
+#' ## Outputs
+#'
+#' - **`relatedness_output`**: Relatedness TSV with `specimen_name_a`,
+#'   `specimen_name_b`, `btwn_host_rel`, and optionally `p_value`,
+#'   `CI_lower`, `CI_upper`, and/or `strain_pair`.
+#'
+#' ## Running
+#'
+#' ```r
+#' dcifer_ibd_wrapper(
+#'   allele_table = "allele_table.tsv",
+#'   relatedness_output = "relatedness.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/dcifer_ibd_wrapper \
+#'   --allele_table allele_table.tsv \
+#'   --relatedness_output relatedness.tsv
+#' ```
+#'
+#' Requires **dcifer** and parallel Suggests packages.
+#'
+#' @param allele_table Path to allele table TSV. See *Inputs*.
+#' @param relatedness_output Path for relatedness TSV. See *Outputs*.
+#' @param coi_table Optional path to COI table TSV. See *Inputs*.
+#' @param allele_freq_table Optional path to allele-frequency TSV. See *Inputs*.
+#' @param specimen_name_col,target_name_col,target_value_col Column names in
+#'   the allele / COI / frequency tables.
+#' @param specimen_metadata Optional metadata TSV. See *Inputs*.
 #' @param pop_name_col Optional population column in metadata.
 #' @param rnull Relatedness null for hypothesis testing.
 #' @param alpha Significance level.
@@ -513,10 +548,14 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 #' @param seed Random seed.
 #' @param verbose Print parallel worker output.
 #'
-#' @return The relatedness tibble (also written to `btwn_host_rel_output`).
+#' @return The relatedness tibble (also written to `relatedness_output`).
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`,
+#'   [dcifer_slaf_wrapper()]
+#'
 #' @export
 dcifer_ibd_wrapper <- function(allele_table,
-                               btwn_host_rel_output,
+                               relatedness_output,
                                coi_table = NULL,
                                allele_freq_table = NULL,
                                specimen_name_col = "specimen_name",
@@ -536,9 +575,9 @@ dcifer_ibd_wrapper <- function(allele_table,
     "parallel IBD estimation via dcifer_ibd_wrapper()"
   )
 
-  if (is.null(allele_table) || is.null(btwn_host_rel_output)) {
+  if (is.null(allele_table) || is.null(relatedness_output)) {
     stop(
-      "--allele_table and --btwn_host_rel_output are required",
+      "--allele_table and --relatedness_output are required",
       call. = FALSE
     )
   }
@@ -634,6 +673,6 @@ dcifer_ibd_wrapper <- function(allele_table,
     )
   }
 
-  write_dcifer_ibd_output(dcifer_res, btwn_host_rel_output)
+  write_dcifer_ibd_output(dcifer_res, relatedness_output)
   dcifer_res
 }

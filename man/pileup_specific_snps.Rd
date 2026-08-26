@@ -8,7 +8,7 @@ pileup_specific_snps(
   allele_table,
   ref_bed,
   snps_of_interest,
-  output_directory,
+  output_dir,
   select_target_names = NULL,
   select_specimen_names = NULL,
   overwrite_dir = FALSE,
@@ -16,17 +16,13 @@ pileup_specific_snps(
 )
 }
 \arguments{
-\item{allele_table}{Path or data frame with columns \code{specimen_name},
-\code{target_name}, \code{reads}, and \code{seq}.}
+\item{allele_table}{Path or data frame of allele table. See \emph{Inputs}.}
 
-\item{ref_bed}{Path or data frame with columns \verb{#chrom}, \code{start}, \code{end},
-\code{target_name}, \code{length}, \code{strand}, and \code{ref_seq}.}
+\item{ref_bed}{Path or data frame of panel BED with \code{ref_seq}. See \emph{Inputs}.}
 
-\item{snps_of_interest}{Path or data frame with columns \verb{#chrom}, \code{start},
-\code{end}, \code{name}, \code{length}, and \code{strand}. Each SNP must span one base
-(\code{end - start == 1}).}
+\item{snps_of_interest}{Path or data frame of SNP BED. See \emph{Inputs}.}
 
-\item{output_directory}{Directory to write results. Created if missing.}
+\item{output_dir}{Directory to write results. Created if missing.}
 
 \item{select_target_names}{Optional comma-separated names, path to a
 one-column TSV, or character vector of targets to keep.}
@@ -35,7 +31,7 @@ one-column TSV, or character vector of targets to keep.}
 one-column TSV, or character vector of specimens to keep.}
 
 \item{overwrite_dir}{If \code{FALSE} (default), refuse to replace an existing
-\code{output_directory}.}
+\code{output_dir}.}
 
 \item{collapse_calls_by_summing}{If \code{TRUE}, sum reads across overlapping
 targets; otherwise keep the target with the highest read count.}
@@ -47,10 +43,48 @@ A named list with \code{snp_calls}, \code{collapsed_snp_calls},
 \description{
 Aligns each unique haplotype to its panel reference with an overlap
 pairwise alignment, then extracts bases at SNP-of-interest coordinates.
-Requires \strong{Biostrings} and \strong{pwalign} (Suggests).
 }
 \details{
-Writes \code{snp_calls.tsv.gz}, \code{collapsed_snp_calls.tsv.gz},
-\code{snps_covered_by_target_samples_info.tsv}, and optionally
-\code{allele_table_out_uncallable.tsv} under \code{output_directory}.
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table (\code{specimen_name}, \code{target_name}, \code{reads},
+\code{seq}), as a file path or data frame. See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{ref_bed}}: Panel BED with \code{ref_seq} (\verb{#chrom}, \code{start}, \code{end},
+\code{target_name}, \code{length}, \code{strand}, \code{ref_seq}).
+\item \strong{\code{snps_of_interest}}: SNP BED (\verb{#chrom}, \code{start}, \code{end}, \code{name},
+\code{length}, \code{strand}); each SNP must span one base (\code{end - start == 1}).
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output_dir}}: Directory receiving \code{snp_calls.tsv.gz},
+\code{collapsed_snp_calls.tsv.gz}, \code{snps_covered_by_target_samples_info.tsv},
+and optionally \code{allele_table_out_uncallable.tsv}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{pileup_specific_snps(
+  allele_table = "allele_table.tsv",
+  ref_bed = "ref_bed_with_seq.tsv",
+  snps_of_interest = "snps.bed",
+  output_dir = "pileup_out"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/pileup_specific_snps \\
+  --allele_table allele_table.tsv \\
+  --ref_bed ref_bed_with_seq.tsv \\
+  --snps_of_interest snps.bed \\
+  --output_dir pileup_out
+}\if{html}{\out{</div>}}
+
+Requires \strong{Biostrings} and \strong{pwalign} (Suggests).
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

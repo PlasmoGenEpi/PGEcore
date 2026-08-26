@@ -5,19 +5,19 @@
 \title{Filter amino acid calls to biallelic loci}
 \usage{
 filter_biallelic_calls(
-  amino_acid_calls,
-  out = NULL,
-  out_nonbiallelic = NULL,
+  aa_calls,
+  output = NULL,
+  nonbiallelic_output = NULL,
   overwrite = FALSE
 )
 }
 \arguments{
-\item{amino_acid_calls}{Path to a TSV, or a data frame, with columns
-\code{gene_id}, \code{aa_position}, \code{ref_aa}, and \code{aa}.}
+\item{aa_calls}{Path to an AA calls TSV, or a data frame with the same
+columns. See \emph{Inputs}.}
 
-\item{out}{Optional path for the biallelic output TSV.}
+\item{output}{Optional path for the biallelic output TSV.}
 
-\item{out_nonbiallelic}{Optional path for loci with more than two alleles.}
+\item{nonbiallelic_output}{Optional path for loci with more than two alleles.}
 
 \item{overwrite}{If \code{FALSE} (default), refuse to overwrite existing outputs.}
 }
@@ -29,8 +29,42 @@ A list with tibbles \code{biallelic} and \code{nonbiallelic}. Each includes an
 Keeps loci (\code{gene_id}, \code{aa_position}, \code{ref_aa}) with at most two distinct
 \code{aa} alleles. Optionally writes non-biallelic loci to a second file.
 }
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{aa_calls}}: AA calls (\code{gene_id}, \code{aa_position}, \code{ref_aa}, \code{aa}), as a
+file path or data frame. See
+\code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): Biallelic AA calls TSV (includes \code{allele_calls}).
+\item \strong{\code{nonbiallelic_output}} (optional): Non-biallelic loci TSV (includes
+\code{allele_calls}).
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{filter_biallelic_calls(
+  aa_calls = "aa_calls.tsv",
+  output = "biallelic_aa_calls.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/filter_biallelic_calls \\
+  --aa_calls aa_calls.tsv \\
+  --output biallelic_aa_calls.tsv
+}\if{html}{\out{</div>}}
+}
+}
 \examples{
-path <- system.file("extdata", "example_amino_acid_calls.tsv", package = "PGEcore")
+path <- system.file("extdata", "example_aa_calls.tsv", package = "PGEcore")
 filter_biallelic_calls(path)
 
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

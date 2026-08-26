@@ -21,14 +21,14 @@ test_that("run_coiaf integration skips when coiaf is unavailable", {
   )
   skip_if_not(nzchar(snp_path) && file.exists(snp_path))
 
-  snp_data <- readr::read_tsv(snp_path, show_col_types = FALSE, n_max = 2000)
-  specimens <- head(unique(snp_data$specimen_name), 2)
-  snp_data <- snp_data[snp_data$specimen_name %in% specimens, ]
+  snp_calls <- readr::read_tsv(snp_path, show_col_types = FALSE, n_max = 2000)
+  specimens <- head(unique(snp_calls$specimen_name), 2)
+  snp_calls <- snp_calls[snp_calls$specimen_name %in% specimens, ]
 
-  expect_error(run_coiaf(snp_data, seq_error = -1), "seq_error")
+  expect_error(run_coiaf(snp_calls, seq_error = -1), "seq_error")
 
   # Auto-calculate PLMAF from the same subset to avoid mismatch warnings
-  result <- suppressWarnings(run_coiaf(snp_data, plmaf = NULL, max_coi = 5))
+  result <- suppressWarnings(run_coiaf(snp_calls, plmaf = NULL, max_coi = 5))
   expect_true(all(c("specimen_name", "coi_freq", "coi_variant") %in% names(result)))
   expect_true(nrow(result) >= 1)
 })

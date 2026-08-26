@@ -23,14 +23,14 @@ test_that("estimate_allele_frequency_naive validates exclusive inputs and method
   expect_error(
     estimate_allele_frequency_naive(
       aa_calls = "missing.tsv",
-      mh_calls = "also_missing.tsv"
+      allele_table = "also_missing.tsv"
     ),
     "One and only one"
   )
 
   aa_path <- system.file(
     "extdata",
-    "example_amino_acid_calls.tsv",
+    "example_aa_calls.tsv",
     package = "PGEcore"
   )
   skip_if_not(nzchar(aa_path) && file.exists(aa_path))
@@ -43,7 +43,7 @@ test_that("estimate_allele_frequency_naive validates exclusive inputs and method
 test_that("estimate_allele_frequency_naive works on packaged example data", {
   aa_path <- system.file(
     "extdata",
-    "example_amino_acid_calls.tsv",
+    "example_aa_calls.tsv",
     package = "PGEcore"
   )
   mh_path <- system.file(
@@ -62,7 +62,7 @@ test_that("estimate_allele_frequency_naive works on packaged example data", {
   expect_true(all(grepl(":", aa_out$variant)))
 
   mh_out <- estimate_allele_frequency_naive(
-    mh_calls = mh_path,
+    allele_table = mh_path,
     method = "read_count_prop"
   )
   expect_true(all(c("target_name", "seq", "freq") %in% names(mh_out)))

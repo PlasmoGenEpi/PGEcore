@@ -242,27 +242,58 @@ validate_translate_column_types <- function(ref_bed,
 #'
 #' Aligns each unique haplotype to its panel reference with an overlap
 #' pairwise alignment, extracts the codon at each locus of interest, and
-#' translates it. Requires **Biostrings** and **pwalign** (Suggests).
+#' translates it.
 #'
-#' Writes `loci_of_interest_for_target_for_microhap.tsv.gz`,
-#' `amino_acid_calls.tsv.gz`, `collapsed_amino_acid_calls.tsv.gz`,
-#' `loci_covered_by_target_samples_info.tsv`, and optionally
-#' `allele_table_out_untranslatable.tsv` under `output_directory`.
+#' ## Inputs
 #'
-#' @param allele_table Path or data frame with columns `specimen_name`,
-#'   `target_name`, `reads`, and `seq`.
-#' @param ref_bed Path or data frame with columns `#chrom`, `start`, `end`,
-#'   `target_name`, `length`, `strand`, and `ref_seq`.
-#' @param loci_of_interest Path or data frame with columns `#chrom`, `start`,
-#'   `end`, `name`, `length`, `strand`, `gene`, `gene_id`, and `aa_position`.
-#'   Each locus must have `length == 3`.
-#' @param output_directory Directory to write results. Created if missing.
+#' - **`allele_table`**: Allele table (`specimen_name`, `target_name`, `reads`,
+#'   `seq`), as a file path or data frame. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`ref_bed`**: Panel BED with `ref_seq` (`#chrom`, `start`, `end`,
+#'   `target_name`, `length`, `strand`, `ref_seq`).
+#' - **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`, `name`,
+#'   `length`, `strand`, `gene`, `gene_id`, `aa_position`); each locus must have
+#'   `length == 3`.
+#'
+#' ## Outputs
+#'
+#' - **`output_dir`**: Directory receiving
+#'   `loci_of_interest_for_target_for_microhap.tsv.gz`,
+#'   `amino_acid_calls.tsv.gz`, `collapsed_amino_acid_calls.tsv.gz`,
+#'   `loci_covered_by_target_samples_info.tsv`, and optionally
+#'   `allele_table_out_untranslatable.tsv`.
+#'
+#' ## Running
+#'
+#' ```r
+#' translate_loci_of_interest(
+#'   allele_table = "allele_table.tsv",
+#'   ref_bed = "ref_bed_with_seq.tsv",
+#'   loci_of_interest = "loci.bed",
+#'   output_dir = "translate_out"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/translate_loci_of_interest \
+#'   --allele_table allele_table.tsv \
+#'   --ref_bed ref_bed_with_seq.tsv \
+#'   --loci_of_interest loci.bed \
+#'   --output_dir translate_out
+#' ```
+#'
+#' Requires **Biostrings** and **pwalign** (Suggests).
+#'
+#' @param allele_table Path or data frame of allele table. See *Inputs*.
+#' @param ref_bed Path or data frame of panel BED with `ref_seq`. See *Inputs*.
+#' @param loci_of_interest Path or data frame of codon BED. See *Inputs*.
+#' @param output_dir Directory to write results. Created if missing.
 #' @param select_target_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of targets to keep.
 #' @param select_specimen_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of specimens to keep.
 #' @param overwrite_dir If `FALSE` (default), refuse to replace an existing
-#'   `output_directory`.
+#'   `output_dir`.
 #' @param output_stop_codons If `FALSE` (default), treat `*` as untranslatable
 #'   (along with `X`).
 #' @param collapse_calls_by_summing If `TRUE`, sum reads across overlapping
@@ -272,11 +303,13 @@ validate_translate_column_types <- function(ref_bed,
 #'   `amino_acid_calls`, `collapsed_amino_acid_calls`,
 #'   `loci_covered_by_target_samples_info`, and `untranslatable`.
 #'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 translate_loci_of_interest <- function(allele_table,
                                        ref_bed,
                                        loci_of_interest,
-                                       output_directory,
+                                       output_dir,
                                        select_target_names = NULL,
                                        select_specimen_names = NULL,
                                        overwrite_dir = FALSE,
@@ -285,7 +318,7 @@ translate_loci_of_interest <- function(allele_table,
   options(dplyr.summarise.inform = FALSE)
   options(readr.show_col_types = FALSE)
   check_microhap_alignment_pkgs("translate_loci_of_interest()")
-  ensure_output_directory(output_directory, overwrite_dir)
+  ensure_output_directory(output_dir, overwrite_dir)
 
   select_targets <- parse_name_list_arg(select_target_names)
   select_specs <- parse_name_list_arg(select_specimen_names)
@@ -475,24 +508,24 @@ translate_loci_of_interest <- function(allele_table,
 
   readr::write_tsv(
     hap_loci,
-    file.path(output_directory, "loci_of_interest_for_target_for_microhap.tsv.gz")
+    file.path(output_dir, "loci_of_interest_for_target_for_microhap.tsv.gz")
   )
   readr::write_tsv(
     allele_table_out,
-    file.path(output_directory, "amino_acid_calls.tsv.gz")
+    file.path(output_dir, "amino_acid_calls.tsv.gz")
   )
   readr::write_tsv(
     collapsed,
-    file.path(output_directory, "collapsed_amino_acid_calls.tsv.gz")
+    file.path(output_dir, "collapsed_amino_acid_calls.tsv.gz")
   )
   readr::write_tsv(
     loci_of_interest_out,
-    file.path(output_directory, "loci_covered_by_target_samples_info.tsv")
+    file.path(output_dir, "loci_covered_by_target_samples_info.tsv")
   )
   if (nrow(untranslatable) > 0) {
     readr::write_tsv(
       untranslatable,
-      file.path(output_directory, "allele_table_out_untranslatable.tsv")
+      file.path(output_dir, "allele_table_out_untranslatable.tsv")
     )
   }
 

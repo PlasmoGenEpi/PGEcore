@@ -40,7 +40,7 @@ test_that("add_ref_seqs_with_targeted_ref_fasta checks Biostrings and overwrite"
     add_ref_seqs_with_targeted_ref_fasta(
       ref_bed = data.frame(x = 1),
       target_fasta = tempfile(),
-      out = tmp,
+      output = tmp,
       overwrite = FALSE
     ),
     "already exists"

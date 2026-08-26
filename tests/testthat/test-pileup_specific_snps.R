@@ -56,7 +56,7 @@ test_that("pileup_specific_snps extracts a matching SNP base", {
     allele_table = allele_table,
     ref_bed = ref_bed,
     snps_of_interest = snps,
-    output_directory = out_dir
+    output_dir = out_dir
   )
   expect_true(file.exists(file.path(out_dir, "snp_calls.tsv.gz")))
   expect_equal(nrow(result$snp_calls), 1)
@@ -96,7 +96,7 @@ test_that("pileup_specific_snps refuses an existing output directory", {
         length = 1,
         strand = "+"
       ),
-      output_directory = tmp
+      output_dir = tmp
     ),
     "already exist"
   )

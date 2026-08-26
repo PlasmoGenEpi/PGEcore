@@ -42,7 +42,7 @@ Flags and file formats match between the two.
 ```r
 library(PGEcore)
 
-count_samples_by_coi("my_coi_calls.tsv", output = "coi_distribution.tsv")
+count_samples_by_coi("my_coi_table.tsv", output = "coi_distribution.tsv")
 
 # Specialist wrappers use the same file paths as the CLI
 # dcifer_slaf_wrapper(allele_table = "alleles.tsv", slaf_output = "slaf.tsv")
@@ -62,7 +62,7 @@ install of `r-pgecore`):
 
 ```bash
 count_samples_by_coi \
-  --coi_calls my_coi_calls.tsv \
+  --coi_table my_coi_table.tsv \
   --output coi_distribution.tsv
 ```
 
@@ -70,7 +70,7 @@ From a source checkout of this repository:
 
 ```bash
 Rscript exec/count_samples_by_coi \
-  --coi_calls inst/extdata/example_coi_table.tsv \
+  --coi_table inst/extdata/example_coi_table.tsv \
   --output coi_distribution.tsv
 
 Rscript exec/dcifer_slaf_wrapper \
@@ -86,15 +86,18 @@ in `inst/extdata/`.
 Tools share a small set of TSV layouts so outputs from one step can feed the
 next. Required columns (minimum):
 
-| Format | Required columns | Example file |
-| ------ | ---------------- | ------------ |
-| COI calls | `specimen_name`, `coi` | `inst/extdata/example_coi_table.tsv` |
-| SNP calls | `specimen_name`, `snp_name`, `reads`, `seq_base` | `inst/extdata/example_collapsed_snp_calls.tsv` |
-| Allele / microhap table | `specimen_name`, `target_name`, `seq`, `reads` | `inst/extdata/example_allele_table.tsv` |
-| Amino acid calls | `specimen_name`, `gene_id`, `aa_position`, `aa`, `reads` (+ often `target_name`, `aa_locus`, …) | `inst/extdata/example_amino_acid_calls.tsv` |
-| Loci groups | `group_id`, `gene_id`, `aa_position` | `inst/extdata/example_loci_groups.tsv` |
+| Format (CLI / R arg) | Required columns | Example file |
+| -------------------- | ---------------- | ------------ |
+| COI table (`coi_table`) | `specimen_name`, `coi` | `inst/extdata/example_coi_table.tsv` |
+| SNP calls (`snp_calls`) | `specimen_name`, `snp_name`, `reads`, `seq_base` | `inst/extdata/example_collapsed_snp_calls.tsv` |
+| Allele table (`allele_table`) | `specimen_name`, `target_name`, `seq`, `reads` | `inst/extdata/example_allele_table.tsv` |
+| AA calls (`aa_calls`) | `specimen_name`, `gene_id`, `aa_position`, `aa`, `reads` (+ often `target_name`, `aa_locus`, …) | `inst/extdata/example_aa_calls.tsv` |
+| Loci groups (`loci_groups`) | `group_id`, `gene_id`, `aa_position` | `inst/extdata/example_loci_groups.tsv` |
 | Allele frequency (MLAF) | `group_id`, `variant`, `freq` | `inst/extdata/example_mlaf.tsv` |
 | Population MAF (PLMAF) | `snp_name`, `seq_base`, `plmaf` | `inst/extdata/example_coiaf_plmaf.tsv` |
+
+`FreqEstimationModel_wrapper` is the exception for COI: its `--coi` argument
+accepts either a path to a COI table or a single numeric average COI.
 
 Full column notes and which tools consume each format: vignette **`input-formats`**.
 

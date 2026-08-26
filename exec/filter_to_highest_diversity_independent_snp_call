@@ -7,15 +7,12 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    "--snp_table_in",
-    help = paste(
-      "TSV containing at least the columns: specimen_name, target_name,",
-      "chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic"
-    )
+    "--snp_calls",
+    help = "SNP calls TSV (specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic). See vignette input-formats."
   ),
   make_option(
-    "--snp_table_out",
-    help = "the output filename path for the output filtered file"
+    "--snp_calls_output",
+    help = "Filtered SNP calls TSV output (includes he)."
   ),
   make_option(
     "--mindist_between_snps",
@@ -55,17 +52,17 @@ opts <- list(
 )
 
 arg <- parse_args(OptionParser(option_list = opts))
-if (is.null(arg$snp_table_in) || is.null(arg$snp_table_out)) {
+if (is.null(arg$snp_calls) || is.null(arg$snp_calls_output)) {
   stop(
-    "Missing required arguments: --snp_table_in and --snp_table_out",
+    "Missing required arguments: --snp_calls and --snp_calls_output",
     call. = FALSE
   )
 }
 
 invisible(
   filter_to_highest_diversity_independent_snp_call(
-    snp_table_in = arg$snp_table_in,
-    snp_table_out = arg$snp_table_out,
+    snp_calls = arg$snp_calls,
+    snp_calls_output = arg$snp_calls_output,
     mindist_between_snps = arg$mindist_between_snps,
     select_target_names = arg$select_target_names,
     select_specimen_names = arg$select_specimen_names,

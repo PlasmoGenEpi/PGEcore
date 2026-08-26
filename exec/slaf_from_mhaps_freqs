@@ -7,47 +7,33 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    "--mhaps_slaf_fnp",
-    help = paste(
-      "TSV containing the columns: target_name, seq, freq, sample_total.",
-      "The target_name and seq columns should match up with the columns in",
-      "loci_of_interest_per_microhaps_fnp"
-    )
+    "--mhaps_slaf",
+    help = "Microhaplotype SLAF TSV (target_name, seq, freq, sample_total). See vignette input-formats."
   ),
   make_option(
-    "--loci_of_interest_per_microhaps_fnp",
-    help = paste(
-      "TSV containing the columns: target_name, seq, gene_id, aa_position, aa.",
-      "The target_name and seq columns should match up with the columns in",
-      "mhaps_slaf_fnp"
-    )
+    "--loci_of_interest_per_microhaps",
+    help = "Translated loci per microhaplotype TSV (target_name, gene_id, aa_position, seq, aa)."
   ),
   make_option(
     "--slaf_output",
-    help = paste(
-      "the output for the single locus allele frequency, will collapse",
-      "frequencies across overlapping targets"
-    )
+    help = "Collapsed single-locus allele frequency TSV output (variant, freq, sample_total)."
   ),
   make_option(
     "--per_target_slaf_output",
-    help = paste(
-      "optional output for the single lcous allele frequency calculated",
-      "per target"
-    )
+    help = "Optional per-target SLAF TSV output."
   )
 )
 
 args <- parse_args(OptionParser(option_list = opts))
 if (
-  is.null(args$mhaps_slaf_fnp) ||
-    is.null(args$loci_of_interest_per_microhaps_fnp) ||
+  is.null(args$mhaps_slaf) ||
+    is.null(args$loci_of_interest_per_microhaps) ||
     is.null(args$slaf_output)
 ) {
   stop(
     paste(
-      "Missing required arguments: --mhaps_slaf_fnp,",
-      "--loci_of_interest_per_microhaps_fnp, and --slaf_output"
+      "Missing required arguments: --mhaps_slaf,",
+      "--loci_of_interest_per_microhaps, and --slaf_output"
     ),
     call. = FALSE
   )
@@ -55,8 +41,8 @@ if (
 
 invisible(
   slaf_from_mhaps_freqs(
-    mhaps_slaf = args$mhaps_slaf_fnp,
-    loci_of_interest_per_microhaps = args$loci_of_interest_per_microhaps_fnp,
+    mhaps_slaf = args$mhaps_slaf,
+    loci_of_interest_per_microhaps = args$loci_of_interest_per_microhaps,
     slaf_output = args$slaf_output,
     per_target_slaf_output = args$per_target_slaf_output
   )

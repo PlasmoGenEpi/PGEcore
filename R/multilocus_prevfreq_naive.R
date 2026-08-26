@@ -1,17 +1,17 @@
 #' Read amino acid calls for naive multilocus prev/freq
 #'
-#' @param aa_table Path to a TSV of amino acid calls.
+#' @param aa_calls Path to a TSV of amino acid calls.
 #' @return A tibble including `n_aa` (allele count per specimen/locus).
 #' @keywords internal
-read_mlp_naive_aa_table <- function(aa_table) {
-  stopifnot(is.character(aa_table), length(aa_table) == 1L)
-  if (!file.exists(aa_table)) {
-    stop(aa_table, " does not exist", call. = FALSE)
+read_mlp_naive_aa_table <- function(aa_calls) {
+  stopifnot(is.character(aa_calls), length(aa_calls) == 1L)
+  if (!file.exists(aa_calls)) {
+    stop(aa_calls, " does not exist", call. = FALSE)
   }
 
   # Match legacy read.table() integer types used by validate rules.
   df_aa <- utils::read.table(
-    aa_table,
+    aa_calls,
     header = TRUE,
     colClasses = c(specimen_name = "character")
   )
@@ -19,7 +19,7 @@ read_mlp_naive_aa_table <- function(aa_table) {
   validate_required_columns(
     df_aa,
     c("specimen_name", "gene", "gene_id", "aa_position", "reads", "aa"),
-    "aa_table"
+    "aa_calls"
   )
 
   rules <- validate::validator(
@@ -36,7 +36,7 @@ read_mlp_naive_aa_table <- function(aa_table) {
     !is.na(reads),
     !is.na(aa)
   )
-  stop_on_validate_fails(df_aa, rules, "aa_table")
+  stop_on_validate_fails(df_aa, rules, "aa_calls")
 
   df_aa |>
     dplyr::group_by(.data$specimen_name, .data$gene_id, .data$aa_position) |>
@@ -67,7 +67,7 @@ read_mlp_naive_loci_groups <- function(loci_groups_path) {
   validate_required_columns(
     loci_groups,
     c("group_id", "gene_id", "aa_position"),
-    "loci_groups_input"
+    "loci_groups"
   )
 
   rules <- validate::validator(
@@ -78,7 +78,7 @@ read_mlp_naive_loci_groups <- function(loci_groups_path) {
     !is.na(gene_id),
     !is.na(aa_position)
   )
-  stop_on_validate_fails(loci_groups, rules, "loci_groups_input")
+  stop_on_validate_fails(loci_groups, rules, "loci_groups")
   loci_groups
 }
 
@@ -278,13 +278,13 @@ calculate_multilocus_af_prev_presence_absence <- function(multilocus_calls) {
 
 #' Build naive multilocus haplotype calls for one loci group
 #'
-#' @param aa_table Amino acid calls with `n_aa`.
+#' @param aa_calls Amino acid calls with `n_aa`.
 #' @param group_df Loci-group rows including `loci_in_group`.
 #' @param wsaf_cut_off Dominant-allele WSAF threshold.
 #' @return A tibble of specimen haplotypes (`specimen_name`, `variant`, `wsaf`).
 #' @keywords internal
-build_naive_multilocus_calls_for_group <- function(aa_table, group_df, wsaf_cut_off) {
-  aa_table_group <- aa_table |>
+build_naive_multilocus_calls_for_group <- function(aa_calls, group_df, wsaf_cut_off) {
+  aa_table_group <- aa_calls |>
     dplyr::inner_join(group_df, by = c("gene_id", "aa_position")) |>
     dplyr::group_by(.data$specimen_name) |>
     dplyr::mutate(
@@ -410,23 +410,54 @@ build_naive_multilocus_calls_for_group <- function(aa_table, group_df, wsaf_cut_
 #' samples). Prevalence and frequency are then estimated with `wsaf_prop` or
 #' `presence_absence`.
 #'
-#' @param aa_table Path to a TSV of amino acid calls with columns
-#'   `specimen_name`, `gene`, `gene_id`, `aa_position`, `reads`, and `aa`.
-#' @param loci_groups_input Path to a TSV of loci groups with columns
-#'   `group_id`, `gene_id`, and `aa_position`.
-#' @param output_path Optional path for the multilocus prev/freq TSV. If
-#'   `NULL`, results are returned without writing.
-#' @param recalc_single_locus_output_path Optional path for single-locus
-#'   prev/freq recalculated from the inferred multilocus calls.
+#' ## Inputs
+#'
+#' - **`aa_calls`**: AA calls (`specimen_name`, `gene`, `gene_id`,
+#'   `aa_position`, `reads`, `aa`). See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`loci_groups`**: Loci groups (`group_id`, `gene_id`, `aa_position`).
+#'   See the same vignette.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): Multilocus prev/freq TSV (includes `group_id`,
+#'   `variant`, `prev`, `freq`). If `NULL`, results are returned without writing.
+#' - **`single_locus_output`** (optional): Single-locus prev/freq recalculated
+#'   from the inferred multilocus calls.
+#'
+#' ## Running
+#'
+#' ```r
+#' multilocus_prevfreq_naive(
+#'   aa_calls = "aa_calls.tsv",
+#'   loci_groups = "loci_groups.tsv",
+#'   output = "multilocus_prevfreq.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/multilocus_prevfreq_naive \
+#'   --aa_calls aa_calls.tsv \
+#'   --loci_groups loci_groups.tsv \
+#'   --output multilocus_prevfreq.tsv
+#' ```
+#'
+#' @param aa_calls Path to an AA calls TSV. See *Inputs*.
+#' @param loci_groups Path to a loci groups TSV. See *Inputs*.
+#' @param output Optional path for the multilocus prev/freq TSV.
+#' @param single_locus_output Optional path for single-locus prev/freq
+#'   recalculated from the inferred multilocus calls.
 #' @param method `"wsaf_prop"` (default) or `"presence_absence"`.
 #' @param wsaf_cut_off WSAF threshold used to infer a dominant haplotype when
 #'   more than one locus is heterozygous. Default: `0.70`.
 #'
 #' @return A tibble of multilocus prevalence and frequency estimates.
 #'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @examples
 #' aa_path <- system.file(
-#'   "extdata", "example2_amino_acid_calls.tsv",
+#'   "extdata", "example2_aa_calls.tsv",
 #'   package = "PGEcore"
 #' )
 #' groups_path <- system.file(
@@ -436,10 +467,10 @@ build_naive_multilocus_calls_for_group <- function(aa_table, group_df, wsaf_cut_
 #' multilocus_prevfreq_naive(aa_path, groups_path)
 #'
 #' @export
-multilocus_prevfreq_naive <- function(aa_table,
-                                      loci_groups_input,
-                                      output_path = NULL,
-                                      recalc_single_locus_output_path = NULL,
+multilocus_prevfreq_naive <- function(aa_calls,
+                                      loci_groups,
+                                      output = NULL,
+                                      single_locus_output = NULL,
                                       method = "wsaf_prop",
                                       wsaf_cut_off = 0.70) {
   options(dplyr.summarise.inform = FALSE)
@@ -450,8 +481,8 @@ multilocus_prevfreq_naive <- function(aa_table,
   }
   stopifnot(is.numeric(wsaf_cut_off), length(wsaf_cut_off) == 1L)
 
-  aa_calls <- read_mlp_naive_aa_table(aa_table)
-  loci_groups <- read_mlp_naive_loci_groups(loci_groups_input) |>
+  aa_calls <- read_mlp_naive_aa_table(aa_calls)
+  loci_groups <- read_mlp_naive_loci_groups(loci_groups) |>
     dplyr::group_by(.data$group_id) |>
     dplyr::mutate(
       loci_in_group = dplyr::n_distinct(paste0(.data$gene_id, "-", .data$aa_position))
@@ -464,7 +495,7 @@ multilocus_prevfreq_naive <- function(aa_table,
 
   for (loci_group in names(loci_groups_split)) {
     group_calls <- build_naive_multilocus_calls_for_group(
-      aa_table = aa_calls,
+      aa_calls = aa_calls,
       group_df = loci_groups_split[[loci_group]],
       wsaf_cut_off = wsaf_cut_off
     )
@@ -484,11 +515,11 @@ multilocus_prevfreq_naive <- function(aa_table,
     all_prev_freq <- dplyr::bind_rows(all_prev_freq, group_prev_freq)
   }
 
-  if (!is.null(output_path)) {
-    readr::write_tsv(all_prev_freq, output_path)
+  if (!is.null(output)) {
+    readr::write_tsv(all_prev_freq, output)
   }
 
-  if (!is.null(recalc_single_locus_output_path)) {
+  if (!is.null(single_locus_output)) {
     slaf_from_ml <- switch(
       method,
       wsaf_prop = generate_single_locus_prev_freq_from_multilocus_groups_wsaf_prop(
@@ -498,7 +529,7 @@ multilocus_prevfreq_naive <- function(aa_table,
         all_calls
       )
     )
-    readr::write_tsv(slaf_from_ml, recalc_single_locus_output_path)
+    readr::write_tsv(slaf_from_ml, single_locus_output)
   }
 
   all_prev_freq

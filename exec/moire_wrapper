@@ -9,8 +9,8 @@ opts <- list(
   make_option(
     "--allele_table",
     help = paste0(
-      "TSV containing allele present/absent per specimen, with the ",
-      "columns: specimen_name, target_name, seq"
+      "Allele table TSV (specimen_name, target_name, seq). ",
+      "See vignette input-formats."
     )
   ),
   make_option(
@@ -41,7 +41,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--num_chains",
+    "--n_chains",
     type = "integer",
     default = 3,
     help = paste0(
@@ -52,7 +52,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--chains_num_threads",
+    "--threads",
     type = "integer",
     default = 1,
     help = paste0(
@@ -196,69 +196,60 @@ opts <- list(
     help = "Maximum runtime for the MCMC process. Default set to Inf."
   ),
   make_option(
-    "--coi_summary",
-    default = "coi_summary.tsv",
+    "--coi_output",
+    default = "coi_output.tsv",
     help = paste0(
-      "TSV file for COI (complexity of infection) summary. ",
-      "This file will contain summarized COI information for each sample."
+      "Output COI TSV (specimen_name, coi, ...). Default: %default"
     )
   ),
   make_option(
-    "--he_summary",
-    default = "he_summary.tsv",
+    "--he_output",
+    default = "he_output.tsv",
     help = paste0(
-      "TSV file for He (expected heterozygosity) summary. ",
-      "This file will provide He values calculated across all loci."
+      "Output He TSV (target_name, he, ...). Default: %default"
     )
   ),
   make_option(
-    "--allele_freq_summary",
-    default = "allele_freq_summary.tsv",
+    "--allele_freq_output",
+    default = "allele_freq_output.tsv",
     help = paste0(
-      "TSV file for allele frequency summary. ",
-      "This file will include allele frequencies for all loci."
+      "Output allele-frequency TSV (target_name, seq, freq, ...). ",
+      "Default: %default"
     )
   ),
   make_option(
-    "--relatedness_summary",
-    default = "relatedness_summary.tsv",
+    "--relatedness_output",
+    default = "relatedness_output.tsv",
     help = paste0(
-      "TSV file for relatedness summary. ",
-      "This file will contain pairwise relatedness estimates for all samples."
+      "Output within-host relatedness TSV (specimen_name, within_host_rel, ...). ",
+      "Default: %default"
     )
   ),
   make_option(
-    "--effective_coi_summary",
-    default = "effective_coi_summary.tsv",
+    "--effective_coi_output",
+    default = "effective_coi_output.tsv",
     help = paste0(
-      "TSV file for effective COI summary. ",
-      "This file will provide the effective complexity of infection estimates."
+      "Output effective COI TSV (specimen_name, ecoi, ...). Default: %default"
     )
   ),
   make_option(
     "--mcmc_results_output",
     help = paste0(
-      "Optionally can export the full results of moire, which can be helpful ",
-      "for debugging or quality assurance (e.g. checking if MCMC properly converged)"
+      "Optional RDS path for the full MOIRe MCMC result object."
     )
   ),
   make_option(
     "--convergence_output",
     default = "convergence_diag.tsv",
     help = paste0(
-      "TSV file for MCMC convergence diagnostics, with one row per estimated ",
-      "parameter and the columns: variable, mean, median, sd, q5, q95, rhat, ",
-      "ess_bulk, ess_tail. Default set to convergence_diag.tsv."
+      "Output MCMC convergence diagnostics TSV. Default: %default"
     )
   ),
   make_option(
     "--acceptance_rates_output",
     default = NULL,
     help = paste0(
-      "Optional TSV file for parallel tempering swap (exchange) acceptance ",
-      "rates, with one row per chain and temperature rung and the columns: ",
-      "chain, rung, temperature, swap_acceptance_rate. Only meaningful when ",
-      "parallel tempering is used (--pt_chains > 1)."
+      "Optional PT swap-acceptance rates TSV (when --pt_chains > 1)."
     )
   )
 )
@@ -275,8 +266,8 @@ invisible(
     allow_relatedness = arg$allow_relatedness,
     burnin = arg$burnin,
     samples_per_chain = arg$samples_per_chain,
-    num_chains = arg$num_chains,
-    chains_num_threads = arg$chains_num_threads,
+    n_chains = arg$n_chains,
+    threads = arg$threads,
     thin = arg$thin,
     verbose = arg$verbose,
     eps_pos_alpha = arg$eps_pos_alpha,
@@ -295,11 +286,11 @@ invisible(
     pt_num_threads = arg$pt_num_threads,
     adapt_temp = arg$adapt_temp,
     max_runtime = arg$max_runtime,
-    coi_summary = arg$coi_summary,
-    he_summary = arg$he_summary,
-    allele_freq_summary = arg$allele_freq_summary,
-    relatedness_summary = arg$relatedness_summary,
-    effective_coi_summary = arg$effective_coi_summary,
+    coi_output = arg$coi_output,
+    he_output = arg$he_output,
+    allele_freq_output = arg$allele_freq_output,
+    relatedness_output = arg$relatedness_output,
+    effective_coi_output = arg$effective_coi_output,
     mcmc_results_output = arg$mcmc_results_output,
     convergence_output = arg$convergence_output,
     acceptance_rates_output = arg$acceptance_rates_output

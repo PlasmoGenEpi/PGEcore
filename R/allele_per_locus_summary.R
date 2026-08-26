@@ -68,14 +68,41 @@ summarize_allele_table <- function(locus_data) {
 #' For each `target_name`, computes total allele count, unique allele count,
 #' and the number of alleles that appear only once (singlets).
 #'
-#' @param allele_table Path to a TSV with columns `specimen_name`,
-#'   `target_name`, and `seq`.
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table (`specimen_name`, `target_name`, `seq`).
+#'   See `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): TSV with columns `target_name`,
+#'   `total_allele_count`, `unique_allele_count`, and `allele_singlets`.
+#'   Defaults to `"allele_summary_by_target.tsv"`. If `NULL`, results are
+#'   returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' allele_per_locus_summary(
+#'   allele_table = "allele_table.tsv",
+#'   output = "allele_summary_by_target.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/allele_per_locus_summary \
+#'   --allele_table allele_table.tsv \
+#'   --output allele_summary_by_target.tsv
+#' ```
+#'
+#' @param allele_table Path to an allele table TSV. See *Inputs*.
 #' @param output Optional output TSV path. Defaults to
-#'   `"allele_summary_by_target.tsv"` (matching the legacy CLI). If `NULL`,
-#'   results are returned without writing a file.
+#'   `"allele_summary_by_target.tsv"`.
 #'
 #' @return A tibble with columns `target_name`, `total_allele_count`,
 #'   `unique_allele_count`, and `allele_singlets`.
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @examples
 #' allele_path <- system.file(

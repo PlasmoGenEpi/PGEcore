@@ -4,24 +4,56 @@
 \alias{count_samples_by_coi}
 \title{Count specimens by complexity of infection (COI)}
 \usage{
-count_samples_by_coi(coi_calls, output = NULL)
+count_samples_by_coi(coi_table, output = NULL)
 }
 \arguments{
-\item{coi_calls}{Path to a TSV with columns \code{specimen_name} and \code{coi}, or a
-data frame with those columns.}
+\item{coi_table}{Path to a COI table TSV, or a data frame with the same
+columns. See \emph{Inputs}.}
 
-\item{output}{Optional output TSV path. If \code{NULL}, results are returned
-without writing a file. Default for the CLI is \code{coi_distribution.tsv}.}
+\item{output}{Optional output TSV path. Default for the CLI is
+\code{coi_distribution.tsv}.}
 }
 \value{
 A tibble with columns \code{coi}, \code{n}, and \code{proportion}.
 }
 \description{
-Reads a TSV of per-specimen COI calls, rounds COI to integers, and returns
-(and optionally writes) the count and proportion of specimens at each COI.
+Reads per-specimen COI values, rounds them to integers, and returns the
+count and proportion of specimens at each COI level.
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{coi_table}}: COI table (\code{specimen_name}, \code{coi}), as a file path or
+data frame. See \code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{output}} (optional): TSV with columns \code{coi}, \code{n}, and \code{proportion}.
+If \code{NULL}, results are returned without writing a file.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{count_samples_by_coi(
+  coi_table = "coi_table.tsv",
+  output = "coi_distribution.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/count_samples_by_coi \\
+  --coi_table coi_table.tsv \\
+  --output coi_distribution.tsv
+}\if{html}{\out{</div>}}
+}
 }
 \examples{
 coi_path <- system.file("extdata", "example_coi_table.tsv", package = "PGEcore")
 count_samples_by_coi(coi_path)
 
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

@@ -154,7 +154,7 @@ create_FEM_input <- function(input_data, groups, group_id) {
 #' @param COI Average complexity of infection.
 #' @param threads Number of threads.
 #' @param seed Random seed.
-#' @param num_chains Number of MCMC chains to run. At least two are needed to
+#' @param n_chains Number of MCMC chains to run. At least two are needed to
 #'   compute the Gelman-Rubin R-hat convergence diagnostic.
 #'
 #' @return A list with the population frequency table, MCMC runtime, marker
@@ -165,7 +165,7 @@ run_FreqEstimationModel <- function(sample_matrix_list,
                                     COI,
                                     threads,
                                     seed,
-                                    num_chains = 3L) {
+                                    n_chains = 3L) {
   check_suggested_pkgs(
     c("FreqEstimationModel", "plyr", "coda", "abind", "foreach", "doMC"),
     "FreqEstimationModel MCMC"
@@ -181,7 +181,7 @@ run_FreqEstimationModel <- function(sample_matrix_list,
   runtime <- system.time({
     thinning_interval <- 1
     no_traces_preburnin <- 10000
-    no_mcmc_chains <- num_chains
+    no_mcmc_chains <- n_chains
     NGS <- FALSE
     log_like_zero <- FALSE
     mcmc_variable_list <- list(
@@ -444,32 +444,71 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 
 #' Estimate multilocus allele frequencies with FreqEstimationModel
 #'
-#' File-oriented entry point used by the `FreqEstimationModel_wrapper` CLI.
-#' Optional **FreqEstimationModel**, **variantstring**, **posterior**, and
-#' parallel helpers (**foreach**, **doMC**, plus **plyr**, **coda**, **abind**)
-#' must be installed separately.
+#' Estimates multilocus haplotype frequencies from amino-acid calls and COI.
+#' Requires **FreqEstimationModel**, **variantstring**, **posterior**, and
+#' parallel helpers (**foreach**, **doMC**, **plyr**, **coda**, **abind**)
+#' (Suggests).
 #'
-#' @param aa_calls Path to amino-acid call TSV.
-#' @param coi Path to COI TSV, or a numeric average COI.
-#' @param groups Path to group TSV (`group_id`, `gene_id`, `aa_position`).
-#' @param mlaf_output Output TSV path.
+#' ## Inputs
+#'
+#' - **`aa_calls`**: Amino-acid calls TSV. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`coi`**: Path to a COI table TSV, **or** a numeric average COI.
+#' - **`loci_groups`**: Loci-groups TSV (`group_id`, `gene_id`, `aa_position`).
+#'
+#' ## Outputs
+#'
+#' - **`mlaf_output`**: Multilocus allele frequencies (`variant`, `freq`,
+#'   `median_freq`, `CI_2.5`, `CI_97.5`, `sample_total`, `group_id`, …).
+#' - **`convergence_output`**: Per-group MCMC diagnostics (`group_id`,
+#'   `variable`, `mean`, `median`, `sd`, `q5`, `q95`, `rhat`, `ess_bulk`,
+#'   `ess_tail`).
+#'
+#' ## Running
+#'
+#' ```r
+#' FreqEstimationModel_wrapper(
+#'   aa_calls = "aa_calls.tsv",
+#'   coi = "coi_table.tsv",
+#'   loci_groups = "loci_groups.tsv",
+#'   mlaf_output = "mlaf.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/FreqEstimationModel_wrapper \
+#'   --aa_calls aa_calls.tsv \
+#'   --coi coi_table.tsv \
+#'   --loci_groups loci_groups.tsv \
+#'   --mlaf_output mlaf.tsv
+#' ```
+#'
+#' Requires **FreqEstimationModel**, **variantstring**, **posterior**, and
+#' parallel Suggests packages.
+#'
+#' @param aa_calls Path to amino-acid call TSV. See *Inputs*.
+#' @param coi Path to COI table TSV, or a numeric average COI. See *Inputs*.
+#' @param loci_groups Path to loci-groups TSV. See *Inputs*.
+#' @param mlaf_output Output TSV path. See *Outputs*.
 #' @param threads Number of threads.
 #' @param seed Random seed.
-#' @param num_chains Number of MCMC chains to run per group. At least two are
+#' @param n_chains Number of MCMC chains to run per group. At least two are
 #'   needed to compute the Gelman-Rubin R-hat convergence diagnostic.
 #' @param convergence_output Output TSV path for per-group MCMC convergence
-#'   diagnostics, with the columns `group_id`, `variable`, `mean`, `median`,
-#'   `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`.
+#'   diagnostics. See *Outputs*.
 #'
 #' @return The formatted output data frame (also written to `mlaf_output`).
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 FreqEstimationModel_wrapper <- function(aa_calls,
                                         coi,
-                                        groups,
+                                        loci_groups,
                                         mlaf_output,
                                         threads = 1L,
                                         seed = 1L,
-                                        num_chains = 3L,
+                                        n_chains = 3L,
                                         convergence_output = "convergence_diag.tsv") {
   check_suggested_pkg(
     "FreqEstimationModel",
@@ -488,15 +527,15 @@ FreqEstimationModel_wrapper <- function(aa_calls,
     "FreqEstimationModel MCMC helpers"
   )
 
-  if (is.null(aa_calls) || is.null(coi) || is.null(groups) || is.null(mlaf_output)) {
+  if (is.null(aa_calls) || is.null(coi) || is.null(loci_groups) || is.null(mlaf_output)) {
     stop(
-      "--aa_calls, --coi, --groups, and --mlaf_output are required",
+      "--aa_calls, --coi, --loci_groups, and --mlaf_output are required",
       call. = FALSE
     )
   }
 
   aa_tbl <- read_fem_aa_calls(aa_calls)
-  groups_tbl <- read_fem_groups(groups)
+  groups_tbl <- read_fem_groups(loci_groups)
   COI <- calculate_avg_COI(coi)
   overall_output <- data.frame(
     sequence = character(),
@@ -518,7 +557,7 @@ FreqEstimationModel_wrapper <- function(aa_calls,
         COI,
         threads,
         seed,
-        num_chains
+        n_chains
       )
       fem_plsf <- format_single_group_output(fem_results)
       convergence_diags[[group]] <- fem_results$convergence_diag |>

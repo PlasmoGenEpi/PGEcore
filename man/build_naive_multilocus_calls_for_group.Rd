@@ -4,10 +4,10 @@
 \alias{build_naive_multilocus_calls_for_group}
 \title{Build naive multilocus haplotype calls for one loci group}
 \usage{
-build_naive_multilocus_calls_for_group(aa_table, group_df, wsaf_cut_off)
+build_naive_multilocus_calls_for_group(aa_calls, group_df, wsaf_cut_off)
 }
 \arguments{
-\item{aa_table}{Amino acid calls with \code{n_aa}.}
+\item{aa_calls}{Amino acid calls with \code{n_aa}.}
 
 \item{group_df}{Loci-group rows including \code{loci_in_group}.}
 

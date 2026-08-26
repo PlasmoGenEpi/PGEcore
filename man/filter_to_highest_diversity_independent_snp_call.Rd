@@ -6,8 +6,8 @@
 \title{Filter SNPs to highest-diversity loci spaced by a minimum distance}
 \usage{
 filter_to_highest_diversity_independent_snp_call(
-  snp_table_in,
-  snp_table_out = NULL,
+  snp_calls,
+  snp_calls_output = NULL,
   mindist_between_snps = 10000,
   select_target_names = NULL,
   select_specimen_names = NULL,
@@ -17,11 +17,10 @@ filter_to_highest_diversity_independent_snp_call(
 )
 }
 \arguments{
-\item{snp_table_in}{Path to a SNP TSV, or a data frame, with columns
-\code{specimen_name}, \code{target_name}, \code{chrom}, \code{pos}, \code{snp_name}, \code{ref_base},
-\code{seq_base}, \code{reads}, and \code{is_biallelic}.}
+\item{snp_calls}{Path to a SNP calls TSV, or a data frame with the same
+columns. See \emph{Inputs}.}
 
-\item{snp_table_out}{Optional output TSV path.}
+\item{snp_calls_output}{Optional output TSV path.}
 
 \item{mindist_between_snps}{Minimum distance between kept SNPs (default
 \code{10000}).}
@@ -32,7 +31,7 @@ one-column TSV, or character vector of targets to keep.}
 \item{select_specimen_names}{Optional comma-separated names, path to a
 one-column TSV, or character vector of specimens to keep.}
 
-\item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{snp_table_out}.}
+\item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{snp_calls_output}.}
 
 \item{only_biallelic}{If \code{TRUE}, restrict to rows where \code{is_biallelic} is
 \code{TRUE}.}
@@ -46,4 +45,38 @@ Filtered SNP table including an \code{he} column.
 \description{
 Ranks SNPs by expected heterozygosity, then greedily keeps loci that are at
 least \code{mindist_between_snps} apart on the same chromosome.
+}
+\details{
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{snp_calls}}: SNP calls (\code{specimen_name}, \code{target_name}, \code{chrom},
+\code{pos}, \code{snp_name}, \code{ref_base}, \code{seq_base}, \code{reads}, \code{is_biallelic}), as a
+file path or data frame. See
+\code{vignette("input-formats", package = "PGEcore")}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{snp_calls_output}} (optional): Filtered SNP calls TSV including an
+\code{he} column. If \code{NULL}, results are returned without writing a file.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{filter_to_highest_diversity_independent_snp_call(
+  snp_calls = "snp_calls.tsv",
+  snp_calls_output = "filtered_snp_calls.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/filter_to_highest_diversity_independent_snp_call \\
+  --snp_calls snp_calls.tsv \\
+  --snp_calls_output filtered_snp_calls.tsv
+}\if{html}{\out{</div>}}
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

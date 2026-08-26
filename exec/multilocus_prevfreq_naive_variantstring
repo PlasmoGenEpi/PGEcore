@@ -7,42 +7,33 @@ suppressPackageStartupMessages({
 
 opts <- list(
   make_option(
-    "--aa_table",
+    "--aa_calls",
     type = "character",
-    help = paste0(
-      "Path to a TSV file containing amino acid calls, with the columns: specimen_name, ",
-      "gene, pos, reads, aa"
-    )
+    help = "AA calls TSV (specimen_name, gene_id, aa_position, reads, aa). See vignette input-formats."
   ),
   make_option(
-    "--loci_groups_input",
+    "--loci_groups",
     type = "character",
-    help = paste0(
-      "Path to a TSV file containing loci group definitions, with the ",
-      "columns: group_id, gene_id, aa_position"
-    )
+    help = "Loci groups TSV (group_id, gene_id, aa_position). See vignette input-formats."
   ),
   make_option(
-    "--output_path",
+    "--output",
     type = "character",
-    help = paste0(
-      "Path to write an output TSV file containing prevalence and frequency estimates ",
-      "for all variants in the data"
-    )
+    help = "Multilocus prev/freq TSV output (group_id, variant, prev, freq, sample_total)."
   )
 )
 
 args <- parse_args(OptionParser(option_list = opts))
 
 missing <- character()
-if (is.null(args$aa_table)) {
-  missing <- c(missing, "--aa_table")
+if (is.null(args$aa_calls)) {
+  missing <- c(missing, "--aa_calls")
 }
-if (is.null(args$loci_groups_input)) {
-  missing <- c(missing, "--loci_groups_input")
+if (is.null(args$loci_groups)) {
+  missing <- c(missing, "--loci_groups")
 }
-if (is.null(args$output_path)) {
-  missing <- c(missing, "--output_path")
+if (is.null(args$output)) {
+  missing <- c(missing, "--output")
 }
 if (length(missing) > 0) {
   stop(
@@ -54,8 +45,8 @@ if (length(missing) > 0) {
 
 invisible(
   multilocus_prevfreq_naive_variantstring(
-    aa_table = args$aa_table,
-    loci_groups_input = args$loci_groups_input,
-    output_path = args$output_path
+    aa_calls = args$aa_calls,
+    loci_groups = args$loci_groups,
+    output = args$output
   )
 )

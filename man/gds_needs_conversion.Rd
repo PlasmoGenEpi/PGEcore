@@ -4,14 +4,14 @@
 \alias{gds_needs_conversion}
 \title{Whether a VCF should be (re)converted to GDS}
 \usage{
-gds_needs_conversion(vcf_path, gds_path, force = FALSE)
+gds_needs_conversion(vcf_path, gds_path, overwrite = FALSE)
 }
 \arguments{
 \item{vcf_path}{Input VCF path.}
 
 \item{gds_path}{GDS path.}
 
-\item{force}{If \code{TRUE}, always convert.}
+\item{overwrite}{If \code{TRUE}, always convert.}
 }
 \value{
 Logical.

@@ -4,10 +4,10 @@
 \alias{read_mlp_naive_aa_table}
 \title{Read amino acid calls for naive multilocus prev/freq}
 \usage{
-read_mlp_naive_aa_table(aa_table)
+read_mlp_naive_aa_table(aa_calls)
 }
 \arguments{
-\item{aa_table}{Path to a TSV of amino acid calls.}
+\item{aa_calls}{Path to a TSV of amino acid calls.}
 }
 \value{
 A tibble including \code{n_aa} (allele count per specimen/locus).

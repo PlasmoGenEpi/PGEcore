@@ -8,11 +8,11 @@ suppressPackageStartupMessages({
 opts <- list(
   make_option(
     "--vcf",
-    help = "Input VCF (.vcf or .vcf.gz). Must carry FORMAT/AD (allelic depths)."
+    help = "Input VCF (.vcf or .vcf.gz) with FORMAT/AD."
   ),
   make_option(
     "--snp_calls_output",
-    help = "Output SNP-calls TSV path; gzip-compressed if it ends in .gz"
+    help = "SNP calls TSV output; gzip-compressed if it ends in .gz."
   ),
   make_option(
     "--biallelic",

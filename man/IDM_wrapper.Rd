@@ -5,8 +5,8 @@
 \title{Estimate single-locus allele frequencies with the Incomplete Data Model}
 \usage{
 IDM_wrapper(
-  allele_table_input = "",
-  aa_calls_input = "",
+  allele_table = "",
+  aa_calls = "",
   slaf_output,
   model = "IDM",
   lambda_initial = 1,
@@ -14,15 +14,13 @@ IDM_wrapper(
 )
 }
 \arguments{
-\item{allele_table_input}{Path to allele TSV (\code{specimen_name}, \code{target_name},
-\code{seq}, \code{reads}), or \code{""} / \code{NULL} if using amino-acid calls.}
+\item{allele_table}{Path to allele table TSV, or \code{""} / \code{NULL} if using
+amino-acid calls. See \emph{Inputs}.}
 
-\item{aa_calls_input}{Path to amino-acid TSV (\code{specimen_name}, \code{target_name},
-\code{gene_id}, \code{aa_position}, \code{ref_aa}, \code{aa}), or \code{""} / \code{NULL} if using an
-allele table.}
+\item{aa_calls}{Path to amino-acid calls TSV, or \code{""} / \code{NULL} if using an
+allele table. See \emph{Inputs}.}
 
-\item{slaf_output}{Output TSV path (\code{variant}, \code{freq}; allele-table input is
-written as \code{target_name}, \code{seq}, \code{freq}).}
+\item{slaf_output}{Output TSV path. See \emph{Outputs}.}
 
 \item{model}{\code{"IDM"} (incomplete-data model) or \code{"OM"} (original model).}
 
@@ -34,10 +32,45 @@ written as \code{target_name}, \code{seq}, \code{freq}).}
 The SLAF tibble (invisibly after writing \code{slaf_output}).
 }
 \description{
-File-oriented entry point used by the \code{IDM_wrapper} CLI. Provide exactly one
-of \code{allele_table_input} or \code{aa_calls_input}.
+Estimates single-locus allele frequencies with the Incomplete Data Model
+(or original model). Provide exactly one of \code{allele_table} or \code{aa_calls}.
+Vendored MLE code is from Hashemi & Schneider (2024). Requires \strong{Rmpfr} and
+\strong{openxlsx} (Suggests).
 }
 \details{
-Vendored MLE code is from Hashemi & Schneider (2024) and requires the
-suggested packages \strong{Rmpfr} and \strong{openxlsx}.
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{allele_table}}: Allele table TSV, or \code{""} / \code{NULL} if using
+\code{aa_calls}. See \code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{aa_calls}}: Amino-acid calls TSV, or \code{""} / \code{NULL} if using
+\code{allele_table}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item \strong{\code{slaf_output}}: Single-locus allele frequencies. Allele-table input is
+written as \code{target_name}, \code{seq}, \code{freq}; AA-call input as \code{variant},
+\code{freq}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{IDM_wrapper(
+  allele_table = "allele_table.tsv",
+  slaf_output = "slaf.tsv"
+)
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/IDM_wrapper \\
+  --allele_table allele_table.tsv \\
+  --slaf_output slaf.tsv
+}\if{html}{\out{</div>}}
+
+Requires \strong{Rmpfr} and \strong{openxlsx} (Suggests).
+}
+}
+\seealso{
+\code{vignette("input-formats", package = "PGEcore")}
 }

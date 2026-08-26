@@ -7,18 +7,18 @@ suppressPackageStartupMessages({
 
 option_list <- list(
   make_option(
-    c("-i", "--input"),
+    c("-i", "--vcf"),
     type = "character",
     default = NULL,
     metavar = "FILE",
-    help = "Input VCF file (.vcf or .vcf.gz) [required]"
+    help = "Input VCF (.vcf or .vcf.gz) with FORMAT/AD."
   ),
   make_option(
     c("-o", "--output"),
     type = "character",
     default = "fws_result.tsv",
     metavar = "FILE",
-    help = "Output TSV of Fws results [default: %default]"
+    help = "Fws TSV output (specimen_name, fws). Default: %default"
   ),
   make_option(
     c("-g", "--gds"),
@@ -42,7 +42,7 @@ option_list <- list(
     )
   ),
   make_option(
-    c("-f", "--force"),
+    c("-f", "--overwrite"),
     action = "store_true",
     default = FALSE,
     help = "Force re-creation of the GDS even if an up-to-date one exists"
@@ -62,18 +62,18 @@ parser <- OptionParser(
 )
 opt <- parse_args(parser)
 
-if (is.null(opt$input)) {
+if (is.null(opt$vcf)) {
   print_help(parser)
-  stop("An input VCF (-i/--input) is required.", call. = FALSE)
+  stop("An input VCF (-i/--vcf) is required.", call. = FALSE)
 }
 
 invisible(
   calculate_fws_from_vcf(
-    input = opt$input,
+    vcf = opt$vcf,
     output = opt$output,
     gds = opt$gds,
     population_name = opt$population_name,
-    force = isTRUE(opt$force),
+    overwrite = isTRUE(opt$overwrite),
     verbose = isTRUE(opt$verbose)
   )
 )

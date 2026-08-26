@@ -9,11 +9,8 @@ opts <- list(
   make_option(
     "--allele_table",
     help = paste0(
-      "TSV containing alleles, with columns identifying specimens, ",
-      "target names, target values, and target counts. The names of these ",
-      "columns are given by the --specimen_name_col, --target_name_col, ",
-      "--target_value_col, and --target_count_col arguments, respectively. ",
-      "Required."
+      "Allele / AA-calls TSV with counts (default columns: specimen_name, ",
+      "aa_locus, aa, reads). See vignette input-formats. Required."
     )
   ),
   make_option(
@@ -46,11 +43,11 @@ opts <- list(
     )
   ),
   make_option(
-    "--loci_groups_input",
+    "--loci_groups",
     type = "character",
     help = paste0(
-      "Path to a TSV file containing loci group definitions, with a group_id ",
-      "column and a column with name matching --target_name_col. Required."
+      "Loci groups TSV (group_id plus locus column matching ",
+      "--target_name_col). See vignette input-formats. Required."
     )
   ),
   make_option(
@@ -59,7 +56,7 @@ opts <- list(
     help = paste0(
       "To prevent SNP-Slice from running for a long time on large datasets, ",
       "the input loci can be subsetted to contain the loci of interest in ",
-      "loci_groups_input and additional random loci, up to the limit ",
+      "loci_groups and additional random loci, up to the limit ",
       "specified here. Using more loci will improve COI estimation, but ",
       "increase computation time. If not provided, all loci will be used."
     )
@@ -154,7 +151,7 @@ opts <- list(
     )
   ),
   make_option(
-    "--n_cores",
+    "--threads",
     type = "integer",
     default = 1,
     help = paste0(
@@ -165,26 +162,20 @@ opts <- list(
   make_option(
     "--mlaf_output",
     help = paste0(
-      "Path of TSV file to contain multilocus allele frequencies, with a ",
-      "group_id column, a variant column using the variantstring format, ",
-      "and a freq column. Required."
+      "Output MLAF TSV (group_id, variant, freq). Required."
     )
   ),
   make_option(
     "--coi_output",
     help = paste0(
-      "Path of TSV file to contain COI estimates, with a specimen_name column ",
-      "and a coi column. Required."
+      "Output COI TSV (specimen_name, coi). Required."
     )
   ),
   make_option(
     "--convergence_output",
     default = "convergence_diag.tsv",
     help = paste0(
-      "Path of TSV file to contain MCMC convergence diagnostics, with one row ",
-      "per parameter (logpost, n_strains, kstar, ktrunc, and coi per ",
-      "specimen) and the columns: variable, mean, median, sd, q5, q95, rhat, ",
-      "ess_bulk, ess_tail. Optional."
+      "Output MCMC convergence diagnostics TSV. Optional. Default: %default"
     )
   )
 )
@@ -193,7 +184,7 @@ parser <- OptionParser(option_list = opts)
 arg <- parse_args(parser)
 missing <- character()
 if (is.null(arg$allele_table)) missing <- c(missing, "--allele_table")
-if (is.null(arg$loci_groups_input)) missing <- c(missing, "--loci_groups_input")
+if (is.null(arg$loci_groups)) missing <- c(missing, "--loci_groups")
 if (is.null(arg$mlaf_output)) missing <- c(missing, "--mlaf_output")
 if (is.null(arg$coi_output)) missing <- c(missing, "--coi_output")
 if (length(missing) > 0) {
@@ -207,7 +198,7 @@ if (length(missing) > 0) {
 invisible(
   snpslice_wrapper(
     allele_table = arg$allele_table,
-    loci_groups_input = arg$loci_groups_input,
+    loci_groups = arg$loci_groups,
     mlaf_output = arg$mlaf_output,
     coi_output = arg$coi_output,
     convergence_output = arg$convergence_output,
@@ -225,7 +216,7 @@ invisible(
     gap = arg$gap,
     estimator = arg$estimator,
     n_chains = arg$n_chains,
-    n_cores = arg$n_cores,
+    threads = arg$threads,
     verbose = isTRUE(arg$verbose) || isTRUE(arg$v),
     seed = arg$seed
   )

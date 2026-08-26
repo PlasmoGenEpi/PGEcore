@@ -41,17 +41,21 @@ Specialised packages used by some wrappers (for example `dcifer`, `moire`) are
 library(PGEcore)
 
 # File paths
-count_samples_by_coi("my_coi_calls.tsv", output = "coi_distribution.tsv")
+count_samples_by_coi("my_coi_table.tsv", output = "coi_distribution.tsv")
 
 # Or in-memory tables
-coi_calls <- readr::read_tsv("my_coi_calls.tsv", show_col_types = FALSE)
-count_samples_by_coi(coi_calls)
+coi_table <- readr::read_tsv("my_coi_table.tsv", show_col_types = FALSE)
+count_samples_by_coi(coi_table)
 ```
 
 Function names match the CLI name (`count_samples_by_coi`, `moire_wrapper`,
-…). That is the API to start with. A small number of wrappers also export an
-in-memory `run_*` helper (`run_coiaf`, `run_moire`, `run_malariaem`) for when
-you already have data frames or model objects in R; see `?run_moire`.
+…). That is the API to start with. Each tool’s help page has the same
+structure—**Inputs**, **Outputs**, and **Running** (R + CLI examples). Shared
+table layouts live in `vignette("input-formats", package = "PGEcore")`.
+
+A small number of wrappers also export an in-memory `run_*` helper
+(`run_coiaf`, `run_moire`, `run_malariaem`) for when you already have data
+frames or model objects in R; see `?run_moire`.
 
 ```{r}
 ?count_samples_by_coi
@@ -65,7 +69,7 @@ that puts those on `PATH`:
 
 ```bash
 count_samples_by_coi \
-  --coi_calls my_coi_calls.tsv \
+  --coi_table my_coi_table.tsv \
   --output coi_distribution.tsv
 ```
 
@@ -73,12 +77,12 @@ From a source checkout of this repository:
 
 ```bash
 Rscript exec/count_samples_by_coi \
-  --coi_calls inst/extdata/example_coi_table.tsv \
+  --coi_table inst/extdata/example_coi_table.tsv \
   --output coi_distribution.tsv
 
 Rscript exec/estimate_coi_naive \
-  --input_path inst/extdata/example_allele_table.tsv \
-  --output_path coi_table.tsv
+  --allele_table inst/extdata/example_allele_table.tsv \
+  --output coi_table.tsv
 
 Rscript exec/dcifer_slaf_wrapper \
   --allele_table inst/extdata/example_allele_table.tsv \

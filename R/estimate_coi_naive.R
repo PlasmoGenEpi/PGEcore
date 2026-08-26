@@ -126,10 +126,33 @@ estimate_coi_naive_from_alleles <- function(df_alleles,
 #' `method = "quantile_method"`, the value at `quantile_threshold` is used
 #' instead (scaling naturally with the number of observed allele rows).
 #'
-#' @param input_path Path to a TSV of allele calls with columns
-#'   `specimen_name`, `target_name`, `reads`, and `seq`.
-#' @param output_path Optional path to write a TSV with columns
-#'   `specimen_name` and `coi`. If `NULL`, results are returned without writing.
+#' ## Inputs
+#'
+#' - **`allele_table`**: Allele table (`specimen_name`, `target_name`, `seq`,
+#'   `reads`). See `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): COI table TSV with columns `specimen_name` and
+#'   `coi`. If `NULL`, results are returned without writing a file.
+#'
+#' ## Running
+#'
+#' ```r
+#' estimate_coi_naive(
+#'   allele_table = "allele_table.tsv",
+#'   output = "coi_table.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/estimate_coi_naive \
+#'   --allele_table allele_table.tsv \
+#'   --output coi_table.tsv
+#' ```
+#'
+#' @param allele_table Path to an allele table TSV. See *Inputs*.
+#' @param output Optional output TSV path.
 #' @param method One of `"integer_method"` or `"quantile_method"`.
 #'   Default: `"integer_method"`.
 #' @param integer_threshold Positive integer index into the ordered allele
@@ -139,6 +162,8 @@ estimate_coi_naive_from_alleles <- function(df_alleles,
 #'
 #' @return A tibble with columns `specimen_name` and `coi`.
 #'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @examples
 #' allele_path <- system.file(
 #'   "extdata", "example_allele_table.tsv",
@@ -147,18 +172,18 @@ estimate_coi_naive_from_alleles <- function(df_alleles,
 #' estimate_coi_naive(allele_path, method = "integer_method")
 #'
 #' @export
-estimate_coi_naive <- function(input_path,
-                               output_path = NULL,
+estimate_coi_naive <- function(allele_table,
+                               output = NULL,
                                method = "integer_method",
                                integer_threshold = 1,
                                quantile_threshold = 0.05) {
-  stopifnot(is.character(input_path), length(input_path) == 1L)
-  if (!file.exists(input_path)) {
-    stop(input_path, " does not exist", call. = FALSE)
+  stopifnot(is.character(allele_table), length(allele_table) == 1L)
+  if (!file.exists(allele_table)) {
+    stop(allele_table, " does not exist", call. = FALSE)
   }
 
   df_alleles <- readr::read_tsv(
-    input_path,
+    allele_table,
     col_types = readr::cols(
       specimen_name = readr::col_character(),
       .default = readr::col_character(),
@@ -174,10 +199,10 @@ estimate_coi_naive <- function(input_path,
     quantile_threshold = quantile_threshold
   )
 
-  if (!is.null(output_path)) {
+  if (!is.null(output)) {
     check_coi_format(df_coi)
-    stopifnot(is.character(output_path), length(output_path) == 1L)
-    readr::write_tsv(df_coi, output_path)
+    stopifnot(is.character(output), length(output) == 1L)
+    readr::write_tsv(df_coi, output)
   }
 
   df_coi

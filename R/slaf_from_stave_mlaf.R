@@ -46,42 +46,71 @@ convert_mlaf_to_slaf <- function(dat) {
 #' frequencies per amino acid allele, and emits STAVE-style single-locus
 #' `variant` identifiers via [convert_single_locus_table_to_stave()].
 #'
-#' The **variantstring** package is an optional dependency (Suggests). It is
-#' not installed automatically with PGEcore.
+#' ## Inputs
 #'
-#' @param mlaf_input Path to an MLAF TSV, or a data frame, with columns
-#'   `group_id`, `variant`, and `freq`.
-#' @param output Optional output TSV path. If `NULL`, results are returned
-#'   without writing. CLI default is `single_locus_allele_frequencies.tsv`.
+#' - **`mlaf`**: Multilocus allele frequency table (`group_id`, `variant`,
+#'   `freq`), as a file path or data frame. See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#'
+#' ## Outputs
+#'
+#' - **`output`** (optional): Single-locus allele frequency TSV with columns
+#'   `variant` and `freq`. If `NULL`, results are returned without writing.
+#'   CLI default is `single_locus_allele_frequencies.tsv`.
+#'
+#' ## Running
+#'
+#' ```r
+#' slaf_from_stave_mlaf(
+#'   mlaf = "mlaf.tsv",
+#'   output = "single_locus_allele_frequencies.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/slaf_from_stave_mlaf \
+#'   --mlaf mlaf.tsv \
+#'   --output single_locus_allele_frequencies.tsv
+#' ```
+#'
+#' Requires the optional **variantstring** package (Suggests). It is not
+#' installed automatically with PGEcore.
+#'
+#' @param mlaf Path to an MLAF TSV, or a data frame with the same columns.
+#'   See *Inputs*.
+#' @param output Optional output TSV path. Default for the CLI is
+#'   `single_locus_allele_frequencies.tsv`.
 #'
 #' @return A tibble with columns `variant` and `freq` (legacy STAVE conversion
 #'   drops `group_id`, matching the original script).
 #'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
-slaf_from_stave_mlaf <- function(mlaf_input, output = NULL) {
+slaf_from_stave_mlaf <- function(mlaf, output = NULL) {
   options(dplyr.summarise.inform = FALSE)
   check_suggested_pkg(
     "variantstring",
     "expanding STAVE multi-locus variants via slaf_from_stave_mlaf()"
   )
 
-  if (is.character(mlaf_input) && length(mlaf_input) == 1L) {
-    if (!file.exists(mlaf_input)) {
-      stop(mlaf_input, " does not exist", call. = FALSE)
+  if (is.character(mlaf) && length(mlaf) == 1L) {
+    if (!file.exists(mlaf)) {
+      stop(mlaf, " does not exist", call. = FALSE)
     }
-    mlaf <- load_mlaf(mlaf_input)
-  } else if (is.data.frame(mlaf_input)) {
+    mlaf_tbl <- load_mlaf(mlaf)
+  } else if (is.data.frame(mlaf)) {
     validate_required_columns(
-      mlaf_input,
+      mlaf,
       c("group_id", "variant", "freq"),
-      "mlaf_input"
+      "mlaf"
     )
-    mlaf <- tibble::as_tibble(mlaf_input)
+    mlaf_tbl <- tibble::as_tibble(mlaf)
   } else {
-    stop("`mlaf_input` must be a file path or a data frame.", call. = FALSE)
+    stop("`mlaf` must be a file path or a data frame.", call. = FALSE)
   }
 
-  slaf <- convert_mlaf_to_slaf(mlaf)
+  slaf <- convert_mlaf_to_slaf(mlaf_tbl)
   # Match legacy script: only variant + freq (group_id not retained).
   slaf_output <- convert_single_locus_table_to_stave(
     slaf,

@@ -98,7 +98,7 @@ create_MultiLociBiallelicModel_input <- function(input_path,
     !is.na(aa_position)
   )
   print("Confronting input data with validation rules")
-  stop_on_validate_fails(loci_groups, rules, "loci_group_table")
+  stop_on_validate_fails(loci_groups, rules, "loci_groups")
 
   identifiers_in_groups <- unique(
     paste0(loci_groups$gene_id, ":", loci_groups$aa_position)
@@ -269,27 +269,59 @@ summarise_MLBM_results <- function(MLBM_res, MLBM_object, group_name) {
 
 #' Estimate multilocus haplotype frequencies with MultiLociBiallelicModel
 #'
-#' File-oriented entry point used by the `MultiLociBiallelicModel_wrapper` CLI.
-#' Requires suggested package **variantstring** 1.x. Samples with any missing
-#' genotype are dropped (legacy behaviour; the model cannot handle missing data).
+#' Estimates multilocus haplotype frequencies from amino-acid calls and loci
+#' groups. Samples with any missing genotype are dropped (legacy behaviour; the
+#' model cannot handle missing data). Requires **variantstring** 1.x (Suggests).
 #'
-#' @param aa_calls Path to amino-acid calls TSV (`specimen_name`, `gene_id`,
-#'   `aa_position`, `ref_aa`, `aa`).
-#' @param loci_group_table Path to loci groups TSV (`group_id`, `gene_id`,
-#'   `aa_position`).
-#' @param mlaf_output Output TSV (`group_id`, `variant`, `freq`).
+#' ## Inputs
+#'
+#' - **`aa_calls`**: Amino-acid calls TSV (`specimen_name`, `gene_id`,
+#'   `aa_position`, `ref_aa`, `aa`). See
+#'   `vignette("input-formats", package = "PGEcore")`.
+#' - **`loci_groups`**: Loci-groups TSV (`group_id`, `gene_id`, `aa_position`).
+#'
+#' ## Outputs
+#'
+#' - **`mlaf_output`**: Multilocus allele frequencies (`group_id`, `variant`,
+#'   `freq`).
+#'
+#' ## Running
+#'
+#' ```r
+#' MultiLociBiallelicModel_wrapper(
+#'   aa_calls = "aa_calls.tsv",
+#'   loci_groups = "loci_groups.tsv",
+#'   mlaf_output = "mlaf.tsv"
+#' )
+#' ```
+#'
+#' ```bash
+#' Rscript exec/MultiLociBiallelicModel_wrapper \
+#'   --aa_calls aa_calls.tsv \
+#'   --loci_groups loci_groups.tsv \
+#'   --mlaf_output mlaf.tsv
+#' ```
+#'
+#' Requires **variantstring** (Suggests).
+#'
+#' @param aa_calls Path to amino-acid calls TSV. See *Inputs*.
+#' @param loci_groups Path to loci-groups TSV. See *Inputs*.
+#' @param mlaf_output Output TSV path. See *Outputs*.
 #' @param aa_sample_occurence_cut_off Amino-acid calls must occur in more than
 #'   this number of samples to be included (legacy default `0`).
 #'
 #' @return The bound MLAF tibble (invisibly after writing `mlaf_output`).
+#'
+#' @seealso `vignette("input-formats", package = "PGEcore")`
+#'
 #' @export
 MultiLociBiallelicModel_wrapper <- function(aa_calls,
-                                            loci_group_table,
+                                            loci_groups,
                                             mlaf_output,
                                             aa_sample_occurence_cut_off = 0) {
-  if (is.null(aa_calls) || is.null(loci_group_table) || is.null(mlaf_output)) {
+  if (is.null(aa_calls) || is.null(loci_groups) || is.null(mlaf_output)) {
     stop(
-      "Missing required arguments: --aa_calls, --loci_group_table, --mlaf_output",
+      "Missing required arguments: --aa_calls, --loci_groups, --mlaf_output",
       call. = FALSE
     )
   }
@@ -297,7 +329,7 @@ MultiLociBiallelicModel_wrapper <- function(aa_calls,
 
   MLBM_object <- create_MultiLociBiallelicModel_input(
     aa_calls,
-    loci_group_table,
+    loci_groups,
     aa_sample_occurence_cut_off
   )
   MLBM_res <- list()

@@ -1,8 +1,8 @@
 test_that("multilocus_prevfreq_naive_variantstring checks suggested package", {
   err <- tryCatch(
     multilocus_prevfreq_naive_variantstring(
-      aa_table = "missing.tsv",
-      loci_groups_input = "also_missing.tsv"
+      aa_calls = "missing.tsv",
+      loci_groups = "also_missing.tsv"
     ),
     error = function(e) conditionMessage(e)
   )
@@ -14,7 +14,7 @@ test_that("multilocus_prevfreq_naive_variantstring works on packaged example dat
 
   aa_path <- system.file(
     "extdata",
-    "example_amino_acid_calls.tsv",
+    "example_aa_calls.tsv",
     package = "PGEcore"
   )
   groups_path <- system.file(
@@ -39,7 +39,7 @@ test_that("multilocus_prevfreq_naive_variantstring works on packaged example dat
   written <- multilocus_prevfreq_naive_variantstring(
     aa_path,
     groups_path,
-    output_path = tmp_out
+    output = tmp_out
   )
   expect_true(file.exists(tmp_out))
   expect_equal(nrow(written), nrow(out))

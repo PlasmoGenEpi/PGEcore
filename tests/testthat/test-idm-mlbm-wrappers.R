@@ -5,19 +5,19 @@ test_that("IDM_wrapper requires exactly one input table and slaf_output", {
   )
   expect_error(
     IDM_wrapper(
-      allele_table_input = "a.tsv",
-      aa_calls_input = "b.tsv",
+      allele_table = "a.tsv",
+      aa_calls = "b.tsv",
       slaf_output = "out.tsv"
     ),
     "One and only one|Rmpfr|openxlsx"
   )
   expect_error(
-    IDM_wrapper(allele_table_input = "a.tsv", slaf_output = NULL),
+    IDM_wrapper(allele_table = "a.tsv", slaf_output = NULL),
     "slaf_output"
   )
   expect_error(
     IDM_wrapper(
-      allele_table_input = "a.tsv",
+      allele_table = "a.tsv",
       slaf_output = "out.tsv",
       model = "NOPE"
     ),
@@ -45,7 +45,7 @@ test_that("IDM_wrapper integration skips without Rmpfr", {
   out <- tempfile(fileext = ".tsv")
   on.exit(unlink(out), add = TRUE)
   res <- IDM_wrapper(
-    allele_table_input = path,
+    allele_table = path,
     slaf_output = out,
     model = "OM"
   )
@@ -58,7 +58,7 @@ test_that("MultiLociBiallelicModel_wrapper validates required arguments", {
   expect_error(
     MultiLociBiallelicModel_wrapper(
       aa_calls = NULL,
-      loci_group_table = "g.tsv",
+      loci_groups = "g.tsv",
       mlaf_output = "o.tsv"
     ),
     "required|variantstring"
@@ -129,7 +129,7 @@ test_that("MultiLociBiallelicModel_wrapper integration skips without variantstri
   )
   res <- MultiLociBiallelicModel_wrapper(
     aa_calls = aa,
-    loci_group_table = lg,
+    loci_groups = lg,
     mlaf_output = out
   )
   expect_true(file.exists(out))

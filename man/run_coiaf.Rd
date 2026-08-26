@@ -4,14 +4,12 @@
 \alias{run_coiaf}
 \title{Estimate complexity of infection (COI) using coiaf}
 \usage{
-run_coiaf(snp_data, plmaf = NULL, seq_error = 0.01, max_coi = 25)
+run_coiaf(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25)
 }
 \arguments{
-\item{snp_data}{A data frame with columns \code{specimen_name}, \code{snp_name},
-\code{reads}, and \code{seq_base}.}
+\item{snp_calls}{SNP-calls data frame. See \emph{Inputs}.}
 
-\item{plmaf}{Optional data frame with columns \code{snp_name}, \code{seq_base}, and
-\code{plmaf}. If \code{NULL}, PLMAF is calculated from \code{snp_data}.}
+\item{plmaf}{Optional PLMAF data frame. See \emph{Inputs}.}
 
 \item{seq_error}{Sequencing error rate (default: \code{0.01}).}
 
@@ -24,9 +22,37 @@ A data frame with columns \code{specimen_name}, \code{coi_freq}, and
 \description{
 Processes SNP read-count data and optionally population-level minor allele
 frequencies (PLMAF), then estimates COI with both the frequency and variant
-methods from the \strong{coiaf} package.
+methods from the \strong{coiaf} package (Suggests; not installed with PGEcore).
 }
 \details{
-The \strong{coiaf} package is an optional dependency (Suggests). It is not
-installed automatically with PGEcore.
+\subsection{Inputs}{
+\itemize{
+\item \strong{\code{snp_calls}}: SNP-calls data frame (\code{specimen_name}, \code{snp_name},
+\code{reads}, \code{seq_base}). See
+\code{vignette("input-formats", package = "PGEcore")}.
+\item \strong{\code{plmaf}}: Optional PLMAF data frame (\code{snp_name}, \code{seq_base}, \code{plmaf}).
+If \code{NULL}, PLMAF is calculated from \code{snp_calls}.
+}
+}
+
+\subsection{Outputs}{
+\itemize{
+\item Returns a data frame with \code{specimen_name}, \code{coi_freq}, and \code{coi_variant}
+(not written to disk). For file I/O, use \code{\link[=coiaf_wrapper]{coiaf_wrapper()}}.
+}
+}
+
+\subsection{Running}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{run_coiaf(snp_calls = snp_df, plmaf = plmaf_df)
+}\if{html}{\out{</div>}}
+
+File and CLI users should call \code{\link[=coiaf_wrapper]{coiaf_wrapper()}} /
+\verb{Rscript exec/coiaf_wrapper ...}.
+
+Requires \strong{coiaf} (Suggests).
+}
+}
+\seealso{
+\code{\link[=coiaf_wrapper]{coiaf_wrapper()}}, \code{vignette("input-formats", package = "PGEcore")}
 }
