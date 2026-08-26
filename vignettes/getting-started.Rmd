@@ -28,7 +28,8 @@ results from one analysis into the next without reformatting.
 ## Install
 
 ```{r}
-# remotes::install_github("PlasmoGenEpi/PGEcore")
+# install.packages("pak")  # if you do not have it yet
+# pak::pak("PlasmoGenEpi/PGEcore")
 library(PGEcore)
 ```
 
@@ -64,27 +65,52 @@ help(package = "PGEcore")
 
 ## Command line
 
-Each tool has an executable in the package `exec/` directory. After an install
-that puts those on `PATH`:
+Each tool has an executable in the package `exec/` directory. Installing the
+package does not put those on `PATH`, so ask R where they landed and add that
+directory yourself:
 
 ```bash
+PGECORE_EXEC="$(Rscript -e 'cat(system.file("exec", package="PGEcore"))')"
+export PATH="$PGECORE_EXEC:$PATH"
+
 count_samples_by_coi \
   --coi_table my_coi_table.tsv \
   --output coi_distribution.tsv
 ```
 
-From a source checkout of this repository:
+That `export` lasts only for the current shell; put both lines in your
+`~/.bashrc` or `~/.zshrc` to make it permanent. Capturing the location in a
+variable first is deliberate: `system.file()` returns an empty string when the
+package cannot be found, and an empty entry in `PATH` means the current
+directory. Check that `PGECORE_EXEC` actually holds a path; if it is empty,
+the package most likely isn't installed yet.
+
+Or use the full path directly, without touching `PATH`:
 
 ```bash
-Rscript exec/count_samples_by_coi \
+"$PGECORE_EXEC/count_samples_by_coi" \
+  --coi_table my_coi_table.tsv \
+  --output coi_distribution.tsv
+```
+
+From a source checkout of this repository. `pak::local_install()` also
+installs the package's dependencies, which a plain `R CMD INSTALL .` does
+not:
+
+```bash
+git clone https://github.com/PlasmoGenEpi/PGEcore.git
+cd PGEcore
+Rscript -e 'pak::local_install(".")'
+
+exec/count_samples_by_coi \
   --coi_table inst/extdata/example_coi_table.tsv \
   --output coi_distribution.tsv
 
-Rscript exec/estimate_coi_naive \
+exec/estimate_coi_naive \
   --allele_table inst/extdata/example_allele_table.tsv \
   --output coi_table.tsv
 
-Rscript exec/dcifer_slaf_wrapper \
+exec/dcifer_slaf_wrapper \
   --allele_table inst/extdata/example_allele_table.tsv \
   --slaf_output slaf.tsv
 ```

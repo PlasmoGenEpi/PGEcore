@@ -23,11 +23,13 @@ Package documentation (reference + vignettes):
 ## Install
 
 ```r
-# From GitHub
-# remotes::install_github("PlasmoGenEpi/PGEcore")
+# install.packages("pak")  # if you do not have it yet
 
-# From a local clone
-devtools::install()
+# From GitHub
+pak::pak("PlasmoGenEpi/PGEcore")
+
+# From a local clone (also installs dependencies)
+pak::local_install(".")
 ```
 
 ## Two ways to run every tool
@@ -57,29 +59,22 @@ browseVignettes("PGEcore")
 
 ### Command line
 
-Once the package executables are on your `PATH` (for example after a Conda
-install of `r-pgecore`):
+Installing the package does not put the executables on `PATH`, so ask R where
+they landed and add that directory:
 
 ```bash
+PGECORE_EXEC="$(Rscript -e 'cat(system.file("exec", package="PGEcore"))')"
+export PATH="$PGECORE_EXEC:$PATH"
+
 count_samples_by_coi \
   --coi_table my_coi_table.tsv \
   --output coi_distribution.tsv
 ```
 
-From a source checkout of this repository:
-
-```bash
-Rscript exec/count_samples_by_coi \
-  --coi_table inst/extdata/example_coi_table.tsv \
-  --output coi_distribution.tsv
-
-Rscript exec/dcifer_slaf_wrapper \
-  --allele_table inst/extdata/example_allele_table.tsv \
-  --slaf_output slaf.tsv
-```
-
-Pass ordinary file paths to your data. Bundled examples for trying formats live
-in `inst/extdata/`.
+In a source checkout the scripts run in place — `exec/count_samples_by_coi
+--coi_table inst/extdata/example_coi_table.tsv --output coi_distribution.tsv`.
+Bundled examples for trying formats live in `inst/extdata/`. More detail:
+`vignette("getting-started", package = "PGEcore")`.
 
 ## Standard input formats
 
@@ -136,7 +131,7 @@ Full column notes and which tools consume each format: vignette **`input-formats
 | `THEREALMcCOIL_wrapper` | Vendored C (`src/`) | `posterior` |
 
 Use the name in the first column from R (`library(PGEcore); moire_wrapper(...)`)
-or from the CLI (`Rscript exec/moire_wrapper ...`). A few wrappers also expose an
+or from the CLI (`moire_wrapper ...`). A few wrappers also expose an
 in-memory helper if you already have objects in R rather than files:
 `run_coiaf`, `run_moire`, and `run_malariaem` (see `?run_moire`).
 
