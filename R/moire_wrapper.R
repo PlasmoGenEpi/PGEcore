@@ -203,6 +203,43 @@ run_moire <- function(moire_object) {
   )
 }
 
+#' Stop early when MOIRe recorded no draws for some chain
+#'
+#' MOIRe's `max_runtime` stops each chain the moment its own wall clock
+#' expires, which for a short enough cap happens partway through burn-in --
+#' leaving that chain with no recorded draws at all. Nothing downstream copes
+#' with that: moire's own summarizers fail deep inside `quantile()` with
+#' "'x' must be atomic", and [extract_moire_chain_draws()] fails reading the
+#' allele count off a first draw that does not exist. Both are opaque, so the
+#' condition is caught here instead.
+#'
+#' @param mcmc_results The list returned by [run_moire()].
+#' @return `invisible(NULL)`; called for its side effect of erroring.
+#' @keywords internal
+assert_moire_chains_have_draws <- function(mcmc_results) {
+  recorded <- vapply(
+    mcmc_results$chains,
+    function(chain) length(chain$mean_coi),
+    integer(1)
+  )
+  if (any(recorded == 0L)) {
+    stop(
+      sprintf(
+        paste0(
+          "MOIRe recorded no draws for %d of %d chains, so its results ",
+          "cannot be summarized. This happens when max_runtime stops the ",
+          "sampler before it finishes burn-in. Raise max_runtime, lower ",
+          "burnin, or leave max_runtime unset (the default)."
+        ),
+        sum(recorded == 0L),
+        length(recorded)
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
 #' Summarize MOIRe MCMC results and write TSV files
 #'
 #' @keywords internal
@@ -215,6 +252,7 @@ summarize_and_write_moire_results <- function(moire_object,
                                               effective_coi_output) {
   check_suggested_pkg("moire", "summarizing MOIRe MCMC results")
   check_suggested_pkg("checkmate", "MOIRe summary checks")
+  assert_moire_chains_have_draws(mcmc_results)
 
   coi_summary <- moire::summarize_coi(mcmc_results) |>
     dplyr::rename(specimen_name = "sample_id", coi = "post_coi_mean")
@@ -332,6 +370,12 @@ extract_moire_chain_draws <- function(chain, sample_ids, loci) {
 #' error rates, within-host relatedness; per-locus/allele frequencies; and the
 #' population mean COI) and summarizes it with [summarize_convergence_draws()].
 #'
+#' @details Chains are not guaranteed to be the same length: MOIRe's
+#'   `max_runtime` stops each chain independently once its own wall clock
+#'   expires, so a truncated run yields ragged chains. All chains are truncated
+#'   to the shortest one (with a warning) so the draws array is rectangular and
+#'   iteration `i` refers to the same sweep in every chain.
+#'
 #' @param mcmc_results The list returned by [run_moire()].
 #' @return A data frame of convergence diagnostics, one row per parameter.
 #' @keywords internal
@@ -340,6 +384,12 @@ prepare_moire_convergence_output <- function(mcmc_results) {
 
   sample_ids <- mcmc_results$args$data$sample_ids
   loci <- mcmc_results$args$data$loci
+
+  # Checked before extracting: extract_moire_chain_draws() reads the allele
+  # count off the first recorded draw, so an empty chain fails there with a
+  # subscript error rather than anything a caller could act on.
+  assert_moire_chains_have_draws(mcmc_results)
+
   per_chain <- lapply(
     mcmc_results$chains,
     extract_moire_chain_draws,
@@ -347,15 +397,42 @@ prepare_moire_convergence_output <- function(mcmc_results) {
     loci
   )
   var_names <- names(per_chain[[1]])
-  n_iter <- length(per_chain[[1]][[1]])
   n_chains <- length(per_chain)
+
+  # MOIRe's max_runtime stops each chain when its own wall clock runs out, so a
+  # truncated run leaves the chains holding different numbers of draws. The
+  # draws array has to be rectangular, so size it from the shortest chain and
+  # keep each chain's first n_iter draws -- iteration i must refer to the same
+  # sweep in every chain for R-hat's within/between-chain variance to compare
+  # like with like, which taking the tail would break.
+  chain_lengths <- vapply(per_chain, function(ch) min(lengths(ch)), integer(1))
+  n_iter <- min(chain_lengths)
+  if (any(chain_lengths != n_iter)) {
+    warning(
+      sprintf(
+        paste0(
+          "MOIRe chains recorded unequal numbers of draws (%s); truncating ",
+          "all chains to the shortest (%d) for convergence diagnostics. ",
+          "Expected when max_runtime stops the sampler mid-run."
+        ),
+        paste(chain_lengths, collapse = ", "),
+        n_iter
+      ),
+      call. = FALSE
+    )
+  }
+
   draws <- array(
     NA_real_,
     dim = c(n_iter, n_chains, length(var_names)),
     dimnames = list(iteration = NULL, chain = NULL, variable = var_names)
   )
   for (i in seq_len(n_chains)) {
-    draws[, i, ] <- sapply(var_names, function(v) per_chain[[i]][[v]])
+    draws[, i, ] <- vapply(
+      var_names,
+      function(v) per_chain[[i]][[v]][seq_len(n_iter)],
+      numeric(n_iter)
+    )
   }
   summarize_convergence_draws(posterior::as_draws_array(draws))
 }
