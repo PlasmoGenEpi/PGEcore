@@ -156,6 +156,17 @@ create_FEM_input <- function(input_data, groups, group_id) {
 #' @param seed Random seed.
 #' @param n_chains Number of MCMC chains to run. At least two are needed to
 #'   compute the Gelman-Rubin R-hat convergence diagnostic.
+#' @param no_traces_preburnin Number of MCMC traces retained per chain before
+#'   burn-in is discarded. This is the dominant driver of memory use: the
+#'   sampler pre-allocates a
+#'   `no_traces_preburnin x n_samples x n_haplotypes x n_chains` array of
+#'   doubles, so a 6-locus group (64 haplotypes) at the default reaches
+#'   several GB.
+#' @param thinning_interval Number of Metropolis-Hastings updates performed per
+#'   retained trace. Total sampler updates are
+#'   `no_traces_preburnin * thinning_interval`, so halving the traces and
+#'   doubling this runs the chain exactly as far while storing fewer draws.
+#'   Note that reported ESS is bounded by the number of *retained* draws.
 #'
 #' @return A list with the population frequency table, MCMC runtime, marker
 #'   names, alternate alleles, group size, mono-allelic loci, and a
@@ -165,7 +176,9 @@ run_FreqEstimationModel <- function(sample_matrix_list,
                                     COI,
                                     threads,
                                     seed,
-                                    n_chains = 3L) {
+                                    n_chains = 3L,
+                                    no_traces_preburnin = 10000L,
+                                    thinning_interval = 1L) {
   check_suggested_pkgs(
     c("FreqEstimationModel", "plyr", "coda", "abind", "foreach", "doMC"),
     "FreqEstimationModel MCMC"
@@ -179,8 +192,6 @@ run_FreqEstimationModel <- function(sample_matrix_list,
   data_summary <- list()
   data_summary$Data <- sample_matrix
   runtime <- system.time({
-    thinning_interval <- 1
-    no_traces_preburnin <- 10000
     no_mcmc_chains <- n_chains
     NGS <- FALSE
     log_like_zero <- FALSE
@@ -494,6 +505,13 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 #' @param seed Random seed.
 #' @param n_chains Number of MCMC chains to run per group. At least two are
 #'   needed to compute the Gelman-Rubin R-hat convergence diagnostic.
+#' @param no_traces_preburnin Number of MCMC traces retained per chain before
+#'   burn-in. Lower values cut memory roughly proportionally; see
+#'   [run_FreqEstimationModel()].
+#' @param thinning_interval Metropolis-Hastings updates per retained trace.
+#'   `no_traces_preburnin * thinning_interval` is the total sampler effort, so
+#'   e.g. 2500 x 4 samples as far as the default 10000 x 1 while storing a
+#'   quarter of the draws.
 #' @param convergence_output Output TSV path for per-group MCMC convergence
 #'   diagnostics. See *Outputs*.
 #'
@@ -509,6 +527,8 @@ FreqEstimationModel_wrapper <- function(aa_calls,
                                         threads = 1L,
                                         seed = 1L,
                                         n_chains = 3L,
+                                        no_traces_preburnin = 10000L,
+                                        thinning_interval = 1L,
                                         convergence_output = "convergence_diag.tsv") {
   check_suggested_pkg(
     "FreqEstimationModel",
@@ -557,7 +577,9 @@ FreqEstimationModel_wrapper <- function(aa_calls,
         COI,
         threads,
         seed,
-        n_chains
+        n_chains,
+        no_traces_preburnin,
+        thinning_interval
       )
       fem_plsf <- format_single_group_output(fem_results)
       convergence_diags[[group]] <- fem_results$convergence_diag |>

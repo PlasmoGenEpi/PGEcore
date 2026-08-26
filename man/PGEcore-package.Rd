@@ -22,6 +22,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Kathryn Murie \email{kathryn.murie@ucsf.edu} (\href{https://orcid.org/0009-0008-9612-2016}{ORCID})
   \item Alfred Hubbard (\href{https://orcid.org/0000-0003-4917-7272}{ORCID})
   \item Nicholas Hathaway (\href{https://orcid.org/0000-0001-9639-2894}{ORCID})
   \item Shazia Ruybal Pesantez (\href{https://orcid.org/0000-0002-0495-179X}{ORCID})
