@@ -1,0 +1,103 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+option_list <- list(
+  make_option(
+    c("--snp_calls"),
+    type = "character",
+    default = NULL,
+    help = "SNP calls TSV (specimen_name, snp_name, reads, seq_base). See vignette input-formats. [required]",
+    metavar = "FILE"
+  ),
+  make_option(
+    c("--plmaf"),
+    type = "character",
+    default = NULL,
+    help = "Optional PLMAF TSV (snp_name, seq_base, plmaf). See vignette input-formats.",
+    metavar = "FILE"
+  ),
+  make_option(
+    c("--output"),
+    type = "character",
+    default = NULL,
+    help = "Output COI TSV (specimen_name, coi_freq, coi_variant). [required]",
+    metavar = "FILE"
+  ),
+  make_option(
+    c("--seq_error"),
+    type = "numeric",
+    default = 0.01,
+    help = "Sequencing error rate [default: %default]",
+    metavar = "NUM"
+  ),
+  make_option(
+    c("--max_coi"),
+    type = "integer",
+    default = 25,
+    help = "Maximum COI to consider [default: %default]",
+    metavar = "NUM"
+  )
+)
+
+parser <- OptionParser(
+  usage = "Usage: %prog --snp_calls FILE --output FILE [options]",
+  option_list = option_list,
+  description = paste(
+    "COIAF Wrapper - Estimates complexity of infection (COI) using the",
+    "optional coiaf package (not installed by PGEcore)."
+  ),
+  epilogue = paste0(
+    "Example:\n",
+    "  %prog --snp_calls data/snps.tsv --output results/coi_estimates.tsv\n",
+    "  %prog --snp_calls data/snps.tsv --plmaf data/plmaf.tsv ",
+    "--output results/coi_estimates.tsv --seq_error 0.005 --max_coi 30"
+  )
+)
+
+opt <- parse_args(parser, positional_arguments = FALSE)
+
+if (is.null(opt$snp_calls)) {
+  cat("Error: --snp_calls is required\n")
+  print_help(parser)
+  quit(status = 1)
+}
+
+if (is.null(opt$output)) {
+  cat("Error: --output is required\n")
+  print_help(parser)
+  quit(status = 1)
+}
+
+cat("COIAF Wrapper\n")
+cat("=============\n")
+cat("SNP data file:", opt$snp_calls, "\n")
+if (!is.null(opt$plmaf)) {
+  cat("PLMAF file:", opt$plmaf, "\n")
+}
+cat("Output file:", opt$output, "\n")
+cat("Sequencing error rate:", opt$seq_error, "\n")
+cat("Maximum COI:", opt$max_coi, "\n")
+cat("\n")
+
+tryCatch(
+  {
+    results <- coiaf_wrapper(
+      snp_calls = opt$snp_calls,
+      output = opt$output,
+      plmaf = opt$plmaf,
+      seq_error = opt$seq_error,
+      max_coi = opt$max_coi
+    )
+    cat("Analysis completed successfully!\n")
+    cat("Results saved to:", opt$output, "\n")
+    cat("Number of specimens processed:", nrow(results), "\n")
+  },
+  error = function(e) {
+    cat("Error:", conditionMessage(e), "\n")
+    quit(status = 1)
+  }
+)

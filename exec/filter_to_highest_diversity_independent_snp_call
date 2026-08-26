@@ -1,0 +1,73 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--snp_calls",
+    help = "SNP calls TSV (specimen_name, target_name, chrom, pos, snp_name, ref_base, seq_base, reads, is_biallelic). See vignette input-formats."
+  ),
+  make_option(
+    "--snp_calls_output",
+    help = "Filtered SNP calls TSV output (includes he)."
+  ),
+  make_option(
+    "--mindist_between_snps",
+    type = "integer",
+    default = 10000,
+    help = "the minimum distance between SNPs to consider them 'independent'. Default: %default"
+  ),
+  make_option(
+    "--select_target_names",
+    help = "only process these targets"
+  ),
+  make_option(
+    "--select_specimen_names",
+    help = "only process these samples"
+  ),
+  make_option(
+    "--overwrite",
+    help = "overwrite the output fnp if it already exists. Default: %default",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  ),
+  make_option(
+    "--only_biallelic",
+    help = "filter to only biallelic SNPs too. Default: %default",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  ),
+  make_option(
+    "--only_informative",
+    help = "filter off SNPs with no variation. Default: %default",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$snp_calls) || is.null(arg$snp_calls_output)) {
+  stop(
+    "Missing required arguments: --snp_calls and --snp_calls_output",
+    call. = FALSE
+  )
+}
+
+invisible(
+  filter_to_highest_diversity_independent_snp_call(
+    snp_calls = arg$snp_calls,
+    snp_calls_output = arg$snp_calls_output,
+    mindist_between_snps = arg$mindist_between_snps,
+    select_target_names = arg$select_target_names,
+    select_specimen_names = arg$select_specimen_names,
+    overwrite = isTRUE(arg$overwrite),
+    only_biallelic = isTRUE(arg$only_biallelic),
+    only_informative = isTRUE(arg$only_informative)
+  )
+)

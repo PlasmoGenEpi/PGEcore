@@ -1,0 +1,73 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = "Allele table TSV (specimen_name, target_name, seq, reads). See vignette input-formats."
+  ),
+  make_option(
+    "--ref_bed",
+    help = "Panel BED TSV with ref_seq (#chrom, start, end, target_name, length, strand, ref_seq)."
+  ),
+  make_option(
+    "--snps_of_interest",
+    help = "SNP BED (#chrom, start, end, name, length, strand); each SNP spans one base."
+  ),
+  make_option(
+    "--output_dir",
+    help = "Output directory for snp_calls and related TSVs."
+  ),
+  make_option(
+    "--select_target_names",
+    help = "only process these targets"
+  ),
+  make_option(
+    "--select_specimen_names",
+    help = "only process these samples"
+  ),
+  make_option(
+    "--overwrite_dir",
+    help = "overwrite the output directory if it already exists",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  ),
+  make_option(
+    "--collapse_calls_by_summing",
+    help = paste(
+      "collapse SNPs calls by summing across targets, by default the target",
+      "with the highest read count will be used as the final call"
+    ),
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+missing <- character()
+if (is.null(arg$allele_table)) missing <- c(missing, "--allele_table")
+if (is.null(arg$ref_bed)) missing <- c(missing, "--ref_bed")
+if (is.null(arg$snps_of_interest)) missing <- c(missing, "--snps_of_interest")
+if (is.null(arg$output_dir)) missing <- c(missing, "--output_dir")
+if (length(missing) > 0) {
+  stop("Missing required arguments: ", paste(missing, collapse = ", "), call. = FALSE)
+}
+
+invisible(
+  pileup_specific_snps(
+    allele_table = arg$allele_table,
+    ref_bed = arg$ref_bed,
+    snps_of_interest = arg$snps_of_interest,
+    output_dir = arg$output_dir,
+    select_target_names = arg$select_target_names,
+    select_specimen_names = arg$select_specimen_names,
+    overwrite_dir = isTRUE(arg$overwrite_dir),
+    collapse_calls_by_summing = isTRUE(arg$collapse_calls_by_summing)
+  )
+)

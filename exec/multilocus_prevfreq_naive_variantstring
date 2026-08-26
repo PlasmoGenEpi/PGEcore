@@ -1,0 +1,52 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_calls",
+    type = "character",
+    help = "AA calls TSV (specimen_name, gene_id, aa_position, reads, aa). See vignette input-formats."
+  ),
+  make_option(
+    "--loci_groups",
+    type = "character",
+    help = "Loci groups TSV (group_id, gene_id, aa_position). See vignette input-formats."
+  ),
+  make_option(
+    "--output",
+    type = "character",
+    help = "Multilocus prev/freq TSV output (group_id, variant, prev, freq, sample_total)."
+  )
+)
+
+args <- parse_args(OptionParser(option_list = opts))
+
+missing <- character()
+if (is.null(args$aa_calls)) {
+  missing <- c(missing, "--aa_calls")
+}
+if (is.null(args$loci_groups)) {
+  missing <- c(missing, "--loci_groups")
+}
+if (is.null(args$output)) {
+  missing <- c(missing, "--output")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  multilocus_prevfreq_naive_variantstring(
+    aa_calls = args$aa_calls,
+    loci_groups = args$loci_groups,
+    output = args$output
+  )
+)

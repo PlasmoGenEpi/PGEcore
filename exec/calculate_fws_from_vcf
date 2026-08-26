@@ -1,0 +1,79 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+option_list <- list(
+  make_option(
+    c("-i", "--vcf"),
+    type = "character",
+    default = NULL,
+    metavar = "FILE",
+    help = "Input VCF (.vcf or .vcf.gz) with FORMAT/AD."
+  ),
+  make_option(
+    c("-o", "--output"),
+    type = "character",
+    default = "fws_result.tsv",
+    metavar = "FILE",
+    help = "Fws TSV output (specimen_name, fws). Default: %default"
+  ),
+  make_option(
+    c("-g", "--gds"),
+    type = "character",
+    default = NULL,
+    metavar = "FILE",
+    help = paste(
+      "GDS file path. If omitted, it is derived from the input VCF by",
+      "replacing the .vcf/.vcf.gz suffix with .gds"
+    )
+  ),
+  make_option(
+    c("-p", "--population_name"),
+    type = "character",
+    default = NULL,
+    metavar = "NAME",
+    help = paste(
+      "Optional population name. If provided, adds a 'population_name'",
+      "column with this value to the output (useful for combining multiple",
+      "populations later)"
+    )
+  ),
+  make_option(
+    c("-f", "--overwrite"),
+    action = "store_true",
+    default = FALSE,
+    help = "Force re-creation of the GDS even if an up-to-date one exists"
+  ),
+  make_option(
+    c("-v", "--verbose"),
+    action = "store_true",
+    default = FALSE,
+    help = "Print progress messages (otherwise run silently)"
+  )
+)
+
+parser <- OptionParser(
+  usage = "%prog -i input.vcf.gz -o fws_result.tsv [options]",
+  option_list = option_list,
+  description = "Calculate Fws from a VCF using moimix::getFws()."
+)
+opt <- parse_args(parser)
+
+if (is.null(opt$vcf)) {
+  print_help(parser)
+  stop("An input VCF (-i/--vcf) is required.", call. = FALSE)
+}
+
+invisible(
+  calculate_fws_from_vcf(
+    vcf = opt$vcf,
+    output = opt$output,
+    gds = opt$gds,
+    population_name = opt$population_name,
+    overwrite = isTRUE(opt$overwrite),
+    verbose = isTRUE(opt$verbose)
+  )
+)

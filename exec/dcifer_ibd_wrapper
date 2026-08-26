@@ -1,0 +1,135 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = paste0(
+      "Allele table TSV (specimen_name, target_name, seq, reads). ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--coi_table",
+    help = paste0(
+      "Optional COI table TSV (specimen_name, coi). ",
+      "See vignette input-formats."
+    )
+  ),
+  make_option(
+    "--allele_freq_table",
+    help = paste0(
+      "Optional SLAF TSV (target_name, seq, freq). ",
+      "See vignette input-formats."
+    )
+  ),
+  make_option(
+    "--specimen_name_col",
+    default = "specimen_name",
+    help = "String giving the name of the specimen ID column"
+  ),
+  make_option(
+    "--target_name_col",
+    default = "target_name",
+    help = "String giving the name of the target name column (e.g., the locus name)"
+  ),
+  make_option(
+    "--target_value_col",
+    default = "seq",
+    help = paste0(
+      "String giving the name of the target value column (e.g., the allele ",
+      "call)"
+    )
+  ),
+  make_option(
+    "--specimen_metadata",
+    help = paste0(
+      "Optional specimen metadata TSV (specimen_name plus population column). ",
+      "Used with --pop_name_col."
+    )
+  ),
+  make_option(
+    "--pop_name_col",
+    help = paste0(
+      "Column in specimen metadata to use for calculating allele ",
+      "frequencies. If this is provided, allele frequencies will be ",
+      "calculated separately for each population and pair of populations ",
+      "(for between population comparisons). Optional."
+    )
+  ),
+  make_option(
+    "--rnull",
+    type = "double",
+    default = 0,
+    help = "Relatedness value to use as null for hypothesis testing. Optional."
+  ),
+  make_option(
+    "--alpha",
+    type = "double",
+    default = 0.05,
+    help = "alpha value to use for hypothesis testing. Optional."
+  ),
+  make_option(
+    "--use_estm",
+    action = "store_true",
+    default = FALSE,
+    help = "Use `dcifer::ibdEstM` in place of `dcifer::ibdPair`"
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    default = 1,
+    help = "Number of threads to use. Optional."
+  ),
+  make_option(
+    "--seed",
+    type = "integer",
+    default = 1,
+    help = "Random number seed. Optional."
+  ),
+  make_option(
+    c("-v", "--verbose"),
+    action = "store_true",
+    default = FALSE,
+    help = "Print detailed process output"
+  ),
+  make_option(
+    "--relatedness_output",
+    help = paste0(
+      "Output relatedness TSV (specimen_name_a, specimen_name_b, ",
+      "btwn_host_rel; optionally p_value, CI_*, strain_pair). Required."
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$allele_table) || is.null(arg$relatedness_output)) {
+  stop(
+    "Missing required arguments: --allele_table and --relatedness_output",
+    call. = FALSE
+  )
+}
+
+invisible(
+  dcifer_ibd_wrapper(
+    allele_table = arg$allele_table,
+    relatedness_output = arg$relatedness_output,
+    coi_table = arg$coi_table,
+    allele_freq_table = arg$allele_freq_table,
+    specimen_name_col = arg$specimen_name_col,
+    target_name_col = arg$target_name_col,
+    target_value_col = arg$target_value_col,
+    specimen_metadata = arg$specimen_metadata,
+    pop_name_col = arg$pop_name_col,
+    rnull = arg$rnull,
+    alpha = arg$alpha,
+    use_estm = isTRUE(arg$use_estm),
+    threads = arg$threads,
+    seed = arg$seed,
+    verbose = isTRUE(arg$verbose) || isTRUE(arg$v)
+  )
+)

@@ -1,0 +1,84 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    type = "character",
+    default = "",
+    help = paste0(
+      "Allele table TSV (specimen_name, target_name, seq, reads). ",
+      "See vignette input-formats. Provide exactly one of --allele_table or ",
+      "--aa_calls. Default: %default"
+    )
+  ),
+  make_option(
+    "--aa_calls",
+    type = "character",
+    default = "",
+    help = paste0(
+      "AA calls TSV (specimen_name, gene_id, aa_position, aa, ...). ",
+      "See vignette input-formats. Provide exactly one of --allele_table or ",
+      "--aa_calls. Default: %default"
+    )
+  ),
+  make_option(
+    "--model",
+    type = "character",
+    default = "IDM",
+    help = paste0(
+      "OM or IDM. OM for original model; IDM for incomplete-data model. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--lambda_initial",
+    type = "numeric",
+    default = 1.0,
+    help = paste0(
+      "the initial value (default to 1) for the numerical iteration to ",
+      "find the estimate  lambda. The default value can be changed to ",
+      "optimize computational time. Unless numerical problem occur, the ",
+      "default parameter should be used. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--eps_initial",
+    type = "numeric",
+    default = 0.1,
+    help = paste0(
+      "the argument eps_initial (default 0.1) specifies the initial ",
+      "value in the numerical iteration to find eps. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--slaf_output",
+    type = "character",
+    help = paste0(
+      "Output SLAF TSV (target_name, seq, freq for allele-table input; ",
+      "variant, freq for aa_calls). Required."
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$slaf_output)) {
+  stop("Missing required arguments: --slaf_output", call. = FALSE)
+}
+
+invisible(
+  IDM_wrapper(
+    allele_table = arg$allele_table,
+    aa_calls = arg$aa_calls,
+    slaf_output = arg$slaf_output,
+    model = arg$model,
+    lambda_initial = arg$lambda_initial,
+    eps_initial = arg$eps_initial
+  )
+)

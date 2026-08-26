@@ -1,0 +1,87 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_calls",
+    help = paste0(
+      "AA calls TSV (specimen_name, gene_id, aa_position, aa, ...). ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--coi",
+    help = paste0(
+      "COI table TSV (specimen_name, coi) or a numeric average COI. ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--loci_groups",
+    help = paste0(
+      "Loci groups TSV (group_id, gene_id, aa_position). ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    help = "Number of threads to use. Optional.",
+    default = 1
+  ),
+  make_option(
+    "--seed",
+    type = "integer",
+    help = "Random number seed. Optional.",
+    default = 1
+  ),
+  make_option(
+    "--n_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of MCMC chains to run per group. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Optional."
+    )
+  ),
+  make_option(
+    "--mlaf_output",
+    help = paste0(
+      "Output MLAF TSV (variant, freq, ...). Required."
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "Output per-group MCMC convergence diagnostics TSV. Optional. ",
+      "Default: %default"
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$aa_calls) || is.null(arg$coi) ||
+    is.null(arg$loci_groups) || is.null(arg$mlaf_output)) {
+  stop(
+    "Missing required arguments: --aa_calls, --coi, --loci_groups, --mlaf_output",
+    call. = FALSE
+  )
+}
+
+invisible(
+  FreqEstimationModel_wrapper(
+    aa_calls = arg$aa_calls,
+    coi = arg$coi,
+    loci_groups = arg$loci_groups,
+    mlaf_output = arg$mlaf_output,
+    threads = arg$threads,
+    seed = arg$seed,
+    n_chains = arg$n_chains,
+    convergence_output = arg$convergence_output
+  )
+)

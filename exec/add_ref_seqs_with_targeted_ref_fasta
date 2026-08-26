@@ -1,0 +1,56 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--ref_bed",
+    help = "Panel BED TSV with header (#chrom, start, end, target_name, length, strand)."
+  ),
+  make_option(
+    "--target_fasta",
+    help = "Target FASTA whose record names match target_name."
+  ),
+  make_option(
+    "--output",
+    help = "Panel BED TSV output with ref_seq column."
+  ),
+  make_option(
+    "--overwrite",
+    help = "overwrite the output if it already exists",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+missing <- character()
+if (is.null(arg$ref_bed)) {
+  missing <- c(missing, "--ref_bed")
+}
+if (is.null(arg$target_fasta)) {
+  missing <- c(missing, "--target_fasta")
+}
+if (is.null(arg$output)) {
+  missing <- c(missing, "--output")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  add_ref_seqs_with_targeted_ref_fasta(
+    ref_bed = arg$ref_bed,
+    target_fasta = arg$target_fasta,
+    output = arg$output,
+    overwrite = isTRUE(arg$overwrite)
+  )
+)
