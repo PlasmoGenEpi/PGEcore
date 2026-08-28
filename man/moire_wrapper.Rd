@@ -2,7 +2,7 @@
 % Please edit documentation in R/moire_wrapper.R
 \name{moire_wrapper}
 \alias{moire_wrapper}
-\title{Run MOIRe from allele-table and output paths}
+\title{Run MOIRE from allele-table and output paths}
 \usage{
 moire_wrapper(
   allele_table,
@@ -53,12 +53,12 @@ required to compute the Gelman-Rubin R-hat convergence diagnostic. This is
 distinct from \code{pt_chains} (parallel-tempering rungs within a chain).}
 
 \item{threads}{Threads used to run the independent chains in
-parallel (MOIRe's \code{num_cores}).}
+parallel (MOIRE's \code{num_cores}).}
 
 \item{thin}{Thinning interval for the MCMC sampler; only every \code{thin}-th
 sample is retained.}
 
-\item{verbose}{Logical; verbose MOIRe output.}
+\item{verbose}{Logical; verbose MOIRE output.}
 
 \item{eps_pos_alpha, eps_pos_beta}{Positive error-rate prior.}
 
@@ -104,10 +104,10 @@ See \emph{Outputs}.}
 swap acceptance rates. Only meaningful when \code{pt_chains > 1}.}
 }
 \value{
-Invisibly, the MOIRe MCMC result object.
+Invisibly, the MOIRE MCMC result object.
 }
 \description{
-Reads an allele table, runs MOIRe MCMC, and writes COI, He, allele-frequency,
+Reads an allele table, runs MOIRE MCMC, and writes COI, He, allele-frequency,
 relatedness, effective-COI, and convergence summaries. Requires \strong{moire},
 \strong{checkmate}, and \strong{posterior} (Suggests).
 }

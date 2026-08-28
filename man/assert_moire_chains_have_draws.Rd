@@ -2,7 +2,7 @@
 % Please edit documentation in R/moire_wrapper.R
 \name{assert_moire_chains_have_draws}
 \alias{assert_moire_chains_have_draws}
-\title{Stop early when MOIRe recorded no draws for some chain}
+\title{Stop early when MOIRE recorded no draws for some chain}
 \usage{
 assert_moire_chains_have_draws(mcmc_results)
 }
@@ -13,7 +13,7 @@ assert_moire_chains_have_draws(mcmc_results)
 \code{invisible(NULL)}; called for its side effect of erroring.
 }
 \description{
-MOIRe's \code{max_runtime} stops each chain the moment its own wall clock
+MOIRE's \code{max_runtime} stops each chain the moment its own wall clock
 expires, which for a short enough cap happens partway through burn-in --
 leaving that chain with no recorded draws at all. Nothing downstream copes
 with that: moire's own summarizers fail deep inside \code{quantile()} with

@@ -1,4 +1,4 @@
-# Fake MOIRe chain shaped the way extract_moire_chain_draws() reads it:
+# Fake MOIRE chain shaped the way extract_moire_chain_draws() reads it:
 # per-sample draw vectors, per-locus lists of per-iteration allele-frequency
 # vectors, and a mean_coi vector.
 make_chain <- function(n_iter, n_samples = 2, n_loci = 1, n_alleles = 2) {

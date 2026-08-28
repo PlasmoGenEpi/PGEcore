@@ -2,7 +2,7 @@
 % Please edit documentation in R/moire_wrapper.R
 \name{create_moire_input}
 \alias{create_moire_input}
-\title{Create a MOIRe input object from an allele table}
+\title{Create a MOIRE input object from an allele table}
 \usage{
 create_moire_input(
   input_path,
