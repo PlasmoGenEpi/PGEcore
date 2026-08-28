@@ -55,6 +55,27 @@ opts <- list(
     )
   ),
   make_option(
+    "--no_traces_preburnin",
+    type = "integer",
+    default = 10000L,
+    help = paste0(
+      "MCMC traces retained per chain before burn-in. Dominant driver of ",
+      "memory: the sampler pre-allocates a no_traces_preburnin x n_samples x ",
+      "n_haplotypes x n_chains array of doubles. Optional. Default: %default"
+    )
+  ),
+  make_option(
+    "--thinning_interval",
+    type = "integer",
+    default = 1L,
+    help = paste0(
+      "Metropolis-Hastings updates per retained trace. Total sampler effort is ",
+      "no_traces_preburnin * thinning_interval, so 2500 x 4 runs the chain as ",
+      "far as the default 10000 x 1 while storing a quarter of the draws. ",
+      "Optional. Default: %default"
+    )
+  ),
+  make_option(
     "--convergence_output",
     default = "convergence_diag.tsv",
     help = paste0(
@@ -82,6 +103,8 @@ invisible(
     threads = arg$threads,
     seed = arg$seed,
     n_chains = arg$n_chains,
+    no_traces_preburnin = arg$no_traces_preburnin,
+    thinning_interval = arg$thinning_interval,
     convergence_output = arg$convergence_output
   )
 )

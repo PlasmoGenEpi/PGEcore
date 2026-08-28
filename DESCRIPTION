@@ -43,7 +43,6 @@ BugReports: https://github.com/PlasmoGenEpi/PGEcore/issues
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 NeedsCompilation: yes
 Depends:
     R (>= 4.1.0)
@@ -92,3 +91,4 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/Needs/website: pkgdown
+Config/roxygen2/version: 8.0.0
