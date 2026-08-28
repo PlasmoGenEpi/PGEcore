@@ -16,6 +16,8 @@ FreqEstimationModel_wrapper(
   threads = 1L,
   seed = 1L,
   n_chains = 3L,
+  no_traces_preburnin = 10000L,
+  thinning_interval = 1L,
   convergence_output = "convergence_diag.tsv"
 )
 ```
@@ -50,6 +52,19 @@ FreqEstimationModel_wrapper(
 
   Number of MCMC chains to run per group. At least two are needed to
   compute the Gelman-Rubin R-hat convergence diagnostic.
+
+- no_traces_preburnin:
+
+  Number of MCMC traces retained per chain before burn-in. Lower values
+  cut memory roughly proportionally; see
+  [`run_FreqEstimationModel()`](https://plasmogenepi.github.io/PGEcore/reference/run_FreqEstimationModel.md).
+
+- thinning_interval:
+
+  Metropolis-Hastings updates per retained trace.
+  `no_traces_preburnin * thinning_interval` is the total sampler effort,
+  so e.g. 2500 x 4 samples as far as the default 10000 x 1 while storing
+  a quarter of the draws.
 
 - convergence_output:
 

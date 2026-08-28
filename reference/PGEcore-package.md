@@ -26,6 +26,9 @@ Useful links:
 
 Authors:
 
+- Kathryn Murie <kathryn.murie@ucsf.edu>
+  ([ORCID](https://orcid.org/0009-0008-9612-2016))
+
 - Alfred Hubbard ([ORCID](https://orcid.org/0000-0003-4917-7272))
 
 - Nicholas Hathaway ([ORCID](https://orcid.org/0000-0001-9639-2894))
