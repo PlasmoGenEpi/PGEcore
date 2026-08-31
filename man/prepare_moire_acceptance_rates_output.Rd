@@ -15,14 +15,14 @@ A tibble with one row per chain-rung combination and the columns
 }
 \description{
 For each independent chain and each temperature rung, computes the swap
-(exchange) acceptance rate with the adjacent hotter rung, following MOIRe's
+(exchange) acceptance rate with the adjacent hotter rung, following MOIRE's
 own convention (see \code{moire::plot_chain_swaps()}):
 \code{swap_acceptances / (samples_per_chain / 2)}.
 }
 \details{
 Swap acceptances are recorded per adjacent rung pair, so the rate
 for rung \code{k} describes swaps between rung \code{k} and rung \code{k + 1}; the final
-rung has no partner above it and its rate is \code{NA}. \code{temperature} is MOIRe's
+rung has no partner above it and its rate is \code{NA}. \code{temperature} is MOIRE's
 \code{temp_gradient} value for the rung (the power-posterior exponent in
 \verb{[0, 1]}), read per chain as it may be adapted.
 }

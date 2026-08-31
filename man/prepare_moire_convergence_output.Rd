@@ -18,4 +18,11 @@ every estimated parameter (per-sample COI, false-positive/false-negative
 error rates, within-host relatedness; per-locus/allele frequencies; and the
 population mean COI) and summarizes it with \code{\link[=summarize_convergence_draws]{summarize_convergence_draws()}}.
 }
+\details{
+Chains are not guaranteed to be the same length: MOIRE's
+\code{max_runtime} stops each chain independently once its own wall clock
+expires, so a truncated run yields ragged chains. All chains are truncated
+to the shortest one (with a warning) so the draws array is rectangular and
+iteration \code{i} refers to the same sweep in every chain.
+}
 \keyword{internal}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/moire_wrapper.R
 \name{run_moire}
 \alias{run_moire}
-\title{Run MOIRe MCMC analysis}
+\title{Run MOIRE MCMC analysis}
 \usage{
 run_moire(moire_object)
 }
@@ -14,7 +14,7 @@ run_moire(moire_object)
 The object returned by \code{\link[moire:run_mcmc]{moire::run_mcmc()}}.
 }
 \description{
-Runs MOIRe MCMC on a prepared \code{moire_object}. Requires \strong{moire} (Suggests).
+Runs MOIRE MCMC on a prepared \code{moire_object}. Requires \strong{moire} (Suggests).
 For reading allele tables and writing summary TSVs, use \code{\link[=moire_wrapper]{moire_wrapper()}}.
 }
 \details{

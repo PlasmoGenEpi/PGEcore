@@ -235,7 +235,7 @@ opts <- list(
   make_option(
     "--mcmc_results_output",
     help = paste0(
-      "Optional RDS path for the full MOIRe MCMC result object."
+      "Optional RDS path for the full MOIRE MCMC result object."
     )
   ),
   make_option(

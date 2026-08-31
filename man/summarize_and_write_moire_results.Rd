@@ -2,7 +2,7 @@
 % Please edit documentation in R/moire_wrapper.R
 \name{summarize_and_write_moire_results}
 \alias{summarize_and_write_moire_results}
-\title{Summarize MOIRe MCMC results and write TSV files}
+\title{Summarize MOIRE MCMC results and write TSV files}
 \usage{
 summarize_and_write_moire_results(
   moire_object,
@@ -15,6 +15,6 @@ summarize_and_write_moire_results(
 )
 }
 \description{
-Summarize MOIRe MCMC results and write TSV files
+Summarize MOIRE MCMC results and write TSV files
 }
 \keyword{internal}
