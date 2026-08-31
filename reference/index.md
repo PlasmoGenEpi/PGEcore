@@ -67,7 +67,7 @@ table). Prefer these file/CLI entry points.
 - [`dcifer_ibd_wrapper()`](https://plasmogenepi.github.io/PGEcore/reference/dcifer_ibd_wrapper.md)
   : Estimate IBD-based relatedness with Dcifer
 - [`moire_wrapper()`](https://plasmogenepi.github.io/PGEcore/reference/moire_wrapper.md)
-  : Run MOIRe from allele-table and output paths
+  : Run MOIRE from allele-table and output paths
 - [`malariaem_wrapper()`](https://plasmogenepi.github.io/PGEcore/reference/malariaem_wrapper.md)
   : Run malaria.em from allele-table and output paths
 - [`snpslice_wrapper()`](https://plasmogenepi.github.io/PGEcore/reference/snpslice_wrapper.md)
@@ -92,6 +92,6 @@ Optional `run_*` APIs for a few wrappers when data are already in R.
 - [`run_coiaf()`](https://plasmogenepi.github.io/PGEcore/reference/run_coiaf.md)
   : Estimate complexity of infection (COI) using coiaf
 - [`run_moire()`](https://plasmogenepi.github.io/PGEcore/reference/run_moire.md)
-  : Run MOIRe MCMC analysis
+  : Run MOIRE MCMC analysis
 - [`run_malariaem()`](https://plasmogenepi.github.io/PGEcore/reference/run_malariaem.md)
   : Run malaria.em and write frequency and phase summaries

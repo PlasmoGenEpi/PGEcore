@@ -1,6 +1,6 @@
-# Summarize MOIRe MCMC results and write TSV files
+# Summarize MOIRE MCMC results and write TSV files
 
-Summarize MOIRe MCMC results and write TSV files
+Summarize MOIRE MCMC results and write TSV files
 
 ## Usage
 

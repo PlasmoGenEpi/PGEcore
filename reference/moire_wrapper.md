@@ -1,6 +1,6 @@
-# Run MOIRe from allele-table and output paths
+# Run MOIRE from allele-table and output paths
 
-Reads an allele table, runs MOIRe MCMC, and writes COI, He,
+Reads an allele table, runs MOIRE MCMC, and writes COI, He,
 allele-frequency, relatedness, effective-COI, and convergence summaries.
 Requires **moire**, **checkmate**, and **posterior** (Suggests).
 
@@ -69,7 +69,7 @@ moire_wrapper(
 
 - threads:
 
-  Threads used to run the independent chains in parallel (MOIRe's
+  Threads used to run the independent chains in parallel (MOIRE's
   `num_cores`).
 
 - thin:
@@ -79,7 +79,7 @@ moire_wrapper(
 
 - verbose:
 
-  Logical; verbose MOIRe output.
+  Logical; verbose MOIRE output.
 
 - eps_pos_alpha, eps_pos_beta:
 
@@ -160,7 +160,7 @@ moire_wrapper(
 
 ## Value
 
-Invisibly, the MOIRe MCMC result object.
+Invisibly, the MOIRE MCMC result object.
 
 ## Details
 

@@ -1,4 +1,4 @@
-# Create a MOIRe input object from an allele table
+# Create a MOIRE input object from an allele table
 
 Reads a TSV of allele presence, validates columns, and packages MCMC
 parameters for

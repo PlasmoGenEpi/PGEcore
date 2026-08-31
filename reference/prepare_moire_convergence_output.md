@@ -23,3 +23,11 @@ prepare_moire_convergence_output(mcmc_results)
 ## Value
 
 A data frame of convergence diagnostics, one row per parameter.
+
+## Details
+
+Chains are not guaranteed to be the same length: MOIRE's `max_runtime`
+stops each chain independently once its own wall clock expires, so a
+truncated run yields ragged chains. All chains are truncated to the
+shortest one (with a warning) so the draws array is rectangular and
+iteration `i` refers to the same sweep in every chain.

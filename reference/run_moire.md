@@ -1,6 +1,6 @@
-# Run MOIRe MCMC analysis
+# Run MOIRE MCMC analysis
 
-Runs MOIRe MCMC on a prepared `moire_object`. Requires **moire**
+Runs MOIRE MCMC on a prepared `moire_object`. Requires **moire**
 (Suggests). For reading allele tables and writing summary TSVs, use
 [`moire_wrapper()`](https://plasmogenepi.github.io/PGEcore/reference/moire_wrapper.md).
 
