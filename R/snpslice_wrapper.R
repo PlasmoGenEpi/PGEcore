@@ -194,12 +194,77 @@ prepare_snpslice_coi_output <- function(snpslice_res,
   coi_tib
 }
 
+#' Lin's concordance correlation coefficient
+#'
+#' Returns `NA_real_` for fewer than three complete pairs and 1 when both
+#' vectors are constant and equal.
+#'
+#' @keywords internal
+snpslice_ccc <- function(x, y) {
+  keep <- stats::complete.cases(x, y)
+  x <- x[keep]
+  y <- y[keep]
+  n <- length(x)
+  if (n < 3L) {
+    return(NA_real_)
+  }
+  vx <- stats::var(x) * (n - 1) / n
+  vy <- stats::var(y) * (n - 1) / n
+  cxy <- stats::cov(x, y) * (n - 1) / n
+  denom <- vx + vy + (mean(x) - mean(y))^2
+  if (denom == 0) {
+    return(1)
+  }
+  2 * cxy / denom
+}
+
+#' Format SNP-Slice per-restart optimisation diagnostics
+#'
+#' One row per restart: `chain_id`, `seed`, `map_logpost`, `is_best`,
+#' `map_iteration`, `final_iteration`, `plateau_frac` (`map_iteration` divided
+#' by `final_iteration`), `map_kstar`, `map_ktrunc`, `coi_mean`, and
+#' `coi_ccc_to_best` (Lin's CCC between that restart's per-host COI and the
+#' reported restart's).
+#'
+#' @keywords internal
+prepare_snpslice_optim_output <- function(snpslice_res) {
+  # snp_slice() returns the reported chain at the top level and only attaches
+  # $chains when n_chains > 1.
+  chains <- snpslice_res$chains
+  if (is.null(chains)) {
+    chains <- list(snpslice_res)
+  }
+  best <- snpslice_res$best_chain
+  if (is.null(best)) {
+    best <- 1L
+  }
+  # COI per host is the row sum of the MAP allocation matrix.
+  coi_by_chain <- lapply(chains, function(ch) rowSums(ch$map_allocation_matrix))
+  coi_best <- coi_by_chain[[best]]
+
+  purrr::list_rbind(purrr::imap(chains, function(ch, i) {
+    d <- ch$diagnostics
+    tibble::tibble(
+      chain_id = if (is.null(d$chain_id)) i else d$chain_id,
+      seed = if (is.null(d$seed)) NA_integer_ else d$seed,
+      map_logpost = d$map_logpost,
+      is_best = identical(as.integer(i), as.integer(best)),
+      map_iteration = d$map_iteration,
+      final_iteration = d$final_iteration,
+      plateau_frac = d$map_iteration / d$final_iteration,
+      map_kstar = d$map_kstar,
+      map_ktrunc = d$map_ktrunc,
+      coi_mean = mean(coi_by_chain[[i]]),
+      coi_ccc_to_best = snpslice_ccc(coi_by_chain[[i]], coi_best)
+    )
+  }))
+}
+
 #' Estimate multilocus allele frequency and COI with SNP-Slice
 #'
 #' Estimates multilocus allele frequencies and per-specimen COI. Requires
-#' **snp.slicer** (with multi-chain sampling, `estimate`, and
-#' [snp.slicer::convergence_diagnostics()]) and **variantstring** 1.x
-#' (Suggests).
+#' **snp.slicer** (with multi-chain sampling and `estimate`) and
+#' **variantstring** 1.x (Suggests).
 #'
 #' ## Inputs
 #'
@@ -215,8 +280,12 @@ prepare_snpslice_coi_output <- function(snpslice_res,
 #'   `freq`, …).
 #' - **`coi_output`**: COI estimates (`specimen_name`, `coi`; uncertainty
 #'   columns when `estimator = "posterior"`).
-#' - **`convergence_output`**: MCMC diagnostics (`variable`, `mean`, `median`,
-#'   `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`).
+#' - **`convergence_output`**: Per-restart optimisation diagnostics
+#'   (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
+#'   `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`, `coi_mean`,
+#'   `coi_ccc_to_best`). SNP-Slice reports the restart with the highest MAP log
+#'   posterior rather than pooling chains, so between-chain R-hat and ESS do not
+#'   describe its output and are not emitted.
 #'
 #' ## Running
 #'
@@ -243,8 +312,8 @@ prepare_snpslice_coi_output <- function(snpslice_res,
 #' @param loci_groups Path to loci-groups TSV. See *Inputs*.
 #' @param mlaf_output Path for multilocus allele-frequency TSV. See *Outputs*.
 #' @param coi_output Path for COI TSV. See *Outputs*.
-#' @param convergence_output Path for MCMC convergence-diagnostics TSV. See
-#'   *Outputs*.
+#' @param convergence_output Path for per-restart optimisation-diagnostics TSV.
+#'   See *Outputs*.
 #' @param specimen_name_col,target_name_col,target_value_col,target_count_col
 #'   Column names in `allele_table`.
 #' @param loci_limit Optional cap on the number of loci.
@@ -342,10 +411,23 @@ snpslice_wrapper <- function(allele_table,
           length(loci_oi), "); no extra loci will be sampled."
         )
       }
-      loci_random <- sample(
-        setdiff(allele_tbl$target_name, loci_oi),
-        n_loci_select
-      )
+      # SNP-Slice keeps only targets with at most two alleles, so the extra
+      # loci are drawn from the biallelic targets alone. Monomorphic targets
+      # are excluded because they carry no allelic variation.
+      biallelic_trgs <- allele_tbl |>
+        dplyr::group_by(.data$target_name) |>
+        dplyr::filter(dplyr::n_distinct(.data$target_value) == 2) |>
+        dplyr::pull("target_name") |>
+        unique()
+      candidates <- setdiff(biallelic_trgs, loci_oi)
+      if (n_loci_select > length(candidates)) {
+        message(
+          "Note: only ", length(candidates), " biallelic target(s) are ",
+          "available to sample; requested ", n_loci_select, "."
+        )
+        n_loci_select <- length(candidates)
+      }
+      loci_random <- sample(candidates, n_loci_select)
       loci_selected <- c(loci_oi, loci_random)
       allele_tbl <- dplyr::filter(allele_tbl, .data$target_name %in% loci_selected)
     }
@@ -362,9 +444,9 @@ snpslice_wrapper <- function(allele_table,
     n_chains = n_chains,
     n_cores = threads,  # snp.slicer arg name
     seed = seed,
-    # store_mcmc is forced on because the convergence diagnostics and the
-    # "posterior" estimator both need the retained per-iteration samples.
-    store_mcmc = TRUE,
+    # Retained per-iteration samples are only needed by the "posterior"
+    # estimator.
+    store_mcmc = identical(estimator, "posterior"),
     verbose = verbose,
     specimen_id_col = "specimen_name",
     target_id_col = "target_name",
@@ -384,10 +466,7 @@ snpslice_wrapper <- function(allele_table,
   readr::write_tsv(mlaf, mlaf_output)
   coi <- prepare_snpslice_coi_output(snpslice_res, specimen_name_col, estimator)
   readr::write_tsv(coi, coi_output)
-  convergence <- snp.slicer::convergence_diagnostics(
-    snpslice_res,
-    pars = c("logpost", "n_strains", "kstar", "ktrunc", "coi")
-  )
+  convergence <- prepare_snpslice_optim_output(snpslice_res)
   readr::write_tsv(convergence, convergence_output)
   invisible(list(mlaf = mlaf, coi = coi, convergence = convergence))
 }
