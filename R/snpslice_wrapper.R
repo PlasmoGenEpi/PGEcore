@@ -176,6 +176,36 @@ prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
   af_tib
 }
 
+#' COI variants from a SNP-Slice allocation matrix
+#'
+#' Strain support is the number of hosts carrying a strain, and mean support is
+#' `sum(A) / ncol(A)`. Support scales with how finely the loci resolve strains,
+#' so the weight below is normalised by it rather than by a fixed count.
+#'
+#' @param A Allocation matrix, hosts in rows and strains in columns.
+#' @return A data frame with `coi_all` (every assigned strain), `coi` (strains
+#'   carried by more than one host), `coi_offset2` (more than two hosts) and
+#'   `coi_weighted` (each strain weighted by `1 - exp(-support / mean support)`).
+#'   Every column is floored at 1, so a host never drops below one strain;
+#'   `coi_weighted` stays on a continuous scale above that floor.
+#' @keywords internal
+snpslice_coi_variants <- function(A) {
+  support <- colSums(A)
+  mean_support <- if (ncol(A) == 0L) 0 else sum(A) / ncol(A)
+  above <- function(k) {
+    keep <- support > k
+    v <- if (any(keep)) rowSums(A[, keep, drop = FALSE]) else rep(0, nrow(A))
+    pmax(as.integer(v), 1L)
+  }
+  weights <- if (mean_support > 0) 1 - exp(-support / mean_support) else rep(0, ncol(A))
+  data.frame(
+    coi_all = as.integer(rowSums(A)),
+    coi = above(1),
+    coi_offset2 = above(2),
+    coi_weighted = pmax(as.vector(A %*% weights), 1)
+  )
+}
+
 #' Format SNP-Slice COI estimates
 #'
 #' @keywords internal
@@ -187,11 +217,22 @@ prepare_snpslice_coi_output <- function(snpslice_res,
     estimate = estimator
   ) |>
     dplyr::select(-"host_index") |>
-    dplyr::rename(!!specimen_name_col := "host_id", coi = "coi_estimate")
+    dplyr::rename(!!specimen_name_col := "host_id", coi_all = "coi_estimate")
   if (!identical(estimator, "posterior")) {
     coi_tib <- dplyr::select(coi_tib, -"coi_sd", -"coi_lower", -"coi_upper")
   }
-  coi_tib
+  A <- snp.slicer:::point_estimate_matrices(
+    snp.slicer::get_chain(snpslice_res, NULL),
+    if (identical(estimator, "posterior")) "map" else estimator
+  )$A
+  variants <- snpslice_coi_variants(A)
+  # coi_all from the variants matches calculate_individual_coi(); keep the
+  # latter's column so the "posterior" uncertainty columns stay aligned with it.
+  dplyr::bind_cols(
+    coi_tib,
+    variants[, c("coi", "coi_offset2", "coi_weighted"), drop = FALSE]
+  ) |>
+    dplyr::relocate("coi", "coi_offset2", "coi_weighted", .after = "coi_all")
 }
 
 #' Lin's concordance correlation coefficient
@@ -278,8 +319,11 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #'
 #' - **`mlaf_output`**: Multilocus allele frequencies (`group_id`, `variant`,
 #'   `freq`, …).
-#' - **`coi_output`**: COI estimates (`specimen_name`, `coi`; uncertainty
-#'   columns when `estimator = "posterior"`).
+#' - **`coi_output`**: COI estimates (`specimen_name`, `coi_all`, `coi`,
+#'   `coi_offset2`, `coi_weighted`; uncertainty columns when
+#'   `estimator = "posterior"`). `coi_all` counts every assigned strain; `coi`
+#'   and `coi_offset2` drop strains carried by at most one or two hosts;
+#'   `coi_weighted` weights each strain by its support.
 #' - **`convergence_output`**: Per-restart optimisation diagnostics
 #'   (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
 #'   `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`, `coi_mean`,

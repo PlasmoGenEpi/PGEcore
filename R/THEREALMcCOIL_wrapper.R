@@ -474,6 +474,8 @@ mccoil_blank <- function(x) {
 #' @param seed Random seed for the first chain; chain `i` uses `seed + i - 1`.
 #' @param n_chains Number of independent MCMC chains. More than one chain is
 #'   required for the Gelman-Rubin R-hat diagnostic.
+#' @param convergence_summary_output Output TSV of the run-level convergence
+#'   summary. See *Outputs*.
 #' @param convergence_output Output TSV of MCMC convergence diagnostics. See
 #'   *Outputs*.
 #'
@@ -499,7 +501,9 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
                                   err_method = 1L,
                                   seed = 321L,
                                   n_chains = 3L,
-                                  convergence_output = "convergence_diag.tsv") {
+                                  convergence_output = "convergence_diag.tsv",
+                                  convergence_summary_output =
+                                    "convergence_summary.tsv") {
   if (mccoil_blank(snp_calls)) {
     stop("--snp_calls must be set", call. = FALSE)
   }
@@ -549,6 +553,10 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
     burnin = burnin
   )
   readr::write_tsv(convergence, convergence_output)
+  convergence_summary <- summarize_convergence_run(convergence)
+  readr::write_tsv(convergence_summary, convergence_summary_output)
 
-  invisible(c(df_formated, list(convergence = convergence)))
+  invisible(c(df_formated, list(
+    convergence = convergence, convergence_summary = convergence_summary
+  )))
 }
