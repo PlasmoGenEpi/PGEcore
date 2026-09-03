@@ -13,8 +13,10 @@ FreqEstimationModel_wrapper(
   seed = 1L,
   n_chains = 3L,
   no_traces_preburnin = 10000L,
+  moi_max = 8L,
   thinning_interval = 1L,
-  convergence_output = "convergence_diag.tsv"
+  convergence_output = "convergence_diag.tsv",
+  convergence_summary_output = "convergence_summary.tsv"
 )
 }
 \arguments{
@@ -37,6 +39,9 @@ needed to compute the Gelman-Rubin R-hat convergence diagnostic.}
 burn-in. Lower values cut memory roughly proportionally; see
 \code{\link[=run_FreqEstimationModel]{run_FreqEstimationModel()}}.}
 
+\item{moi_max}{Largest MOI the model can assign to a specimen. Specimens
+whose true MOI exceeds it are censored at the ceiling.}
+
 \item{thinning_interval}{Metropolis-Hastings updates per retained trace.
 \code{no_traces_preburnin * thinning_interval} is the total sampler effort, so
 e.g. 2500 x 4 samples as far as the default 10000 x 1 while storing a
@@ -44,6 +49,9 @@ quarter of the draws.}
 
 \item{convergence_output}{Output TSV path for per-group MCMC convergence
 diagnostics. See \emph{Outputs}.}
+
+\item{convergence_summary_output}{Output TSV path for the per-group
+run-level convergence summary. See \emph{Outputs}.}
 }
 \value{
 The formatted output data frame (also written to \code{mlaf_output}).

@@ -176,34 +176,54 @@ prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
   af_tib
 }
 
-#' COI variants from a SNP-Slice allocation matrix
+#' Consensus COI across SNP-Slice restarts
 #'
-#' Strain support is the number of hosts carrying a strain, and mean support is
-#' `sum(A) / ncol(A)`. Support scales with how finely the loci resolve strains,
-#' so the weight below is normalised by it rather than by a fixed count.
+#' Restarts are independent optimisations that land on different strain
+#' dictionaries, so a strain index means nothing across them. Haplotypes are
+#' matched by their dictionary row instead, and duplicate rows within a restart
+#' are collapsed before counting. `membership[i, h]` is then the fraction of
+#' restarts in which host `i` carries haplotype `h`.
 #'
-#' @param A Allocation matrix, hosts in rows and strains in columns.
-#' @return A data frame with `coi_all` (every assigned strain), `coi` (strains
-#'   carried by more than one host), `coi_offset2` (more than two hosts) and
-#'   `coi_weighted` (each strain weighted by `1 - exp(-support / mean support)`).
-#'   Every column is floored at 1, so a host never drops below one strain;
-#'   `coi_weighted` stays on a continuous scale above that floor.
+#' Consensus support is `colSums(membership)`, and each haplotype is weighted by
+#' `1 - exp(-support / mean support)`. Support scales with how finely the loci
+#' resolve strains, so the weight is normalised by the mean rather than by a
+#' fixed count.
+#'
+#' @param chains List of per-restart results, or a single result object.
+#' @param estimate Point estimate to read from each restart, `"map"` or
+#'   `"final_sample"`.
+#' @return Numeric vector, one consensus COI per host, floored at 1.
 #' @keywords internal
-snpslice_coi_variants <- function(A) {
-  support <- colSums(A)
-  mean_support <- if (ncol(A) == 0L) 0 else sum(A) / ncol(A)
-  above <- function(k) {
-    keep <- support > k
-    v <- if (any(keep)) rowSums(A[, keep, drop = FALSE]) else rep(0, nrow(A))
-    pmax(as.integer(v), 1L)
+snpslice_consensus_coi <- function(chains, estimate) {
+  if (!is.null(chains) && !is.null(chains$map_allocation_matrix)) {
+    chains <- list(chains)
   }
-  weights <- if (mean_support > 0) 1 - exp(-support / mean_support) else rep(0, ncol(A))
-  data.frame(
-    coi_all = as.integer(rowSums(A)),
-    coi = above(1),
-    coi_offset2 = above(2),
-    coi_weighted = pmax(as.vector(A %*% weights), 1)
-  )
+  per_chain <- lapply(chains, function(ch) {
+    mats <- snp.slicer:::point_estimate_matrices(ch, estimate)
+    A <- mats$A
+    D <- mats$D
+    haplotype <- apply(D, 1L, paste0, collapse = "")
+    columns <- split(seq_len(ncol(A)), haplotype)
+    lapply(columns, function(k) which(rowSums(A[, k, drop = FALSE]) > 0))
+  })
+  n_hosts <- nrow(snp.slicer:::point_estimate_matrices(chains[[1L]], estimate)$A)
+  haplotypes <- unique(unlist(lapply(per_chain, names), use.names = FALSE))
+  membership <- matrix(0, nrow = n_hosts, ncol = length(haplotypes),
+                       dimnames = list(NULL, haplotypes))
+  for (chain in per_chain) {
+    for (h in names(chain)) {
+      membership[chain[[h]], h] <- membership[chain[[h]], h] + 1
+    }
+  }
+  membership <- membership / length(per_chain)
+  support <- colSums(membership)
+  mean_support <- if (length(support) == 0L) 0 else mean(support)
+  weights <- if (mean_support > 0) {
+    1 - exp(-support / mean_support)
+  } else {
+    rep(0, length(support))
+  }
+  pmax(as.vector(membership %*% weights), 1)
 }
 
 #' Format SNP-Slice COI estimates
@@ -217,22 +237,25 @@ prepare_snpslice_coi_output <- function(snpslice_res,
     estimate = estimator
   ) |>
     dplyr::select(-"host_index") |>
-    dplyr::rename(!!specimen_name_col := "host_id", coi_all = "coi_estimate")
+    dplyr::rename(!!specimen_name_col := "host_id", coi = "coi_estimate")
   if (!identical(estimator, "posterior")) {
     coi_tib <- dplyr::select(coi_tib, -"coi_sd", -"coi_lower", -"coi_upper")
   }
-  A <- snp.slicer:::point_estimate_matrices(
-    snp.slicer::get_chain(snpslice_res, NULL),
+  chains <- if (is.null(snpslice_res$chains)) {
+    snp.slicer::get_chain(snpslice_res, NULL)
+  } else {
+    snpslice_res$chains
+  }
+  consensus <- snpslice_consensus_coi(
+    chains,
     if (identical(estimator, "posterior")) "map" else estimator
-  )$A
-  variants <- snpslice_coi_variants(A)
-  # coi_all from the variants matches calculate_individual_coi(); keep the
-  # latter's column so the "posterior" uncertainty columns stay aligned with it.
-  dplyr::bind_cols(
-    coi_tib,
-    variants[, c("coi", "coi_offset2", "coi_weighted"), drop = FALSE]
-  ) |>
-    dplyr::relocate("coi", "coi_offset2", "coi_weighted", .after = "coi_all")
+  )
+  if (length(consensus) != nrow(coi_tib)) {
+    stop("Consensus COI length does not match the per-host COI table.",
+         call. = FALSE)
+  }
+  coi_tib$coi_cons_weighted <- consensus
+  dplyr::relocate(coi_tib, "coi_cons_weighted", .after = "coi")
 }
 
 #' Lin's concordance correlation coefficient
@@ -319,11 +342,12 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #'
 #' - **`mlaf_output`**: Multilocus allele frequencies (`group_id`, `variant`,
 #'   `freq`, …).
-#' - **`coi_output`**: COI estimates (`specimen_name`, `coi_all`, `coi`,
-#'   `coi_offset2`, `coi_weighted`; uncertainty columns when
-#'   `estimator = "posterior"`). `coi_all` counts every assigned strain; `coi`
-#'   and `coi_offset2` drop strains carried by at most one or two hosts;
-#'   `coi_weighted` weights each strain by its support.
+#' - **`coi_output`**: COI estimates (`specimen_name`, `coi`,
+#'   `coi_cons_weighted`; uncertainty columns when `estimator = "posterior"`).
+#'   `coi` counts every strain assigned to a host in the best restart.
+#'   `coi_cons_weighted` pools haplotype membership across all restarts and
+#'   weights each haplotype by its consensus support, which counters the
+#'   dictionary over-parameterisation that inflates `coi`.
 #' - **`convergence_output`**: Per-restart optimisation diagnostics
 #'   (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
 #'   `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`, `coi_mean`,

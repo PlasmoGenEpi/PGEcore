@@ -36,6 +36,7 @@ moire_wrapper(
   effective_coi_output = "effective_coi_output.tsv",
   mcmc_results_output = NULL,
   convergence_output = "convergence_diag.tsv",
+  convergence_summary_output = "convergence_summary.tsv",
   acceptance_rates_output = NULL
 )
 }
@@ -99,6 +100,9 @@ See \emph{Outputs}.}
 
 \item{convergence_output}{Output path for MCMC convergence diagnostics.
 See \emph{Outputs}.}
+
+\item{convergence_summary_output}{Output path for the run-level convergence
+summary. See \emph{Outputs}.}
 
 \item{acceptance_rates_output}{Optional output path for parallel-tempering
 swap acceptance rates. Only meaningful when \code{pt_chains > 1}.}
