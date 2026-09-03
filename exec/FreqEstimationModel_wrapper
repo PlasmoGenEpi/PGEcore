@@ -65,6 +65,15 @@ opts <- list(
     )
   ),
   make_option(
+    "--moi_max",
+    type = "integer",
+    default = 8L,
+    help = paste0(
+      "Largest MOI the model can assign to a specimen. Specimens whose true ",
+      "MOI exceeds it are censored at the ceiling. Optional. Default: %default"
+    )
+  ),
+  make_option(
     "--thinning_interval",
     type = "integer",
     default = 1L,
@@ -115,6 +124,7 @@ invisible(
     n_chains = arg$n_chains,
     no_traces_preburnin = arg$no_traces_preburnin,
     thinning_interval = arg$thinning_interval,
+    moi_max = arg$moi_max,
     convergence_output = arg$convergence_output,
     convergence_summary_output = arg$convergence_summary_output
   )
