@@ -178,16 +178,51 @@ prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
 
 #' Consensus COI across SNP-Slice restarts
 #'
-#' Restarts are independent optimisations that land on different strain
-#' dictionaries, so a strain index means nothing across them. Haplotypes are
-#' matched by their dictionary row instead, and duplicate rows within a restart
-#' are collapsed before counting. `membership[i, h]` is then the fraction of
-#' restarts in which host `i` carries haplotype `h`.
+#' Pools the strain assignments from several independent SNP-Slice restarts
+#' into one per-host complexity of infection (COI) that discounts strains
+#' the restarts do not agree on.
 #'
-#' Consensus support is `colSums(membership)`, and each haplotype is weighted by
-#' `1 - exp(-support / mean support)`. Support scales with how finely the loci
-#' resolve strains, so the weight is normalised by the mean rather than by a
-#' fixed count.
+#' @section Why this exists:
+#' SNP-Slice fits allele frequencies well but over-parameterizes the strain
+#' dictionary to do so: it adds many low-support strains, often carried by a
+#' single host. Each such strain adds a full +1 to that host's COI while
+#' contributing almost nothing to the frequencies, so the raw row sum of the
+#' allocation matrix over-counts COI. On top of that, restarts are independent
+#' optimizations that land on different dictionaries, so any single restart's
+#' assignments are partly noise. This function addresses both problems by
+#' asking, per host and per strain, how consistently that assignment is
+#' recovered across the different chains, and weighting the count accordingly.
+#'
+#' @section How it works:
+#' 1. **Match strains across restarts by sequence.** A strain index means
+#'    nothing across restarts, so haplotypes are keyed by their dictionary
+#'    row (the concatenated allele string). Duplicate rows within a restart
+#'    are collapsed before counting.
+#' 2. **Build a membership matrix.** `membership[i, h]` is the fraction of
+#'    restarts in which host `i` carries haplotype `h`. Assignments
+#'    recovered by every restart score 1; those seen in one restart out of
+#'    ten score 0.1.
+#' 3. **Weight each haplotype by cohort support.** Support is
+#'    `colSums(membership)`, the expected number of hosts carrying `h`.
+#'    Each haplotype gets weight `1 - exp(-support / mean(support))`.
+#'    This is a smooth discount rather than a threshold: a strain with no
+#'    support contributes 0, one of average commonness contributes about
+#'    0.63, and a common strain contributes fully. Hard thresholds were
+#'    tested and rejected because the best cutoff differed by population
+#'    and a small wobble in support flipped whole-strain counts.
+#' 4. **Sum and floor.** Host COI is `membership %*% weights`, floored at 1
+#'    so every host is counted as at least one infection.
+#'
+#' Normalizing support by its mean, rather than a fixed host count, is what
+#' keeps the estimate from drifting with panel or cohort size. More loci
+#' resolve more strains, which lowers the mean support, so the same absolute
+#' support earns a higher weight. More hosts raise the mean, so the same
+#' support earns a lower weight. Both adjustments are the desired direction.
+#'
+#' In benchmarking on simulated populations this consensus estimate beat
+#' the same weighting applied to a single restart, nearly removed the loci
+#' drift, and was more reproducible between independent seeds. The gain
+#' saturates at roughly three restarts.
 #'
 #' @param chains List of per-restart results, or a single result object.
 #' @param estimate Point estimate to read from each restart, `"map"` or
@@ -260,8 +295,31 @@ prepare_snpslice_coi_output <- function(snpslice_res,
 
 #' Lin's concordance correlation coefficient
 #'
-#' Returns `NA_real_` for fewer than three complete pairs and 1 when both
-#' vectors are constant and equal.
+#' Computes Lin's (1989) concordance correlation coefficient (CCC) for
+#' agreement between two sets of paired measurements. Unlike Pearson's
+#' correlation, the CCC combines precision (tightness of the points about
+#' their best-fit line) and accuracy (how far that line deviates from the
+#' 45-degree line of perfect concordance), so it measures reproducibility
+#' rather than linear association. Values range from -1 to 1, with 1
+#' indicating perfect agreement. Used here to compare per-host COI estimates
+#' between SNP-Slice restarts.
+#'
+#' Only pairs where both `x` and `y` are non-missing are used. Returns
+#' `NA_real_` for fewer than three complete pairs and 1 when both vectors are
+#' constant and equal.
+#'
+#' @param x Numeric vector, the first set of measurements.
+#' @param y Numeric vector, the second set of measurements, same length as
+#'   `x`.
+#'
+#' @return A single numeric value, the concordance correlation coefficient.
+#'
+#' @references
+#' Lin L (1989). A concordance correlation coefficient to evaluate
+#' reproducibility. *Biometrics* 45: 255-268.
+#'
+#' Lin L (2000). A note on the concordance correlation coefficient.
+#' *Biometrics* 56: 324-325.
 #'
 #' @keywords internal
 snpslice_ccc <- function(x, y) {
@@ -282,7 +340,7 @@ snpslice_ccc <- function(x, y) {
   2 * cxy / denom
 }
 
-#' Format SNP-Slice per-restart optimisation diagnostics
+#' Format SNP-Slice per-restart optimization diagnostics
 #'
 #' One row per restart: `chain_id`, `seed`, `map_logpost`, `is_best`,
 #' `map_iteration`, `final_iteration`, `plateau_frac` (`map_iteration` divided
@@ -348,7 +406,7 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #'   `coi_cons_weighted` pools haplotype membership across all restarts and
 #'   weights each haplotype by its consensus support, which counters the
 #'   dictionary over-parameterisation that inflates `coi`.
-#' - **`convergence_output`**: Per-restart optimisation diagnostics
+#' - **`convergence_output`**: Per-restart optimization diagnostics
 #'   (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
 #'   `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`, `coi_mean`,
 #'   `coi_ccc_to_best`). SNP-Slice reports the restart with the highest MAP log
@@ -380,7 +438,7 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' @param loci_groups Path to loci-groups TSV. See *Inputs*.
 #' @param mlaf_output Path for multilocus allele-frequency TSV. See *Outputs*.
 #' @param coi_output Path for COI TSV. See *Outputs*.
-#' @param convergence_output Path for per-restart optimisation-diagnostics TSV.
+#' @param convergence_output Path for per-restart optimization-diagnostics TSV.
 #'   See *Outputs*.
 #' @param specimen_name_col,target_name_col,target_value_col,target_count_col
 #'   Column names in `allele_table`.

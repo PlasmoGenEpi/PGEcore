@@ -16,16 +16,56 @@ snpslice_consensus_coi(chains, estimate)
 Numeric vector, one consensus COI per host, floored at 1.
 }
 \description{
-Restarts are independent optimisations that land on different strain
-dictionaries, so a strain index means nothing across them. Haplotypes are
-matched by their dictionary row instead, and duplicate rows within a restart
-are collapsed before counting. \code{membership[i, h]} is then the fraction of
-restarts in which host \code{i} carries haplotype \code{h}.
+Pools the strain assignments from several independent SNP-Slice restarts
+into one per-host complexity of infection (COI) that discounts strains
+the restarts do not agree on.
 }
-\details{
-Consensus support is \code{colSums(membership)}, and each haplotype is weighted by
-\verb{1 - exp(-support / mean support)}. Support scales with how finely the loci
-resolve strains, so the weight is normalised by the mean rather than by a
-fixed count.
+\section{Why this exists}{
+
+SNP-Slice fits allele frequencies well but over-parameterizes the strain
+dictionary to do so: it adds many low-support strains, often carried by a
+single host. Each such strain adds a full +1 to that host's COI while
+contributing almost nothing to the frequencies, so the raw row sum of the
+allocation matrix over-counts COI. On top of that, restarts are independent
+optimizations that land on different dictionaries, so any single restart's
+assignments are partly noise. This function addresses both problems by
+asking, per host and per strain, how consistently that assignment is
+recovered across the different chains, and weighting the count accordingly.
 }
+
+\section{How it works}{
+
+\enumerate{
+\item \strong{Match strains across restarts by sequence.} A strain index means
+nothing across restarts, so haplotypes are keyed by their dictionary
+row (the concatenated allele string). Duplicate rows within a restart
+are collapsed before counting.
+\item \strong{Build a membership matrix.} \code{membership[i, h]} is the fraction of
+restarts in which host \code{i} carries haplotype \code{h}. Assignments
+recovered by every restart score 1; those seen in one restart out of
+ten score 0.1.
+\item \strong{Weight each haplotype by cohort support.} Support is
+\code{colSums(membership)}, the expected number of hosts carrying \code{h}.
+Each haplotype gets weight \code{1 - exp(-support / mean(support))}.
+This is a smooth discount rather than a threshold: a strain with no
+support contributes 0, one of average commonness contributes about
+0.63, and a common strain contributes fully. Hard thresholds were
+tested and rejected because the best cutoff differed by population
+and a small wobble in support flipped whole-strain counts.
+\item \strong{Sum and floor.} Host COI is \code{membership \%*\% weights}, floored at 1
+so every host is counted as at least one infection.
+}
+
+Normalizing support by its mean, rather than a fixed host count, is what
+keeps the estimate from drifting with panel or cohort size. More loci
+resolve more strains, which lowers the mean support, so the same absolute
+support earns a higher weight. More hosts raise the mean, so the same
+support earns a lower weight. Both adjustments are the desired direction.
+
+In benchmarking on simulated populations this consensus estimate beat
+the same weighting applied to a single restart, nearly removed the loci
+drift, and was more reproducible between independent seeds. The gain
+saturates at roughly three restarts.
+}
+
 \keyword{internal}

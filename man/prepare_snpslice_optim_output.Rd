@@ -2,7 +2,7 @@
 % Please edit documentation in R/snpslice_wrapper.R
 \name{prepare_snpslice_optim_output}
 \alias{prepare_snpslice_optim_output}
-\title{Format SNP-Slice per-restart optimisation diagnostics}
+\title{Format SNP-Slice per-restart optimization diagnostics}
 \usage{
 prepare_snpslice_optim_output(snpslice_res)
 }

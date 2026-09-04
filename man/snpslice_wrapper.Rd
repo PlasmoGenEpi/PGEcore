@@ -38,7 +38,7 @@ snpslice_wrapper(
 
 \item{coi_output}{Path for COI TSV. See \emph{Outputs}.}
 
-\item{convergence_output}{Path for per-restart optimisation-diagnostics TSV.
+\item{convergence_output}{Path for per-restart optimization-diagnostics TSV.
 See \emph{Outputs}.}
 
 \item{specimen_name_col, target_name_col, target_value_col, target_count_col}{Column names in \code{allele_table}.}
@@ -100,7 +100,7 @@ matching \code{target_name_col}).
 \code{coi_cons_weighted} pools haplotype membership across all restarts and
 weights each haplotype by its consensus support, which counters the
 dictionary over-parameterisation that inflates \code{coi}.
-\item \strong{\code{convergence_output}}: Per-restart optimisation diagnostics
+\item \strong{\code{convergence_output}}: Per-restart optimization diagnostics
 (\code{chain_id}, \code{seed}, \code{map_logpost}, \code{is_best}, \code{map_iteration},
 \code{final_iteration}, \code{plateau_frac}, \code{map_kstar}, \code{map_ktrunc}, \code{coi_mean},
 \code{coi_ccc_to_best}). SNP-Slice reports the restart with the highest MAP log

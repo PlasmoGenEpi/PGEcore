@@ -20,9 +20,59 @@ A data frame with the columns \code{n_variables}, \code{n_degenerate},
 and \code{min_ess_tail}, preceded by any \code{group_cols}.
 }
 \description{
-A parameter is degenerate when its draws do not vary (\code{sd} of zero) or its
-R-hat is not finite; R-hat and ESS are undefined for those and they are
-excluded from the R-hat and ESS columns below. \verb{pct_*} values are percentages
-of \code{n_usable}, or \code{NA} when nothing is usable.
+Collapses a per-parameter convergence table (one row per sampled
+parameter, with R-hat and effective sample size) into a single row of
+run-level health indicators. The per-parameter table answers "did this
+parameter mix?"; this summary answers "did this run mix?" so runs can be
+compared across populations, parameter sets, and tools without reading
+hundreds of rows.
 }
+\section{Why one row per run}{
+
+Two failure modes matter in practice and are hard to see per parameter.
+A chain that never moves off its initial state produces constant draws,
+for which R-hat and ESS are undefined rather than bad. In a per-parameter
+table that shows up as scattered \code{NA}s and is easy to miss. In this
+summary it shows up as a high \code{pct_degenerate}, which is the standing
+guard for frozen chains across the parallel-chain wrappers. The second
+failure is broad, mild non-convergence, where no single parameter is
+alarming but a large fraction sit above R-hat 1.01. The \verb{pct_rhat_*}
+columns expose that as a proportion rather than a worst case.
+}
+
+\section{How to read the columns}{
+
+\itemize{
+\item \strong{Degenerate parameters.} A parameter is degenerate when its draws do
+not vary (\code{sd} of zero) or its R-hat is not finite. This can be benign,
+for example a COI fixed at 1 for a monoclonal specimen, or it can mean
+the sampler is stuck. Interpret \code{pct_degenerate} against what the model
+is expected to hold constant. A value near 100\% means the chain did not
+move, whatever the R-hat columns say.
+\item \strong{R-hat.} Computed on usable parameters only. \code{max_rhat} is the worst
+case. The three \verb{pct_rhat_gt_*} columns give the share of usable
+parameters above 1.01 (the strict modern threshold), 1.05 (a common
+working tolerance), and 1.1 (the older lenient cutoff). A well-mixed run
+has a \code{max_rhat} near 1 and small percentages in all three.
+\item \strong{Effective sample size.} \code{ess_bulk} reflects how well posterior means
+and medians are estimated. \code{ess_tail} reflects the quantiles that feed
+credible intervals. The minima flag the worst parameter; the median
+describes the typical one. A rule of thumb is at least 100 effective
+draws per chain for a stable estimate. ESS can be \code{NA} for a parameter
+whose R-hat is finite, and those are skipped rather than collapsing the
+column to \code{NA}.
+}
+
+Because R-hat and ESS are computed on usable parameters only, always read
+them alongside \code{pct_degenerate}. A run with many degenerate parameters can
+look clean on \code{max_rhat} simply because the parameters that would have
+failed were excluded. \verb{pct_*} values are percentages of \code{n_usable}, or
+\code{NA} when nothing is usable.
+
+Convergence is a property of the sampler, not of the estimate. A run can
+mix well and still be inaccurate, and the best-mixing parameter set is
+not necessarily the most accurate one, so report these diagnostics as a
+separate axis from accuracy rather than using them to pick a model.
+}
+
 \keyword{internal}
