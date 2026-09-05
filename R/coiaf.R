@@ -95,7 +95,9 @@ run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
     dplyr::mutate(coverage = sum(.data$reads)) |>
     dplyr::ungroup() |>
     dplyr::mutate(wsmaf = .data$reads / .data$coverage) |>
-    dplyr::select("specimen_name", "snp_name", "seq_base", "wsmaf", "reads")
+    dplyr::select(
+      "specimen_name", "snp_name", "seq_base", "wsmaf", "reads", "coverage"
+    )
 
   if (is.null(plmaf)) {
     message("Calculating population-level minor allele frequencies...")
@@ -146,15 +148,19 @@ run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
   filtered_processed |>
     dplyr::group_by(.data$specimen_name) |>
     dplyr::summarize(
-      coi_freq = coiaf::optimize_coi(
-        tibble::tibble(wsmaf, plmaf, coverage = reads),
+      coi_freq = coiaf_optimize(
+        # coiaf weights each locus by `coverage`, which it documents as the read
+        # depth at that locus. Passing the minor-allele count instead gives every
+        # homozygous-major locus a weight of zero and rails the variant method at
+        # max_coi.
+        tibble::tibble(wsmaf, plmaf, coverage),
         data_type = "real",
         coi_method = "frequency",
         seq_error = seq_error,
         max_coi = max_coi
       ),
-      coi_variant = coiaf::optimize_coi(
-        tibble::tibble(wsmaf, plmaf, coverage = reads),
+      coi_variant = coiaf_optimize(
+        tibble::tibble(wsmaf, plmaf, coverage),
         data_type = "real",
         coi_method = "variant",
         seq_error = seq_error,
@@ -162,6 +168,22 @@ run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
       ),
       .groups = "drop"
     )
+}
+
+#' Call `coiaf::optimize_coi()` and resolve its monoclonal sentinel
+#'
+#' When the frequency method finds no variant loci, coiaf returns `NaN` carrying
+#' an `estimated_coi` attribute (1) rather than the estimate itself. Reading that
+#' attribute keeps monoclonal specimens as COI 1 instead of dropping them.
+#'
+#' @keywords internal
+coiaf_optimize <- function(...) {
+  value <- coiaf::optimize_coi(...)
+  estimated <- attr(value, "estimated_coi")
+  if (is.nan(value) && !is.null(estimated)) {
+    return(as.numeric(estimated))
+  }
+  as.numeric(value)
 }
 
 #' Estimate COI with coiaf from SNP-call and output paths
