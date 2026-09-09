@@ -15,7 +15,7 @@ run_idm_mle_across_loci(
 \item{df}{Formatted input from \code{prepare_input_4_allele_table()} or
 \code{prepare_input_4_aa_calls()}.}
 
-\item{model}{\code{"IDM"} or \code{"OM"}.}
+\item{model}{\code{"IDM"}, \code{"OM"}, \code{"IDM_OM"}, \code{"OM_CC"}, or \code{"IDM_OM_CC"}.}
 
 \item{lambda_initial}{Initial lambda for the numerical solver.}
 

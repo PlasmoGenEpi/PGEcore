@@ -28,7 +28,8 @@ create_moire_input(
   adapt_temp,
   max_runtime,
   n_chains,
-  threads
+  threads,
+  seed = NULL
 )
 }
 \description{

@@ -31,7 +31,11 @@ opts <- list(
     type = "character",
     default = "IDM",
     help = paste0(
-      "OM or IDM. OM for original model; IDM for incomplete-data model. ",
+      "One of: OM (original model), IDM (incomplete-data model), IDM_OM ",
+      "(IDM, falling back to the OM at any locus the IDM leaves unsolved), ",
+      "OM_CC (OM with a continuity correction on lineage prevalence, which ",
+      "resolves loci where a lineage is seen in every sample), IDM_OM_CC ",
+      "(IDM, falling back to OM_CC). ",
       "Default: %default"
     )
   ),

@@ -11,8 +11,7 @@ malariaem_wrapper(
   max_size = "8",
   test_size = "min",
   freq_output = "gt_freq_summary_all.tsv",
-  phase_output = "gt_phase_summary_all.tsv",
-  seed = 1L
+  phase_output = "gt_phase_summary_all.tsv"
 )
 }
 \arguments{
@@ -29,8 +28,6 @@ malariaem_wrapper(
 \item{freq_output}{Frequency summary path. See \emph{Outputs}.}
 
 \item{phase_output}{Phase summary path. See \emph{Outputs}.}
-
-\item{seed}{Random seed.}
 }
 \value{
 The object returned by \code{\link[=run_malariaem]{run_malariaem()}}.
