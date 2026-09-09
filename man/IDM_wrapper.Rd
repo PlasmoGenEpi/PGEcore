@@ -22,7 +22,10 @@ allele table. See \emph{Inputs}.}
 
 \item{slaf_output}{Output TSV path. See \emph{Outputs}.}
 
-\item{model}{\code{"IDM"} (incomplete-data model) or \code{"OM"} (original model).}
+\item{model}{\code{"IDM"} (incomplete-data model), \code{"OM"} (original model), or
+\code{"IDM_OM"} (IDM, falling back to the OM at any locus the IDM leaves
+unsolved), \code{"OM_CC"} (OM with a continuity correction on lineage
+prevalence), or \code{"IDM_OM_CC"} (IDM, falling back to \code{"OM_CC"}).}
 
 \item{lambda_initial}{Initial lambda for the numerical iteration.}
 

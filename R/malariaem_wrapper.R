@@ -395,7 +395,6 @@ run_malariaem <- function(matrix,
 #' @param test_size COI size to test, or `"min"`.
 #' @param freq_output Frequency summary path. See *Outputs*.
 #' @param phase_output Phase summary path. See *Outputs*.
-#' @param seed Random seed.
 #'
 #' @return The object returned by [run_malariaem()].
 #'
@@ -409,13 +408,11 @@ malariaem_wrapper <- function(allele_table,
                               max_size = "8",
                               test_size = "min",
                               freq_output = "gt_freq_summary_all.tsv",
-                              phase_output = "gt_phase_summary_all.tsv",
-                              seed = 1L) {
+                              phase_output = "gt_phase_summary_all.tsv") {
   options(dplyr.summarise.inform = FALSE)
   check_suggested_pkg("malaria.em", "malaria.em via malariaem_wrapper()")
   check_suggested_pkg("checkmate", "malaria.em input validation")
 
-  set.seed(as.numeric(seed))
   matrix <- load_malariaem_allele_table(allele_table)
 
   tg <- NULL

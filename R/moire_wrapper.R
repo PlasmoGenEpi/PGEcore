@@ -18,7 +18,6 @@ moire_supports_seed <- function() {
 #'
 #' @keywords internal
 create_moire_input <- function(input_path,
-                               seed = NULL,
                                allow_relatedness,
                                burnin,
                                samples_per_chain,
@@ -41,7 +40,8 @@ create_moire_input <- function(input_path,
                                adapt_temp,
                                max_runtime,
                                n_chains,
-                               threads) {
+                               threads,
+                               seed = NULL) {
   check_suggested_pkg("checkmate", "MOIRE input validation")
 
   message("Reading input data")
@@ -189,10 +189,9 @@ run_moire <- function(moire_object) {
 
   moire_parameters <- moire_object$moire_parameters
 
-  # A seed is only forwarded when one was requested. Asking for a seed that the
-  # installed MOIRE cannot honour is an error rather than a silent fall-through
-  # to non-deterministic sampling. Checked before the data is loaded so the
-  # failure is immediate rather than arriving after the work.
+  # Forward a seed only when one was requested. A build that cannot honour it
+  # errors rather than sampling non-deterministically under a recorded seed.
+  # Checked before the data is loaded so the failure is immediate.
   seed_args <- list()
   if (!is.null(moire_parameters$seed)) {
     if (!moire_supports_seed()) {
@@ -603,7 +602,6 @@ prepare_moire_acceptance_rates_output <- function(mcmc_results) {
 #'
 #' @export
 moire_wrapper <- function(allele_table,
-                          seed = NULL,
                           allow_relatedness = TRUE,
                           burnin = 10000L,
                           samples_per_chain = 1000L,
@@ -634,7 +632,8 @@ moire_wrapper <- function(allele_table,
                           effective_coi_output = "effective_coi_output.tsv",
                           mcmc_results_output = NULL,
                           convergence_output = "convergence_diag.tsv",
-                          acceptance_rates_output = NULL) {
+                          acceptance_rates_output = NULL,
+                          seed = NULL) {
   check_suggested_pkg("moire", "MOIRE analysis via moire_wrapper()")
   check_suggested_pkg("checkmate", "MOIRE input validation")
   check_suggested_pkg("posterior", "MOIRE convergence diagnostics")

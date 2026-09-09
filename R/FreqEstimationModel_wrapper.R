@@ -147,6 +147,16 @@ create_FEM_input <- function(input_data, groups, group_id) {
   }
   list(sample_matrix, alt_alleles, nrow(sample_matrix), monos)
 }
+#' Does the installed FreqEstimationModel accept a seed?
+#'
+#' Checks `mcmc_sampling_parallel()`'s formals for a `seed` argument.
+#'
+#' @return `TRUE` when `mcmc_sampling_parallel()` has a `seed` argument.
+#' @keywords internal
+fem_supports_seed <- function() {
+  "seed" %in% names(formals(FreqEstimationModel::mcmc_sampling_parallel))
+}
+
 
 #' Run FreqEstimationModel MCMC for one group
 #'
@@ -239,14 +249,30 @@ run_FreqEstimationModel <- function(sample_matrix_list,
       frequency_initial = frequency_initial
     )
 
+    # mcmc_sampling_parallel() builds its per-chain RNG streams with RNGseq(),
+    # so the seed must reach it directly; set.seed() alone does not control them.
+    # A build without that argument cannot honour the request, so error rather
+    # than return a result whose recorded seed had no effect.
     set.seed(as.numeric(seed))
-    results <- FreqEstimationModel::mcmc_sampling_parallel(
+    fem_seed_args <- list()
+    if (fem_supports_seed()) {
+      fem_seed_args$seed <- as.integer(seed)
+    } else if (!is.null(seed)) {
+      stop(
+        "current FreqEstimationModel version does not support seeding: ",
+        "mcmc_sampling_parallel() has no `seed` argument (installed version ",
+        as.character(utils::packageVersion("FreqEstimationModel")), "). ",
+        "Its RNG streams are fixed, so --seed cannot change the result.",
+        call. = FALSE
+      )
+    }
+    results <- do.call(FreqEstimationModel::mcmc_sampling_parallel, c(list(
       processed_data_list,
       moi_list,
       frequency_list,
       mcmc_variable_list,
       cores_max = threads
-    )
+    ), fem_seed_args))
 
     burnin <- 1:(0.5 * mcmc_variable_list$no_traces_preburnin)
     if (mcmc_variable_list$no_mcmc_chains > 1) {
