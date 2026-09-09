@@ -17,8 +17,10 @@ FreqEstimationModel_wrapper(
   seed = 1L,
   n_chains = 3L,
   no_traces_preburnin = 10000L,
+  moi_max = 8L,
   thinning_interval = 1L,
-  convergence_output = "convergence_diag.tsv"
+  convergence_output = "convergence_diag.tsv",
+  convergence_summary_output = "convergence_summary.tsv"
 )
 ```
 
@@ -59,6 +61,11 @@ FreqEstimationModel_wrapper(
   cut memory roughly proportionally; see
   [`run_FreqEstimationModel()`](https://plasmogenepi.github.io/PGEcore/reference/run_FreqEstimationModel.md).
 
+- moi_max:
+
+  Largest MOI the model can assign to a specimen. Specimens whose true
+  MOI exceeds it are censored at the ceiling.
+
 - thinning_interval:
 
   Metropolis-Hastings updates per retained trace.
@@ -69,6 +76,11 @@ FreqEstimationModel_wrapper(
 - convergence_output:
 
   Output TSV path for per-group MCMC convergence diagnostics. See
+  *Outputs*.
+
+- convergence_summary_output:
+
+  Output TSV path for the per-group run-level convergence summary. See
   *Outputs*.
 
 ## Value

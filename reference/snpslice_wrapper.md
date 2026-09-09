@@ -1,9 +1,8 @@
 # Estimate multilocus allele frequency and COI with SNP-Slice
 
 Estimates multilocus allele frequencies and per-specimen COI. Requires
-**snp.slicer** (with multi-chain sampling, `estimate`, and
-[`snp.slicer::convergence_diagnostics()`](https://plasmogenepi.github.io/snp.slicer/reference/convergence_diagnostics.html))
-and **variantstring** 1.x (Suggests).
+**snp.slicer** (with multi-chain sampling and `estimate`) and
+**variantstring** 1.x (Suggests).
 
 ## Usage
 
@@ -54,7 +53,7 @@ snpslice_wrapper(
 
 - convergence_output:
 
-  Path for MCMC convergence-diagnostics TSV. See *Outputs*.
+  Path for per-restart optimization-diagnostics TSV. See *Outputs*.
 
 - specimen_name_col, target_name_col, target_value_col,
   target_count_col:
@@ -132,11 +131,20 @@ Invisibly, a list with `mlaf`, `coi`, and `convergence` tibbles.
 - **`mlaf_output`**: Multilocus allele frequencies (`group_id`,
   `variant`, `freq`, …).
 
-- **`coi_output`**: COI estimates (`specimen_name`, `coi`; uncertainty
-  columns when `estimator = "posterior"`).
+- **`coi_output`**: COI estimates (`specimen_name`, `coi`,
+  `coi_cons_weighted`; uncertainty columns when
+  `estimator = "posterior"`). `coi` counts every strain assigned to a
+  host in the best restart. `coi_cons_weighted` pools haplotype
+  membership across all restarts and weights each haplotype by its
+  consensus support, which counters the dictionary over-parameterisation
+  that inflates `coi`.
 
-- **`convergence_output`**: MCMC diagnostics (`variable`, `mean`,
-  `median`, `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`).
+- **`convergence_output`**: Per-restart optimization diagnostics
+  (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
+  `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`,
+  `coi_mean`, `coi_ccc_to_best`). SNP-Slice reports the restart with the
+  highest MAP log posterior rather than pooling chains, so between-chain
+  R-hat and ESS do not describe its output and are not emitted.
 
 ### Running
 

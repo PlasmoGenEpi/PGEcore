@@ -63,8 +63,10 @@ parallel helpers (<strong>foreach</strong>, <strong>doMC</strong>, <strong>plyr<
 <span>  seed <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  n_chains <span class="op">=</span> <span class="fl">3L</span>,</span>
 <span>  no_traces_preburnin <span class="op">=</span> <span class="fl">10000L</span>,</span>
+<span>  moi_max <span class="op">=</span> <span class="fl">8L</span>,</span>
 <span>  thinning_interval <span class="op">=</span> <span class="fl">1L</span>,</span>
-<span>  convergence_output <span class="op">=</span> <span class="st">"convergence_diag.tsv"</span></span>
+<span>  convergence_output <span class="op">=</span> <span class="st">"convergence_diag.tsv"</span>,</span>
+<span>  convergence_summary_output <span class="op">=</span> <span class="st">"convergence_summary.tsv"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -107,6 +109,11 @@ burn-in. Lower values cut memory roughly proportionally; see
 <code><a href="run_FreqEstimationModel.html">run_FreqEstimationModel()</a></code>.</p></dd>
 
 
+<dt id="arg-moi-max">moi_max<a class="anchor" aria-label="anchor" href="#arg-moi-max"></a></dt>
+<dd><p>Largest MOI the model can assign to a specimen. Specimens
+whose true MOI exceeds it are censored at the ceiling.</p></dd>
+
+
 <dt id="arg-thinning-interval">thinning_interval<a class="anchor" aria-label="anchor" href="#arg-thinning-interval"></a></dt>
 <dd><p>Metropolis-Hastings updates per retained trace.
 <code>no_traces_preburnin * thinning_interval</code> is the total sampler effort, so
@@ -117,6 +124,11 @@ quarter of the draws.</p></dd>
 <dt id="arg-convergence-output">convergence_output<a class="anchor" aria-label="anchor" href="#arg-convergence-output"></a></dt>
 <dd><p>Output TSV path for per-group MCMC convergence
 diagnostics. See <em>Outputs</em>.</p></dd>
+
+
+<dt id="arg-convergence-summary-output">convergence_summary_output<a class="anchor" aria-label="anchor" href="#arg-convergence-summary-output"></a></dt>
+<dd><p>Output TSV path for the per-group
+run-level convergence summary. See <em>Outputs</em>.</p></dd>
 
 </dl></div>
     <div class="section level2">

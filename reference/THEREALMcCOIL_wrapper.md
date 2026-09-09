@@ -25,7 +25,8 @@ THEREALMcCOIL_wrapper(
   err_method = 1L,
   seed = 321L,
   n_chains = 3L,
-  convergence_output = "convergence_diag.tsv"
+  convergence_output = "convergence_diag.tsv",
+  convergence_summary_output = "convergence_summary.tsv"
 )
 ```
 
@@ -101,6 +102,10 @@ THEREALMcCOIL_wrapper(
 - convergence_output:
 
   Output TSV of MCMC convergence diagnostics. See *Outputs*.
+
+- convergence_summary_output:
+
+  Output TSV of the run-level convergence summary. See *Outputs*.
 
 ## Value
 

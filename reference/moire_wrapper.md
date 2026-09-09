@@ -39,6 +39,7 @@ moire_wrapper(
   effective_coi_output = "effective_coi_output.tsv",
   mcmc_results_output = NULL,
   convergence_output = "convergence_diag.tsv",
+  convergence_summary_output = "convergence_summary.tsv",
   acceptance_rates_output = NULL,
   seed = NULL
 )
@@ -153,6 +154,10 @@ moire_wrapper(
 - convergence_output:
 
   Output path for MCMC convergence diagnostics. See *Outputs*.
+
+- convergence_summary_output:
+
+  Output path for the run-level convergence summary. See *Outputs*.
 
 - acceptance_rates_output:
 

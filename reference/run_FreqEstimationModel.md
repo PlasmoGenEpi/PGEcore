@@ -12,7 +12,8 @@ run_FreqEstimationModel(
   seed,
   n_chains = 3L,
   no_traces_preburnin = 10000L,
-  thinning_interval = 1L
+  thinning_interval = 1L,
+  moi_max = 8L
 )
 ```
 

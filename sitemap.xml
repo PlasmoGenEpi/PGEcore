@@ -126,6 +126,7 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/prepare_moire_convergence_output.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/prepare_snpslice_af_output.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/prepare_snpslice_coi_output.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/prepare_snpslice_optim_output.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/prev_parse_aa_calls.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/prev_parse_mh_calls.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/process_input_loci_of_interest_per_microhaps.html</loc></url>
@@ -165,6 +166,8 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/slaf_from_mhaps_freqs.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/slaf_from_stave_mlaf.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/snp_calls_to_vcf.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_ccc.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_consensus_coi.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_wrapper.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/stop_if_output_exists.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/stop_on_duplicate_names.html</loc></url>
@@ -174,6 +177,7 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/summarize_allele_table.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/summarize_and_write_moire_results.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/summarize_convergence_draws.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/summarize_convergence_run.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/translate_loci_of_interest.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/translate_microhap_seqs.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/unique_haps_from_allele_table.html</loc></url>

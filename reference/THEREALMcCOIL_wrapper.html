@@ -71,7 +71,8 @@ single-locus allele frequencies. Compiled C routines (<code>McCOIL_categorical</
 <span>  err_method <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">321L</span>,</span>
 <span>  n_chains <span class="op">=</span> <span class="fl">3L</span>,</span>
-<span>  convergence_output <span class="op">=</span> <span class="st">"convergence_diag.tsv"</span></span>
+<span>  convergence_output <span class="op">=</span> <span class="st">"convergence_diag.tsv"</span>,</span>
+<span>  convergence_summary_output <span class="op">=</span> <span class="st">"convergence_summary.tsv"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -149,6 +150,11 @@ required for the Gelman-Rubin R-hat diagnostic.</p></dd>
 <dt id="arg-convergence-output">convergence_output<a class="anchor" aria-label="anchor" href="#arg-convergence-output"></a></dt>
 <dd><p>Output TSV of MCMC convergence diagnostics. See
 <em>Outputs</em>.</p></dd>
+
+
+<dt id="arg-convergence-summary-output">convergence_summary_output<a class="anchor" aria-label="anchor" href="#arg-convergence-summary-output"></a></dt>
+<dd><p>Output TSV of the run-level convergence
+summary. See <em>Outputs</em>.</p></dd>
 
 </dl></div>
     <div class="section level2">
