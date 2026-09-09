@@ -14,6 +14,16 @@ opts <- list(
     )
   ),
   make_option(
+    "--seed",
+    type = "integer",
+    default = NULL,
+    help = paste0(
+      "Integer seed for reproducible sampling. Omitted by default, leaving ",
+      "MOIRE non-deterministic. Errors if the installed MOIRE has no `seed` ",
+      "argument rather than silently ignoring the request."
+    )
+  ),
+  make_option(
     "--allow_relatedness",
     type = "logical",
     default = TRUE,
@@ -263,6 +273,7 @@ if (is.null(arg$allele_table)) {
 invisible(
   moire_wrapper(
     allele_table = arg$allele_table,
+    seed = arg$seed,
     allow_relatedness = arg$allow_relatedness,
     burnin = arg$burnin,
     samples_per_chain = arg$samples_per_chain,
