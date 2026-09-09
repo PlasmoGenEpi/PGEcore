@@ -149,10 +149,6 @@ run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
     dplyr::group_by(.data$specimen_name) |>
     dplyr::summarize(
       coi_freq = coiaf_optimize(
-        # coiaf weights each locus by `coverage`, which it documents as the read
-        # depth at that locus. Passing the minor-allele count instead gives every
-        # homozygous-major locus a weight of zero and rails the variant method at
-        # max_coi.
         tibble::tibble(wsmaf, plmaf, coverage),
         data_type = "real",
         coi_method = "frequency",
@@ -174,7 +170,9 @@ run_coiaf <- function(snp_calls, plmaf = NULL, seq_error = 0.01, max_coi = 25) {
 #'
 #' When the frequency method finds no variant loci, coiaf returns `NaN` carrying
 #' an `estimated_coi` attribute (1) rather than the estimate itself. Reading that
-#' attribute keeps monoclonal specimens as COI 1 instead of dropping them.
+#' attribute keeps monoclonal specimens as COI 1 instead of dropping them. This wrapper 
+#' therefore returns the estimate itself otherwise this script would return NA for all
+#' monoclonal samples 
 #'
 #' @keywords internal
 coiaf_optimize <- function(...) {
