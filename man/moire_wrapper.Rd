@@ -37,7 +37,8 @@ moire_wrapper(
   mcmc_results_output = NULL,
   convergence_output = "convergence_diag.tsv",
   convergence_summary_output = "convergence_summary.tsv",
-  acceptance_rates_output = NULL
+  acceptance_rates_output = NULL,
+  seed = NULL
 )
 }
 \arguments{

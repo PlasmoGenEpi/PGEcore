@@ -635,7 +635,8 @@ moire_wrapper <- function(allele_table,
                           mcmc_results_output = NULL,
                           convergence_output = "convergence_diag.tsv",
                           convergence_summary_output = "convergence_summary.tsv",
-                          acceptance_rates_output = NULL) {
+                          acceptance_rates_output = NULL,
+                          seed = NULL) {
   check_suggested_pkg("moire", "MOIRE analysis via moire_wrapper()")
   check_suggested_pkg("checkmate", "MOIRE input validation")
   check_suggested_pkg("posterior", "MOIRE convergence diagnostics")
