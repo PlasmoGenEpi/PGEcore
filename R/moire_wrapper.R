@@ -1,3 +1,16 @@
+#' Does the installed MOIRE accept a seed?
+#'
+#' Feature detection rather than a version comparison: whether
+#' [moire::run_mcmc()] takes a `seed` argument is exactly the question, and the
+#' formals answer it directly. A version string would need updating every time
+#' the feature moves between branches or releases.
+#'
+#' @return `TRUE` when `moire::run_mcmc()` has a `seed` argument.
+#' @keywords internal
+moire_supports_seed <- function() {
+  "seed" %in% names(formals(moire::run_mcmc))
+}
+
 #' Create a MOIRE input object from an allele table
 #'
 #' Reads a TSV of allele presence, validates columns, and packages MCMC
@@ -27,7 +40,8 @@ create_moire_input <- function(input_path,
                                adapt_temp,
                                max_runtime,
                                n_chains,
-                               threads) {
+                               threads,
+                               seed = NULL) {
   check_suggested_pkg("checkmate", "MOIRE input validation")
 
   message("Reading input data")
@@ -81,6 +95,7 @@ create_moire_input <- function(input_path,
   moire_object <- list(
     moire_data = moire_data,
     moire_parameters = list(
+      seed = seed,
       allow_relatedness = allow_relatedness,
       burnin = burnin,
       samples_per_chain = samples_per_chain,
@@ -172,10 +187,28 @@ create_moire_input <- function(input_path,
 run_moire <- function(moire_object) {
   check_suggested_pkg("moire", "MCMC analysis via run_moire()")
 
-  moire_data <- moire::load_long_form_data(moire_object$moire_data)
   moire_parameters <- moire_object$moire_parameters
 
-  moire::run_mcmc(
+  # Forward a seed only when one was requested. A build that cannot honour it
+  # errors rather than sampling non-deterministically under a recorded seed.
+  # Checked before the data is loaded so the failure is immediate.
+  seed_args <- list()
+  if (!is.null(moire_parameters$seed)) {
+    if (!moire_supports_seed()) {
+      stop(
+        "current moire version does not support seeding: ",
+        "moire::run_mcmc() has no `seed` argument (installed version ",
+        as.character(utils::packageVersion("moire")), "). ",
+        "Omit --seed, or install a MOIRE build that accepts one.",
+        call. = FALSE
+      )
+    }
+    seed_args$seed <- as.integer(moire_parameters$seed)
+  }
+
+  moire_data <- moire::load_long_form_data(moire_object$moire_data)
+
+  do.call(moire::run_mcmc, c(list(
     moire_data,
     moire_data$is_missing,
     allow_relatedness = moire_parameters$allow_relatedness,
@@ -200,7 +233,7 @@ run_moire <- function(moire_object) {
     max_runtime = moire_parameters$max_runtime,
     num_chains = moire_parameters$num_chains,
     num_cores = moire_parameters$num_cores
-  )
+  ), seed_args))
 }
 
 #' Stop early when MOIRE recorded no draws for some chain
@@ -562,6 +595,11 @@ prepare_moire_acceptance_rates_output <- function(mcmc_results) {
 #'
 #' @return Invisibly, the MOIRE MCMC result object.
 #'
+#' @param seed Integer seed for reproducible sampling, or `NULL` to leave MOIRE
+#'   non-deterministic. Support is detected from `moire::run_mcmc()`'s formals;
+#'   supplying a seed to a MOIRE build that cannot honour it is an error rather
+#'   than a silent fall-through to unseeded sampling.
+#'
 #' @seealso [run_moire()], `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
@@ -607,6 +645,7 @@ moire_wrapper <- function(allele_table,
   }
 
   moire_object <- create_moire_input(
+    seed = seed,
     allele_table,
     allow_relatedness,
     burnin,

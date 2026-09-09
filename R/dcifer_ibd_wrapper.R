@@ -545,7 +545,6 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 #' @param use_estm If `TRUE`, use `dcifer::ibdEstM()` instead of
 #'   `dcifer::ibdPair()`.
 #' @param threads Number of parallel workers.
-#' @param seed Random seed.
 #' @param verbose Print parallel worker output.
 #'
 #' @return The relatedness tibble (also written to `relatedness_output`).
@@ -567,7 +566,6 @@ dcifer_ibd_wrapper <- function(allele_table,
                                alpha = 0.05,
                                use_estm = FALSE,
                                threads = 1L,
-                               seed = 1L,
                                verbose = FALSE) {
   check_suggested_pkg("dcifer", "IBD relatedness via dcifer_ibd_wrapper()")
   check_suggested_pkgs(
@@ -581,7 +579,6 @@ dcifer_ibd_wrapper <- function(allele_table,
       call. = FALSE
     )
   }
-  set.seed(seed)
 
   allele_tbl <- create_dcifer_allele_table_input(
     allele_table,

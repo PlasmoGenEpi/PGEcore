@@ -77,7 +77,7 @@
   #         5) the inverse Fisher information (estimates for the parameter epsilon are omitted if option model="OM" is specified).
   #
   # @examples MLE_IDM(40, 1, c(23, 27), 1, 0.1)
-  MLE <- function(N, N_k, n_0 = 0, model = "IDM", lambda_initial = 1, eps_initial = 0.1) {
+  MLE <- function(N, N_k, n_0 = 0, model = "IDM", lambda_initial = 1, eps_initial = 0.1, continuity = 0) {
     eps <- 1e-12
     n <- length(N_k)
     if (!is.numeric(N)) {
@@ -125,7 +125,7 @@
                 names(final) <- c("MOI parameter lambda", "average MOI", "lineage frequencies", "inverse Fisher information", "inverse Fisher information adjusted for average MOI")
               }
               final
-            } else if (min(N - N_k) == 0) {
+            } else if (continuity == 0 && min(N - N_k) == 0) {
               final <- list(0, Inf, Inf, NA, NA, NA)
               names(final) <- c("probability of lineages remain undetected", "MOI parameter lambda", "average MOI", "lineage frequencies", "inverse Fisher information", "inverse Fisher information adjusted for average MOI")
               if (is.element(model, c("OM"))) {
@@ -134,7 +134,7 @@
               }
               final
             } else {
-              final <- MLE1(N, N_k, n_0, model, lambda_initial, eps_initial)
+              final <- MLE1(N, N_k, n_0, model, lambda_initial, eps_initial, continuity)
               final
             }
           } else { # n_0>0
@@ -156,7 +156,7 @@
                 #              }
                 final
               } else {
-                final <- MLE1(N, N_k, n_0, model, lambda_initial, eps_initial)
+                final <- MLE1(N, N_k, n_0, model, lambda_initial, eps_initial, continuity)
                 final
               }
             }
@@ -169,17 +169,17 @@
 
   #---------------------------------internal function-------------------------------
 
-  MLE1 <- function(N, N_k, n_0 = 0, model = "IDM", lambda_initial = 1, eps_initial = 0.1) {
+  MLE1 <- function(N, N_k, n_0 = 0, model = "IDM", lambda_initial = 1, eps_initial = 0.1, continuity = 0) {
     if (model == "OM") {
       if (n_0 > 0) {
         print(paste("Option model= `OM' neglects n_0=", n_0, " samples and adjusts sample size to N=", N - n_0, sep = ""))
       }
-      MLE_OM(N - n_0, N_k, lambda_initial)
+      MLE_OM(N - n_0, N_k, lambda_initial, continuity)
     } else if (model == "IDM") {
       if (n_0 > 0) {
         MLE_IDM(N, N_k, n_0, lambda_initial, eps_initial)
       } else {
-        inp <- MLE_OM(N - n_0, N_k, lambda_initial)
+        inp <- MLE_OM(N - n_0, N_k, lambda_initial, continuity)
         FI <- inp[[4]]
         n <- length(inp[[3]])
         FInf <- array(NA, c(n + 2, n + 2))
@@ -480,10 +480,14 @@
   #
   # @examples MLE(97, c(22, 25, 49, 32, 18))
   #
-  MLE_OM <- function(N, Nk, la = 1) {
+  MLE_OM <- function(N, Nk, la = 1, continuity = 0) {
     sel <- Nk
     Nk <- sel[sel > 0]
-    nk <- Nk / N
+    # A lineage seen in every sample puts n_k at 1, where log(1 - n_k(1 - e^-lam))
+    # collapses to -lam and cancels the leading lam: the score equation then has
+    # no positive root and the MLE does not exist. continuity > 0 holds n_k off
+    # that boundary. continuity = 0 is the published estimator.
+    nk <- if (continuity > 0) (Nk + continuity) / (N + 2 * continuity) else Nk / N
     l1 <- 2.5 # initial value
     l0 <- 0
     eps <- 10^(-8) # precision

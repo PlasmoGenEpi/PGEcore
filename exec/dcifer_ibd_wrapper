@@ -86,12 +86,6 @@ opts <- list(
     help = "Number of threads to use. Optional."
   ),
   make_option(
-    "--seed",
-    type = "integer",
-    default = 1,
-    help = "Random number seed. Optional."
-  ),
-  make_option(
     c("-v", "--verbose"),
     action = "store_true",
     default = FALSE,
@@ -129,7 +123,6 @@ invisible(
     alpha = arg$alpha,
     use_estm = isTRUE(arg$use_estm),
     threads = arg$threads,
-    seed = arg$seed,
     verbose = isTRUE(arg$verbose) || isTRUE(arg$v)
   )
 )

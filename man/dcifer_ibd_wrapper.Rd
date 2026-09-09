@@ -18,7 +18,6 @@ dcifer_ibd_wrapper(
   alpha = 0.05,
   use_estm = FALSE,
   threads = 1L,
-  seed = 1L,
   verbose = FALSE
 )
 }
@@ -46,8 +45,6 @@ the allele / COI / frequency tables.}
 \code{dcifer::ibdPair()}.}
 
 \item{threads}{Number of parallel workers.}
-
-\item{seed}{Random seed.}
 
 \item{verbose}{Print parallel worker output.}
 }

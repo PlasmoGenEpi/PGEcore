@@ -59,12 +59,6 @@ opts <- list(
     help = "Output phasing TSV (specimen_name, target_name, seq, gt_id, posterior_est, phase_id).",
     type = "character",
     default = "gt_phase_summary_all.tsv"
-  ),
-  make_option(
-    "--seed",
-    help = "seed",
-    type = "integer",
-    default = 1
   )
 )
 
@@ -81,7 +75,6 @@ invisible(
     max_size = arg$max_size,
     test_size = arg$test_size,
     freq_output = arg$freq_output,
-    phase_output = arg$phase_output,
-    seed = arg$seed
+    phase_output = arg$phase_output
   )
 )

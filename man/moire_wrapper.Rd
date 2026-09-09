@@ -106,6 +106,11 @@ summary. See \emph{Outputs}.}
 
 \item{acceptance_rates_output}{Optional output path for parallel-tempering
 swap acceptance rates. Only meaningful when \code{pt_chains > 1}.}
+
+\item{seed}{Integer seed for reproducible sampling, or \code{NULL} to leave MOIRE
+non-deterministic. Support is detected from \code{moire::run_mcmc()}'s formals;
+supplying a seed to a MOIRE build that cannot honour it is an error rather
+than a silent fall-through to unseeded sampling.}
 }
 \value{
 Invisibly, the MOIRE MCMC result object.
