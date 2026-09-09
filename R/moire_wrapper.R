@@ -586,6 +586,8 @@ prepare_moire_acceptance_rates_output <- function(mcmc_results) {
 #' @param effective_coi_output Output path for effective COI summary TSV. See
 #'   *Outputs*.
 #' @param mcmc_results_output Optional RDS path for full MCMC results.
+#' @param convergence_summary_output Output path for the run-level convergence
+#'   summary. See *Outputs*.
 #' @param convergence_output Output path for MCMC convergence diagnostics.
 #'   See *Outputs*.
 #' @param acceptance_rates_output Optional output path for parallel-tempering
@@ -632,6 +634,7 @@ moire_wrapper <- function(allele_table,
                           effective_coi_output = "effective_coi_output.tsv",
                           mcmc_results_output = NULL,
                           convergence_output = "convergence_diag.tsv",
+                          convergence_summary_output = "convergence_summary.tsv",
                           acceptance_rates_output = NULL,
                           seed = NULL) {
   check_suggested_pkg("moire", "MOIRE analysis via moire_wrapper()")
@@ -681,9 +684,14 @@ moire_wrapper <- function(allele_table,
     effective_coi_output
   )
 
+  convergence_diag <- prepare_moire_convergence_output(moire_results)
   readr::write_tsv(
-    prepare_moire_convergence_output(moire_results),
+    convergence_diag,
     convergence_output
+  )
+  readr::write_tsv(
+    summarize_convergence_run(convergence_diag),
+    convergence_summary_output
   )
 
   if (!is.null(acceptance_rates_output)) {

@@ -38,8 +38,8 @@ snpslice_wrapper(
 
 \item{coi_output}{Path for COI TSV. See \emph{Outputs}.}
 
-\item{convergence_output}{Path for MCMC convergence-diagnostics TSV. See
-\emph{Outputs}.}
+\item{convergence_output}{Path for per-restart optimization-diagnostics TSV.
+See \emph{Outputs}.}
 
 \item{specimen_name_col, target_name_col, target_value_col, target_count_col}{Column names in \code{allele_table}.}
 
@@ -76,9 +76,8 @@ Invisibly, a list with \code{mlaf}, \code{coi}, and \code{convergence} tibbles.
 }
 \description{
 Estimates multilocus allele frequencies and per-specimen COI. Requires
-\strong{snp.slicer} (with multi-chain sampling, \code{estimate}, and
-\code{\link[snp.slicer:convergence_diagnostics]{snp.slicer::convergence_diagnostics()}}) and \strong{variantstring} 1.x
-(Suggests).
+\strong{snp.slicer} (with multi-chain sampling and \code{estimate}) and
+\strong{variantstring} 1.x (Suggests).
 }
 \details{
 \subsection{Inputs}{
@@ -95,10 +94,18 @@ matching \code{target_name_col}).
 \itemize{
 \item \strong{\code{mlaf_output}}: Multilocus allele frequencies (\code{group_id}, \code{variant},
 \code{freq}, …).
-\item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi}; uncertainty
-columns when \code{estimator = "posterior"}).
-\item \strong{\code{convergence_output}}: MCMC diagnostics (\code{variable}, \code{mean}, \code{median},
-\code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}).
+\item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi},
+\code{coi_cons_weighted}; uncertainty columns when \code{estimator = "posterior"}).
+\code{coi} counts every strain assigned to a host in the best restart.
+\code{coi_cons_weighted} pools haplotype membership across all restarts and
+weights each haplotype by its consensus support, which counters the
+dictionary over-parameterisation that inflates \code{coi}.
+\item \strong{\code{convergence_output}}: Per-restart optimization diagnostics
+(\code{chain_id}, \code{seed}, \code{map_logpost}, \code{is_best}, \code{map_iteration},
+\code{final_iteration}, \code{plateau_frac}, \code{map_kstar}, \code{map_ktrunc}, \code{coi_mean},
+\code{coi_ccc_to_best}). SNP-Slice reports the restart with the highest MAP log
+posterior rather than pooling chains, so between-chain R-hat and ESS do not
+describe its output and are not emitted.
 }
 }
 

@@ -249,6 +249,16 @@ opts <- list(
     )
   ),
   make_option(
+    "--convergence_summary_output",
+    type = "character",
+    default = "convergence_summary.tsv",
+    help = paste0(
+      "Output run-level convergence summary TSV: one row of degenerate-parameter ",
+      "counts, R-hat exceedance percentages and ESS minima. Optional. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
     "--convergence_output",
     default = "convergence_diag.tsv",
     help = paste0(
@@ -304,6 +314,7 @@ invisible(
     effective_coi_output = arg$effective_coi_output,
     mcmc_results_output = arg$mcmc_results_output,
     convergence_output = arg$convergence_output,
+    convergence_summary_output = arg$convergence_summary_output,
     acceptance_rates_output = arg$acceptance_rates_output
   )
 )

@@ -65,6 +65,15 @@ opts <- list(
     )
   ),
   make_option(
+    "--moi_max",
+    type = "integer",
+    default = 8L,
+    help = paste0(
+      "Largest MOI the model can assign to a specimen. Specimens whose true ",
+      "MOI exceeds it are censored at the ceiling. Optional. Default: %default"
+    )
+  ),
+  make_option(
     "--thinning_interval",
     type = "integer",
     default = 1L,
@@ -73,6 +82,16 @@ opts <- list(
       "no_traces_preburnin * thinning_interval, so 2500 x 4 runs the chain as ",
       "far as the default 10000 x 1 while storing a quarter of the draws. ",
       "Optional. Default: %default"
+    )
+  ),
+  make_option(
+    "--convergence_summary_output",
+    type = "character",
+    default = "convergence_summary.tsv",
+    help = paste0(
+      "Output run-level convergence summary TSV: one row of degenerate-parameter ",
+      "counts, R-hat exceedance percentages and ESS minima. Optional. ",
+      "Default: %default"
     )
   ),
   make_option(
@@ -105,6 +124,8 @@ invisible(
     n_chains = arg$n_chains,
     no_traces_preburnin = arg$no_traces_preburnin,
     thinning_interval = arg$thinning_interval,
-    convergence_output = arg$convergence_output
+    moi_max = arg$moi_max,
+    convergence_output = arg$convergence_output,
+    convergence_summary_output = arg$convergence_summary_output
   )
 )

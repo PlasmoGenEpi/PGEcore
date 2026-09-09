@@ -188,7 +188,8 @@ run_FreqEstimationModel <- function(sample_matrix_list,
                                     seed,
                                     n_chains = 3L,
                                     no_traces_preburnin = 10000L,
-                                    thinning_interval = 1L) {
+                                    thinning_interval = 1L,
+                                    moi_max = 8L) {
   check_suggested_pkgs(
     c("FreqEstimationModel", "plyr", "coda", "abind", "foreach", "doMC"),
     "FreqEstimationModel MCMC"
@@ -222,7 +223,6 @@ run_FreqEstimationModel <- function(sample_matrix_list,
     } else {
       moi_prior <- "Poisson"
     }
-    moi_max <- 8
     moi_hyperparameter <- COI
     moi_size_hyperparameter <- 0.5
     moi_prior_min2 <- NULL
@@ -538,6 +538,10 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 #'   `no_traces_preburnin * thinning_interval` is the total sampler effort, so
 #'   e.g. 2500 x 4 samples as far as the default 10000 x 1 while storing a
 #'   quarter of the draws.
+#' @param moi_max Largest MOI the model can assign to a specimen. Specimens
+#'   whose true MOI exceeds it are censored at the ceiling.
+#' @param convergence_summary_output Output TSV path for the per-group
+#'   run-level convergence summary. See *Outputs*.
 #' @param convergence_output Output TSV path for per-group MCMC convergence
 #'   diagnostics. See *Outputs*.
 #'
@@ -554,8 +558,11 @@ FreqEstimationModel_wrapper <- function(aa_calls,
                                         seed = 1L,
                                         n_chains = 3L,
                                         no_traces_preburnin = 10000L,
+                                        moi_max = 8L,
                                         thinning_interval = 1L,
-                                        convergence_output = "convergence_diag.tsv") {
+                                        convergence_output = "convergence_diag.tsv",
+                                        convergence_summary_output =
+                                          "convergence_summary.tsv") {
   check_suggested_pkg(
     "FreqEstimationModel",
     "multilocus frequencies via FreqEstimationModel_wrapper()"
@@ -605,7 +612,8 @@ FreqEstimationModel_wrapper <- function(aa_calls,
         seed,
         n_chains,
         no_traces_preburnin,
-        thinning_interval
+        thinning_interval,
+        moi_max
       )
       fem_plsf <- format_single_group_output(fem_results)
       convergence_diags[[group]] <- fem_results$convergence_diag |>
@@ -620,7 +628,12 @@ FreqEstimationModel_wrapper <- function(aa_calls,
   overall_output_df <- data.frame(overall_output)
   readr::write_tsv(overall_output_df, mlaf_output)
 
-  readr::write_tsv(dplyr::bind_rows(convergence_diags), convergence_output)
+  convergence_diag <- dplyr::bind_rows(convergence_diags)
+  readr::write_tsv(convergence_diag, convergence_output)
+  readr::write_tsv(
+    summarize_convergence_run(convergence_diag, group_cols = "group_id"),
+    convergence_summary_output
+  )
 
   overall_output_df
 }

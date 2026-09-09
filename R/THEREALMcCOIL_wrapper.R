@@ -139,7 +139,40 @@ prep_input_prop <- function(df) {
   row.names(df_allele2) <- df_allele2$specimen_name
   df_allele2 <- df_allele2[, -1, drop = FALSE]
 
-  list(a1 = df_allele1, a2 = df_allele2)
+  # The two subsets are pivoted independently, so each names its columns in the
+  # order it happens to meet the loci and carries only the specimens that have a
+  # read for that allele. McCOIL_prop sizes both matrices from a1 and reads them
+  # as flat vectors, so anything not on a shared grid pairs one locus's allele-1
+  # count with another locus's allele-2 count -- the likelihood never improves
+  # and every specimen stays at its starting COI. Put both on the full
+  # specimen x locus grid; an absent combination is a count of zero, and no
+  # specimen is dropped for lacking one of the two alleles.
+  specimens <- unique(df_with_allele_idx$specimen_name)
+  loci <- unique(df_with_allele_idx$snp_name)
+  on_grid <- function(d) {
+    out <- matrix(0, nrow = length(specimens), ncol = length(loci),
+                  dimnames = list(specimens, loci))
+    r <- intersect(specimens, rownames(d))
+    cl <- intersect(loci, colnames(d))
+    if (length(r) > 0 && length(cl) > 0) {
+      out[r, cl] <- as.matrix(d[r, cl, drop = FALSE])
+    }
+    as.data.frame(out)
+  }
+
+  a1 <- on_grid(df_allele1)
+  a2 <- on_grid(df_allele2)
+
+  # McCOIL_prop reads a locus as missing only when a count is negative; its
+  # likelihood divides by the two counts, so a locus with no reads for either
+  # allele gives 0/0 and turns the whole per-specimen sum into NaN. No proposal
+  # then clears the acceptance test and that specimen keeps its starting COI for
+  # the entire chain. Mark uncovered specimen-locus pairs as missing instead.
+  uncovered <- (a1 + a2) == 0
+  a1[uncovered] <- -1
+  a2[uncovered] <- -1
+
+  list(a1 = a1, a2 = a2)
 }
 
 #' Run a single McCOIL chain and return its per-iteration trace
@@ -474,6 +507,8 @@ mccoil_blank <- function(x) {
 #' @param seed Random seed for the first chain; chain `i` uses `seed + i - 1`.
 #' @param n_chains Number of independent MCMC chains. More than one chain is
 #'   required for the Gelman-Rubin R-hat diagnostic.
+#' @param convergence_summary_output Output TSV of the run-level convergence
+#'   summary. See *Outputs*.
 #' @param convergence_output Output TSV of MCMC convergence diagnostics. See
 #'   *Outputs*.
 #'
@@ -499,7 +534,9 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
                                   err_method = 1L,
                                   seed = 321L,
                                   n_chains = 3L,
-                                  convergence_output = "convergence_diag.tsv") {
+                                  convergence_output = "convergence_diag.tsv",
+                                  convergence_summary_output =
+                                    "convergence_summary.tsv") {
   if (mccoil_blank(snp_calls)) {
     stop("--snp_calls must be set", call. = FALSE)
   }
@@ -549,6 +586,10 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
     burnin = burnin
   )
   readr::write_tsv(convergence, convergence_output)
+  convergence_summary <- summarize_convergence_run(convergence)
+  readr::write_tsv(convergence_summary, convergence_summary_output)
 
-  invisible(c(df_formated, list(convergence = convergence)))
+  invisible(c(df_formated, list(
+    convergence = convergence, convergence_summary = convergence_summary
+  )))
 }

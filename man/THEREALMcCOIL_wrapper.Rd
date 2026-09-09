@@ -21,7 +21,8 @@ THEREALMcCOIL_wrapper(
   err_method = 1L,
   seed = 321L,
   n_chains = 3L,
-  convergence_output = "convergence_diag.tsv"
+  convergence_output = "convergence_diag.tsv",
+  convergence_summary_output = "convergence_summary.tsv"
 )
 }
 \arguments{
@@ -62,6 +63,9 @@ required for the Gelman-Rubin R-hat diagnostic.}
 
 \item{convergence_output}{Output TSV of MCMC convergence diagnostics. See
 \emph{Outputs}.}
+
+\item{convergence_summary_output}{Output TSV of the run-level convergence
+summary. See \emph{Outputs}.}
 }
 \value{
 A list with \code{slaf}, \code{coi} and \code{convergence} (invisibly after writing

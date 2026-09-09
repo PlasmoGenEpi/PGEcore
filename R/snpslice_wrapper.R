@@ -176,6 +176,91 @@ prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
   af_tib
 }
 
+#' Consensus COI across SNP-Slice restarts
+#'
+#' Pools the strain assignments from several independent SNP-Slice restarts
+#' into one per-host complexity of infection (COI) that discounts strains
+#' the restarts do not agree on.
+#'
+#' @section Why this exists:
+#' SNP-Slice fits allele frequencies well but over-parameterizes the strain
+#' dictionary to do so: it adds many low-support strains, often carried by a
+#' single host. Each such strain adds a full +1 to that host's COI while
+#' contributing almost nothing to the frequencies, so the raw row sum of the
+#' allocation matrix over-counts COI. On top of that, restarts are independent
+#' optimizations that land on different dictionaries, so any single restart's
+#' assignments are partly noise. This function addresses both problems by
+#' asking, per host and per strain, how consistently that assignment is
+#' recovered across the different chains, and weighting the count accordingly.
+#'
+#' @section How it works:
+#' 1. **Match strains across restarts by sequence.** A strain index means
+#'    nothing across restarts, so haplotypes are keyed by their dictionary
+#'    row (the concatenated allele string). Duplicate rows within a restart
+#'    are collapsed before counting.
+#' 2. **Build a membership matrix.** `membership[i, h]` is the fraction of
+#'    restarts in which host `i` carries haplotype `h`. Assignments
+#'    recovered by every restart score 1; those seen in one restart out of
+#'    ten score 0.1.
+#' 3. **Weight each haplotype by cohort support.** Support is
+#'    `colSums(membership)`, the expected number of hosts carrying `h`.
+#'    Each haplotype gets weight `1 - exp(-support / mean(support))`.
+#'    This is a smooth discount rather than a threshold: a strain with no
+#'    support contributes 0, one of average commonness contributes about
+#'    0.63, and a common strain contributes fully. Hard thresholds were
+#'    tested and rejected because the best cutoff differed by population
+#'    and a small wobble in support flipped whole-strain counts.
+#' 4. **Sum and floor.** Host COI is `membership %*% weights`, floored at 1
+#'    so every host is counted as at least one infection.
+#'
+#' Normalizing support by its mean, rather than a fixed host count, is what
+#' keeps the estimate from drifting with panel or cohort size. More loci
+#' resolve more strains, which lowers the mean support, so the same absolute
+#' support earns a higher weight. More hosts raise the mean, so the same
+#' support earns a lower weight. Both adjustments are the desired direction.
+#'
+#' In benchmarking on simulated populations this consensus estimate beat
+#' the same weighting applied to a single restart, nearly removed the loci
+#' drift, and was more reproducible between independent seeds. The gain
+#' saturates at roughly three restarts.
+#'
+#' @param chains List of per-restart results, or a single result object.
+#' @param estimate Point estimate to read from each restart, `"map"` or
+#'   `"final_sample"`.
+#' @return Numeric vector, one consensus COI per host, floored at 1.
+#' @keywords internal
+snpslice_consensus_coi <- function(chains, estimate) {
+  if (!is.null(chains) && !is.null(chains$map_allocation_matrix)) {
+    chains <- list(chains)
+  }
+  per_chain <- lapply(chains, function(ch) {
+    mats <- snp.slicer:::point_estimate_matrices(ch, estimate)
+    A <- mats$A
+    D <- mats$D
+    haplotype <- apply(D, 1L, paste0, collapse = "")
+    columns <- split(seq_len(ncol(A)), haplotype)
+    lapply(columns, function(k) which(rowSums(A[, k, drop = FALSE]) > 0))
+  })
+  n_hosts <- nrow(snp.slicer:::point_estimate_matrices(chains[[1L]], estimate)$A)
+  haplotypes <- unique(unlist(lapply(per_chain, names), use.names = FALSE))
+  membership <- matrix(0, nrow = n_hosts, ncol = length(haplotypes),
+                       dimnames = list(NULL, haplotypes))
+  for (chain in per_chain) {
+    for (h in names(chain)) {
+      membership[chain[[h]], h] <- membership[chain[[h]], h] + 1
+    }
+  }
+  membership <- membership / length(per_chain)
+  support <- colSums(membership)
+  mean_support <- if (length(support) == 0L) 0 else mean(support)
+  weights <- if (mean_support > 0) {
+    1 - exp(-support / mean_support)
+  } else {
+    rep(0, length(support))
+  }
+  pmax(as.vector(membership %*% weights), 1)
+}
+
 #' Format SNP-Slice COI estimates
 #'
 #' @keywords internal
@@ -191,15 +276,117 @@ prepare_snpslice_coi_output <- function(snpslice_res,
   if (!identical(estimator, "posterior")) {
     coi_tib <- dplyr::select(coi_tib, -"coi_sd", -"coi_lower", -"coi_upper")
   }
-  coi_tib
+  chains <- if (is.null(snpslice_res$chains)) {
+    snp.slicer::get_chain(snpslice_res, NULL)
+  } else {
+    snpslice_res$chains
+  }
+  consensus <- snpslice_consensus_coi(
+    chains,
+    if (identical(estimator, "posterior")) "map" else estimator
+  )
+  if (length(consensus) != nrow(coi_tib)) {
+    stop("Consensus COI length does not match the per-host COI table.",
+         call. = FALSE)
+  }
+  coi_tib$coi_cons_weighted <- consensus
+  dplyr::relocate(coi_tib, "coi_cons_weighted", .after = "coi")
+}
+
+#' Lin's concordance correlation coefficient
+#'
+#' Computes Lin's (1989) concordance correlation coefficient (CCC) for
+#' agreement between two sets of paired measurements. Unlike Pearson's
+#' correlation, the CCC combines precision (tightness of the points about
+#' their best-fit line) and accuracy (how far that line deviates from the
+#' 45-degree line of perfect concordance), so it measures reproducibility
+#' rather than linear association. Values range from -1 to 1, with 1
+#' indicating perfect agreement. Used here to compare per-host COI estimates
+#' between SNP-Slice restarts.
+#'
+#' Only pairs where both `x` and `y` are non-missing are used. Returns
+#' `NA_real_` for fewer than three complete pairs and 1 when both vectors are
+#' constant and equal.
+#'
+#' @param x Numeric vector, the first set of measurements.
+#' @param y Numeric vector, the second set of measurements, same length as
+#'   `x`.
+#'
+#' @return A single numeric value, the concordance correlation coefficient.
+#'
+#' @references
+#' Lin L (1989). A concordance correlation coefficient to evaluate
+#' reproducibility. *Biometrics* 45: 255-268.
+#'
+#' Lin L (2000). A note on the concordance correlation coefficient.
+#' *Biometrics* 56: 324-325.
+#'
+#' @keywords internal
+snpslice_ccc <- function(x, y) {
+  keep <- stats::complete.cases(x, y)
+  x <- x[keep]
+  y <- y[keep]
+  n <- length(x)
+  if (n < 3L) {
+    return(NA_real_)
+  }
+  vx <- stats::var(x) * (n - 1) / n
+  vy <- stats::var(y) * (n - 1) / n
+  cxy <- stats::cov(x, y) * (n - 1) / n
+  denom <- vx + vy + (mean(x) - mean(y))^2
+  if (denom == 0) {
+    return(1)
+  }
+  2 * cxy / denom
+}
+
+#' Format SNP-Slice per-restart optimization diagnostics
+#'
+#' One row per restart: `chain_id`, `seed`, `map_logpost`, `is_best`,
+#' `map_iteration`, `final_iteration`, `plateau_frac` (`map_iteration` divided
+#' by `final_iteration`), `map_kstar`, `map_ktrunc`, `coi_mean`, and
+#' `coi_ccc_to_best` (Lin's CCC between that restart's per-host COI and the
+#' reported restart's).
+#'
+#' @keywords internal
+prepare_snpslice_optim_output <- function(snpslice_res) {
+  # snp_slice() returns the reported chain at the top level and only attaches
+  # $chains when n_chains > 1.
+  chains <- snpslice_res$chains
+  if (is.null(chains)) {
+    chains <- list(snpslice_res)
+  }
+  best <- snpslice_res$best_chain
+  if (is.null(best)) {
+    best <- 1L
+  }
+  # COI per host is the row sum of the MAP allocation matrix.
+  coi_by_chain <- lapply(chains, function(ch) rowSums(ch$map_allocation_matrix))
+  coi_best <- coi_by_chain[[best]]
+
+  purrr::list_rbind(purrr::imap(chains, function(ch, i) {
+    d <- ch$diagnostics
+    tibble::tibble(
+      chain_id = if (is.null(d$chain_id)) i else d$chain_id,
+      seed = if (is.null(d$seed)) NA_integer_ else d$seed,
+      map_logpost = d$map_logpost,
+      is_best = identical(as.integer(i), as.integer(best)),
+      map_iteration = d$map_iteration,
+      final_iteration = d$final_iteration,
+      plateau_frac = d$map_iteration / d$final_iteration,
+      map_kstar = d$map_kstar,
+      map_ktrunc = d$map_ktrunc,
+      coi_mean = mean(coi_by_chain[[i]]),
+      coi_ccc_to_best = snpslice_ccc(coi_by_chain[[i]], coi_best)
+    )
+  }))
 }
 
 #' Estimate multilocus allele frequency and COI with SNP-Slice
 #'
 #' Estimates multilocus allele frequencies and per-specimen COI. Requires
-#' **snp.slicer** (with multi-chain sampling, `estimate`, and
-#' [snp.slicer::convergence_diagnostics()]) and **variantstring** 1.x
-#' (Suggests).
+#' **snp.slicer** (with multi-chain sampling and `estimate`) and
+#' **variantstring** 1.x (Suggests).
 #'
 #' ## Inputs
 #'
@@ -213,10 +400,18 @@ prepare_snpslice_coi_output <- function(snpslice_res,
 #'
 #' - **`mlaf_output`**: Multilocus allele frequencies (`group_id`, `variant`,
 #'   `freq`, …).
-#' - **`coi_output`**: COI estimates (`specimen_name`, `coi`; uncertainty
-#'   columns when `estimator = "posterior"`).
-#' - **`convergence_output`**: MCMC diagnostics (`variable`, `mean`, `median`,
-#'   `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`).
+#' - **`coi_output`**: COI estimates (`specimen_name`, `coi`,
+#'   `coi_cons_weighted`; uncertainty columns when `estimator = "posterior"`).
+#'   `coi` counts every strain assigned to a host in the best restart.
+#'   `coi_cons_weighted` pools haplotype membership across all restarts and
+#'   weights each haplotype by its consensus support, which counters the
+#'   dictionary over-parameterisation that inflates `coi`.
+#' - **`convergence_output`**: Per-restart optimization diagnostics
+#'   (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
+#'   `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`, `coi_mean`,
+#'   `coi_ccc_to_best`). SNP-Slice reports the restart with the highest MAP log
+#'   posterior rather than pooling chains, so between-chain R-hat and ESS do not
+#'   describe its output and are not emitted.
 #'
 #' ## Running
 #'
@@ -243,8 +438,8 @@ prepare_snpslice_coi_output <- function(snpslice_res,
 #' @param loci_groups Path to loci-groups TSV. See *Inputs*.
 #' @param mlaf_output Path for multilocus allele-frequency TSV. See *Outputs*.
 #' @param coi_output Path for COI TSV. See *Outputs*.
-#' @param convergence_output Path for MCMC convergence-diagnostics TSV. See
-#'   *Outputs*.
+#' @param convergence_output Path for per-restart optimization-diagnostics TSV.
+#'   See *Outputs*.
 #' @param specimen_name_col,target_name_col,target_value_col,target_count_col
 #'   Column names in `allele_table`.
 #' @param loci_limit Optional cap on the number of loci.
@@ -342,10 +537,23 @@ snpslice_wrapper <- function(allele_table,
           length(loci_oi), "); no extra loci will be sampled."
         )
       }
-      loci_random <- sample(
-        setdiff(allele_tbl$target_name, loci_oi),
-        n_loci_select
-      )
+      # SNP-Slice keeps only targets with at most two alleles, so the extra
+      # loci are drawn from the biallelic targets alone. Monomorphic targets
+      # are excluded because they carry no allelic variation.
+      biallelic_trgs <- allele_tbl |>
+        dplyr::group_by(.data$target_name) |>
+        dplyr::filter(dplyr::n_distinct(.data$target_value) == 2) |>
+        dplyr::pull("target_name") |>
+        unique()
+      candidates <- setdiff(biallelic_trgs, loci_oi)
+      if (n_loci_select > length(candidates)) {
+        message(
+          "Note: only ", length(candidates), " biallelic target(s) are ",
+          "available to sample; requested ", n_loci_select, "."
+        )
+        n_loci_select <- length(candidates)
+      }
+      loci_random <- sample(candidates, n_loci_select)
       loci_selected <- c(loci_oi, loci_random)
       allele_tbl <- dplyr::filter(allele_tbl, .data$target_name %in% loci_selected)
     }
@@ -362,9 +570,9 @@ snpslice_wrapper <- function(allele_table,
     n_chains = n_chains,
     n_cores = threads,  # snp.slicer arg name
     seed = seed,
-    # store_mcmc is forced on because the convergence diagnostics and the
-    # "posterior" estimator both need the retained per-iteration samples.
-    store_mcmc = TRUE,
+    # Retained per-iteration samples are only needed by the "posterior"
+    # estimator.
+    store_mcmc = identical(estimator, "posterior"),
     verbose = verbose,
     specimen_id_col = "specimen_name",
     target_id_col = "target_name",
@@ -384,10 +592,7 @@ snpslice_wrapper <- function(allele_table,
   readr::write_tsv(mlaf, mlaf_output)
   coi <- prepare_snpslice_coi_output(snpslice_res, specimen_name_col, estimator)
   readr::write_tsv(coi, coi_output)
-  convergence <- snp.slicer::convergence_diagnostics(
-    snpslice_res,
-    pars = c("logpost", "n_strains", "kstar", "ktrunc", "coi")
-  )
+  convergence <- prepare_snpslice_optim_output(snpslice_res)
   readr::write_tsv(convergence, convergence_output)
   invisible(list(mlaf = mlaf, coi = coi, convergence = convergence))
 }
