@@ -22,7 +22,6 @@ dcifer_ibd_wrapper(
   alpha = 0.05,
   use_estm = FALSE,
   threads = 1L,
-  seed = 1L,
   verbose = FALSE
 )
 ```
@@ -75,10 +74,6 @@ dcifer_ibd_wrapper(
 - threads:
 
   Number of parallel workers.
-
-- seed:
-
-  Random seed.
 
 - verbose:
 

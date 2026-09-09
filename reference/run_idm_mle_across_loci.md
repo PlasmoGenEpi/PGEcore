@@ -24,7 +24,7 @@ run_idm_mle_across_loci(
 
 - model:
 
-  `"IDM"` or `"OM"`.
+  `"IDM"`, `"OM"`, `"IDM_OM"`, `"OM_CC"`, or `"IDM_OM_CC"`.
 
 - lambda_initial:
 

@@ -36,7 +36,10 @@ IDM_wrapper(
 
 - model:
 
-  `"IDM"` (incomplete-data model) or `"OM"` (original model).
+  `"IDM"` (incomplete-data model), `"OM"` (original model), or
+  `"IDM_OM"` (IDM, falling back to the OM at any locus the IDM leaves
+  unsolved), `"OM_CC"` (OM with a continuity correction on lineage
+  prevalence), or `"IDM_OM_CC"` (IDM, falling back to `"OM_CC"`).
 
 - lambda_initial:
 

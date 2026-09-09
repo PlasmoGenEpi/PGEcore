@@ -39,7 +39,8 @@ moire_wrapper(
   effective_coi_output = "effective_coi_output.tsv",
   mcmc_results_output = NULL,
   convergence_output = "convergence_diag.tsv",
-  acceptance_rates_output = NULL
+  acceptance_rates_output = NULL,
+  seed = NULL
 )
 ```
 
@@ -157,6 +158,14 @@ moire_wrapper(
 
   Optional output path for parallel-tempering swap acceptance rates.
   Only meaningful when `pt_chains > 1`.
+
+- seed:
+
+  Integer seed for reproducible sampling, or `NULL` to leave MOIRE
+  non-deterministic. Support is detected from
+  [`moire::run_mcmc()`](https://EPPIcenter.github.io/moire/reference/run_mcmc.html)'s
+  formals; supplying a seed to a MOIRE build that cannot honour it is an
+  error rather than a silent fall-through to unseeded sampling.
 
 ## Value
 

@@ -83,7 +83,10 @@ allele table. See <em>Inputs</em>.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p><code>"IDM"</code> (incomplete-data model) or <code>"OM"</code> (original model).</p></dd>
+<dd><p><code>"IDM"</code> (incomplete-data model), <code>"OM"</code> (original model), or
+<code>"IDM_OM"</code> (IDM, falling back to the OM at any locus the IDM leaves
+unsolved), <code>"OM_CC"</code> (OM with a continuity correction on lineage
+prevalence), or <code>"IDM_OM_CC"</code> (IDM, falling back to <code>"OM_CC"</code>).</p></dd>
 
 
 <dt id="arg-lambda-initial">lambda_initial<a class="anchor" aria-label="anchor" href="#arg-lambda-initial"></a></dt>

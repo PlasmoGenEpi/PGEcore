@@ -77,6 +77,7 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/extract_moire_chain_draws.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/extract_snps_of_interest.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/features_for_target_with_rel_coords.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/fem_supports_seed.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/filter_biallelic.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/filter_biallelic_calls.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/filter_highest_diversity_snps_core.html</loc></url>
@@ -93,6 +94,7 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/get_aligned_pattern_from_overlap_align.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/get_aligned_subject_from_overlap_align.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/get_aln_pos_per_real_pos.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/idm_locus_mle.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/index.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/info_target.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/is_simple_base.html</loc></url>
@@ -102,6 +104,7 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/load_mlaf.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/make_stave.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/malariaem_wrapper.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/moire_supports_seed.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/moire_wrapper.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/msa_method_binary.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/multilocus_prevfreq_naive.html</loc></url>

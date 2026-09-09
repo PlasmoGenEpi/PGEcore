@@ -14,8 +14,7 @@ malariaem_wrapper(
   max_size = "8",
   test_size = "min",
   freq_output = "gt_freq_summary_all.tsv",
-  phase_output = "gt_phase_summary_all.tsv",
-  seed = 1L
+  phase_output = "gt_phase_summary_all.tsv"
 )
 ```
 
@@ -48,10 +47,6 @@ malariaem_wrapper(
 - phase_output:
 
   Phase summary path. See *Outputs*.
-
-- seed:
-
-  Random seed.
 
 ## Value
 
