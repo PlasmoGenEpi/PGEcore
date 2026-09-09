@@ -2,3 +2,15 @@
 .DS_Store
 *.Rproj
 *.Rhistory
+.claude/*
+CLAUDE.md
+.Rcheck/
+*.tar.gz
+inst/doc
+docs
+
+# Compiled objects
+src/*.o
+src/*.so
+src/*.dll
+*.o

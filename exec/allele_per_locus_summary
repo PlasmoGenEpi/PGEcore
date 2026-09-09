@@ -1,0 +1,31 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = "Allele table TSV (specimen_name, target_name, seq). See vignette input-formats."
+  ),
+  make_option(
+    "--output",
+    default = "allele_summary_by_target.tsv",
+    help = "Per-locus allele summary TSV output. Default: %default"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$allele_table) ||
+    (length(arg$allele_table) == 1L && is.na(arg$allele_table))) {
+  stop("Missing required arguments: --allele_table", call. = FALSE)
+}
+
+invisible(
+  allele_per_locus_summary(
+    allele_table = arg$allele_table,
+    output = arg$output
+  )
+)
