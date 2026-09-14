@@ -43,6 +43,20 @@ gds_needs_conversion <- function(vcf_path, gds_path, overwrite = FALSE) {
 #'
 #' - **`vcf`**: Input VCF path (`.vcf` or `.vcf.gz`) with `FORMAT/AD`.
 #'
+#' ## Multi-allelic sites
+#'
+#' `moimix::getFws()` is biallelic-only and does not check: on a record with
+#' more than one ALT it reads only the first two `AD` columns while dividing by
+#' the depth over all of them, and its MAF becomes the rarest allele's
+#' frequency. Both errors bias Fws downward, so multi-allelic input reads as
+#' spuriously polyclonal. Sites with more than two alleles are therefore dropped
+#' before `getFws()` runs, with a warning naming how many. The ALT count is the
+#' one declared in the VCF, so a site whose extra ALT no sample here has reads
+#' for is still dropped; split and left-normalise upstream
+#' (`bcftools norm -m-`) if that loses too many sites. For an Fws that uses
+#' every allele instead of discarding these sites, see
+#' `plasgenomicsutils calculate_fws --multiallelic collapse`.
+#'
 #' ## Outputs
 #'
 #' - **`output`**: Fws TSV with columns `specimen_name`, `fws`, and optionally
@@ -123,6 +137,32 @@ calculate_fws_from_vcf <- function(vcf,
 
   gds_obj <- SeqArray::seqOpen(gds_path)
   on.exit(SeqArray::seqClose(gds_obj), add = TRUE)
+
+  # moimix::getFws() is biallelic-only and gives no indication when it is not:
+  # getHeterozygosityBySample() divides by the depth over every allele but only
+  # sums AD columns 1-2, so a clonal sample carrying the second ALT scores
+  # Hs = 1 instead of 0, and getMAF() returns the rarest allele's frequency
+  # rather than a minor allele frequency, which getHeterozygosity() then feeds
+  # into a two-allele formula. Both errors push Fws down, so multi-allelic input
+  # silently reads as polyclonal. Restrict the GDS before handing it over; the
+  # filter applies to every seqApply() getFws() makes.
+  keep <- SeqArray::seqNumAllele(gds_obj) == 2
+  if (!any(keep)) {
+    stop(sprintf("No biallelic sites in %s; moimix::getFws() needs them.", vcf),
+         call. = FALSE)
+  }
+  if (any(!keep)) {
+    # Loud by default: this discards input, and the caller (e.g. the benchmarking
+    # pipeline) does not pass verbose.
+    warning(sprintf(
+      "%d of %d sites are multi-allelic and were dropped; Fws is from the %d biallelic sites.",
+      sum(!keep), length(keep), sum(keep)
+    ), call. = FALSE)
+  } else {
+    say("All %d sites are biallelic.", length(keep))
+  }
+  SeqArray::seqSetFilter(gds_obj, variant.sel = keep, verbose = FALSE)
+
   fws_result <- if (isTRUE(verbose)) {
     moimix::getFws(gds_obj)
   } else {
