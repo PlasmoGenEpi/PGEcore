@@ -104,6 +104,23 @@ The VCF must carry per-sample allelic depths (<code>FORMAT/AD</code>).</p>
 </ul></div>
 
 <div class="section">
+<h3 id="multi-allelic-sites">Multi-allelic sites<a class="anchor" aria-label="anchor" href="#multi-allelic-sites"></a></h3>
+
+
+<p><code><a href="https://rdrr.io/pkg/moimix/man/getFws.html" class="external-link">moimix::getFws()</a></code> is biallelic-only and does not check: on a record with
+more than one ALT it reads only the first two <code>AD</code> columns while dividing by
+the depth over all of them, and its MAF becomes the rarest allele's
+frequency. Both errors bias Fws downward, so multi-allelic input reads as
+spuriously polyclonal. Sites with more than two alleles are therefore dropped
+before <code>getFws()</code> runs, with a warning naming how many. The ALT count is the
+one declared in the VCF, so a site whose extra ALT no sample here has reads
+for is still dropped; split and left-normalise upstream
+(<code>bcftools norm -m-</code>) if that loses too many sites. For an Fws that uses
+every allele instead of discarding these sites, see
+<code>plasgenomicsutils calculate_fws --multiallelic collapse</code>.</p>
+</div>
+
+<div class="section">
 <h3 id="outputs">Outputs<a class="anchor" aria-label="anchor" href="#outputs"></a></h3>
 
 <ul><li><p><strong><code>output</code></strong>: Fws TSV with columns <code>specimen_name</code>, <code>fws</code>, and optionally
