@@ -43,6 +43,13 @@ gds_needs_conversion <- function(vcf_path, gds_path, overwrite = FALSE) {
 #'
 #' - **`vcf`**: Input VCF path (`.vcf` or `.vcf.gz`) with `FORMAT/AD`.
 #'
+#' ## Multi-allelic sites
+#'
+#' `moimix::getFws()` is biallelic-only and does not check: on a record with
+#' more than one ALT it reads only the first two `AD` columns while dividing by
+#' the depth over all of them, and its MAF becomes the rarest allele's
+#' frequency, so function filters to biallelic only before passing to `moimix::getFws()`
+#'
 #' ## Outputs
 #'
 #' - **`output`**: Fws TSV with columns `specimen_name`, `fws`, and optionally
@@ -123,6 +130,24 @@ calculate_fws_from_vcf <- function(vcf,
 
   gds_obj <- SeqArray::seqOpen(gds_path)
   on.exit(SeqArray::seqClose(gds_obj), add = TRUE)
+
+  # moimix::getFws() is biallelic-only and gives no indication when it is not, so filter
+  # to only biallelic-only first
+  keep <- SeqArray::seqNumAllele(gds_obj) == 2
+  if (!any(keep)) {
+    stop(sprintf("No biallelic sites in %s; moimix::getFws() needs them.", vcf),
+         call. = FALSE)
+  }
+  if (any(!keep)) {
+    warning(sprintf(
+      "%d of %d sites are multi-allelic and were dropped; Fws is from the %d biallelic sites.",
+      sum(!keep), length(keep), sum(keep)
+    ), call. = FALSE)
+  } else {
+    say("All %d sites are biallelic.", length(keep))
+  }
+  SeqArray::seqSetFilter(gds_obj, variant.sel = keep, verbose = FALSE)
+
   fws_result <- if (isTRUE(verbose)) {
     moimix::getFws(gds_obj)
   } else {
