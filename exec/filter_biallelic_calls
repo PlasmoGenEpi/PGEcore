@@ -1,0 +1,45 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_calls",
+    help = "AA calls TSV (gene_id, aa_position, ref_aa, aa). See vignette input-formats."
+  ),
+  make_option(
+    "--output",
+    help = "Biallelic AA calls TSV output."
+  ),
+  make_option(
+    "--nonbiallelic_output",
+    help = "Non-biallelic AA calls TSV output (optional)."
+  ),
+  make_option(
+    "--overwrite",
+    help = "overwrite the output if it already exists",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$aa_calls) || is.null(arg$output)) {
+  stop(
+    "Missing required arguments: --aa_calls and --output",
+    call. = FALSE
+  )
+}
+
+invisible(
+  filter_biallelic_calls(
+    aa_calls = arg$aa_calls,
+    output = arg$output,
+    nonbiallelic_output = arg$nonbiallelic_output,
+    overwrite = isTRUE(arg$overwrite)
+  )
+)

@@ -1,0 +1,17 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.git$
+^\.github$
+^\.gitignore$
+^\.DS_Store$
+^LICENSE\.md$
+^CITATION\.cff$
+^\.claude$
+^CLAUDE\.md$
+^README\.Rmd$
+^\.cursor$
+^.*\.tar\.gz$
+^vignettes/*\.html$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

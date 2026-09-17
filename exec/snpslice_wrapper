@@ -1,0 +1,223 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = paste0(
+      "Allele / AA-calls TSV with counts (default columns: specimen_name, ",
+      "aa_locus, aa, reads). See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--specimen_name_col",
+    default = "specimen_name",
+    help = "String giving the name of the specimen ID column. Optional."
+  ),
+  make_option(
+    "--target_name_col",
+    default = "aa_locus",
+    help = paste0(
+      "String giving the name of the target name column (e.g., the locus ",
+      "name). Optional."
+    )
+  ),
+  make_option(
+    "--target_value_col",
+    default = "aa",
+    help = paste0(
+      "String giving the name of the target value column (e.g., the allele ",
+      "call). Optional."
+    )
+  ),
+  make_option(
+    "--target_count_col",
+    default = "reads",
+    help = paste0(
+      "String giving the name of the target count column (e.g., the read ",
+      "counts). Optional."
+    )
+  ),
+  make_option(
+    "--loci_groups",
+    type = "character",
+    help = paste0(
+      "Loci groups TSV (group_id plus locus column matching ",
+      "--target_name_col). See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--loci_limit",
+    type = "integer",
+    help = paste0(
+      "To prevent SNP-Slice from running for a long time on large datasets, ",
+      "the input loci can be subsetted to contain the loci of interest in ",
+      "loci_groups and additional random loci, up to the limit ",
+      "specified here. Using more loci will improve COI estimation, but ",
+      "increase computation time. If not provided, all loci will be used."
+    )
+  ),
+  make_option(
+    "--model",
+    default = "negative_binomial",
+    help = paste0(
+      "Observation model to use. Options: 'poisson', ",
+      "'binomial', 'negative_binomial' (default). Optional."
+    )
+  ),
+  make_option(
+    "--n_sample",
+    type = "integer",
+    default = 10000,
+    help = paste0(
+      "Number of post-burn-in MCMC iterations to retain per chain. Optional."
+    )
+  ),
+  make_option(
+    "--n_burnin",
+    type = "double",
+    default = NULL,
+    help = paste0(
+      "Number of burn-in iterations per chain. If NULL, defaults to ",
+      "floor(n_sample / 2). Optional."
+    )
+  ),
+  make_option(
+    "--alpha",
+    type = "double",
+    default = 2.6,
+    help = "IBP concentration parameter. Optional."
+  ),
+  make_option(
+    "--rho",
+    type = "double",
+    default = NULL,
+    help = paste0(
+      "Dictionary sparsity parameter. Optional. If unset, SNP-Slice uses its ",
+      "model-specific default: 0.5 for the categorical model and the global ",
+      "minor allele frequency for count models."
+    )
+  ),
+  make_option(
+    "--threshold",
+    type = "double",
+    default = 0.001,
+    help = "Threshold for identifying single infections. Optional."
+  ),
+  make_option(
+    "--gap",
+    type = "integer",
+    default = NULL,
+    help = paste0(
+      "Early stopping threshold. If NULL, runs for full n_sample iterations. ",
+      "Optional."
+    )
+  ),
+  make_option(
+    "--estimator",
+    type = "character",
+    default = "final_sample",
+    help = paste0(
+      "Estimator used for COI and allele frequencies. One of 'final_sample' ",
+      "(the final sample of the MCMC chain, matching the SNP-Slice paper; ",
+      "default), 'map' (the maximum a posteriori state), or 'posterior' ",
+      "(the posterior mean over retained MCMC samples, which also yields ",
+      "uncertainty columns). Optional."
+    )
+  ),
+  make_option(
+    c("-v", "--verbose"),
+    action = "store_true",
+    default = FALSE,
+    help = "Verbose output."
+  ),
+  make_option(
+    "--seed",
+    type = "integer",
+    default = 1,
+    help = "Random number seed. Optional."
+  ),
+  make_option(
+    "--n_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of independent MCMC chains to run. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Optional."
+    )
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Number of cores used to run chains simultaneously (capped at ",
+      "n_chains). Optional."
+    )
+  ),
+  make_option(
+    "--mlaf_output",
+    help = paste0(
+      "Output MLAF TSV (group_id, variant, freq). Required."
+    )
+  ),
+  make_option(
+    "--coi_output",
+    help = paste0(
+      "Output COI TSV (specimen_name, coi). Required."
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "Output MCMC convergence diagnostics TSV. Optional. Default: %default"
+    )
+  )
+)
+
+parser <- OptionParser(option_list = opts)
+arg <- parse_args(parser)
+missing <- character()
+if (is.null(arg$allele_table)) missing <- c(missing, "--allele_table")
+if (is.null(arg$loci_groups)) missing <- c(missing, "--loci_groups")
+if (is.null(arg$mlaf_output)) missing <- c(missing, "--mlaf_output")
+if (is.null(arg$coi_output)) missing <- c(missing, "--coi_output")
+if (length(missing) > 0) {
+  stop(
+    "missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  snpslice_wrapper(
+    allele_table = arg$allele_table,
+    loci_groups = arg$loci_groups,
+    mlaf_output = arg$mlaf_output,
+    coi_output = arg$coi_output,
+    convergence_output = arg$convergence_output,
+    specimen_name_col = arg$specimen_name_col,
+    target_name_col = arg$target_name_col,
+    target_value_col = arg$target_value_col,
+    target_count_col = arg$target_count_col,
+    loci_limit = arg$loci_limit,
+    model = arg$model,
+    n_sample = arg$n_sample,
+    n_burnin = arg$n_burnin,
+    alpha = arg$alpha,
+    rho = arg$rho,
+    threshold = arg$threshold,
+    gap = arg$gap,
+    estimator = arg$estimator,
+    n_chains = arg$n_chains,
+    threads = arg$threads,
+    verbose = isTRUE(arg$verbose) || isTRUE(arg$v),
+    seed = arg$seed
+  )
+)

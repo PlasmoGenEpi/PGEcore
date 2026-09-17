@@ -1,14 +1,16 @@
 ## Pull Request for PGEcore
 
-Thank you for your contribution to PGEcore!✨
+Thank you for your contribution to PGEcore.
 
 ### Description of changes
-Please include a summary of the changes and the related issue, if applicable. Please also include relevant motivation and context. List any dependencies that are required for this change.
+Please include a summary of the changes and the related issue, if applicable. Include motivation and context. List any new dependencies.
 
 ### Pull Request Checklist
 
-- [ ] I have provided a description and detailed information about the changes made
-- [ ] I have followed the [PGEcore Code Guidelines](https://github.com/PlasmoGenEpi/PGEcore?tab=readme-ov-file#code-guidelines)
-- [ ] I have followed the [PGEcore how to contribute instructions](https://github.com/PlasmoGenEpi/PGEcore?tab=readme-ov-file#how-to-contribute) and I am merging into the `develop` branch
-- [ ] Documentation is updated, if necessary
-- [ ] Relevant issues are linked, if applicable
+- [ ] Description of the changes is complete
+- [ ] Merging into the `develop` branch (Gitflow)
+- [ ] New or changed tools have an `R/` implementation and thin `exec/` CLI
+- [ ] Shared TSV formats are reused where possible (see vignette `input-formats`)
+- [ ] Documentation updated (README and/or vignettes / roxygen)
+- [ ] Tests added or updated
+- [ ] Relevant issues linked, if applicable

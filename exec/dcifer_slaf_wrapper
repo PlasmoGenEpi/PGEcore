@@ -1,0 +1,95 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = paste0(
+      "Allele table TSV (specimen_name, target_name, seq, reads). ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--coi_table",
+    help = paste0(
+      "Optional COI table TSV (specimen_name, coi). ",
+      "See vignette input-formats."
+    )
+  ),
+  make_option(
+    "--specimen_name_col",
+    default = "specimen_name",
+    help = "String giving the name of the specimen ID column"
+  ),
+  make_option(
+    "--target_name_col",
+    default = "target_name",
+    help = "String giving the name of the target name column (e.g., the locus name)"
+  ),
+  make_option(
+    "--target_value_col",
+    default = "seq",
+    help = paste0(
+      "String giving the name of the target value column (e.g., the allele ",
+      "call)"
+    )
+  ),
+  make_option(
+    "--tol",
+    type = "double",
+    default = 1e-04,
+    help = paste0(
+      "Double specifying the convergence tolerance. Passed to ",
+      "dcifer::calcAfreq(). Optional."
+    )
+  ),
+  make_option(
+    "--qstart",
+    type = "double",
+    default = 0.5,
+    help = paste0(
+      "Double specifying the starting value for frequency estimation. ",
+      "Passed to dcifer::calcAfreq(). Optional."
+    )
+  ),
+  make_option(
+    "--coi_lrank",
+    type = "integer",
+    default = 2,
+    help = paste0(
+      "Integer specifying the rank of the locus used to determine ",
+      "sample COI. Passed to dcifer::getCOI(). Should not be combined with ",
+      "--coi_table. Optional."
+    )
+  ),
+  make_option(
+    "--slaf_output",
+    help = paste0(
+      "Output SLAF TSV (target_name, seq, freq, sample_total by default). ",
+      "Required."
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$allele_table) || is.null(arg$slaf_output)) {
+  stop("Missing required arguments: --allele_table and --slaf_output", call. = FALSE)
+}
+
+invisible(
+  dcifer_slaf_wrapper(
+    allele_table = arg$allele_table,
+    slaf_output = arg$slaf_output,
+    coi_table = arg$coi_table,
+    specimen_name_col = arg$specimen_name_col,
+    target_name_col = arg$target_name_col,
+    target_value_col = arg$target_value_col,
+    tol = arg$tol,
+    qstart = arg$qstart,
+    coi_lrank = arg$coi_lrank
+  )
+)

@@ -1,0 +1,82 @@
+url: https://plasmogenepi.github.io/PGEcore/
+
+template:
+  bootstrap: 5
+
+development:
+  mode: auto
+
+home:
+  title: Malaria genomics analysis tools
+  description: >
+    R functions and CLIs for malaria genomics — wrappers for specialised tools
+    plus naive estimators, filters, and format converters.
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+  components:
+    intro:
+      text: Get started
+      href: articles/getting-started.html
+
+reference:
+  - title: Getting started helpers
+    desc: Lightweight summaries and COI utilities with no specialised Suggests.
+    contents:
+      - count_samples_by_coi
+      - estimate_coi_naive
+      - estimate_allele_frequency_naive
+      - estimate_allele_prevalence_naive
+      - allele_per_locus_summary
+
+  - title: Format converters and filters
+    contents:
+      - filter_biallelic_calls
+      - filter_to_highest_diversity_independent_snp_call
+      - slaf_from_mhaps_freqs
+      - slaf_from_stave_mlaf
+      - convert_single_locus_table_to_stave
+      - multilocus_prevfreq_naive
+      - multilocus_prevfreq_naive_variantstring
+      - snp_calls_to_vcf
+      - vcf_to_snp_calls
+      - add_ref_seqs_with_targeted_ref_fasta
+      - add_ref_seqs_with_full_genome_ref_fasta
+
+  - title: Sequence and panel tools
+    desc: Require Biostrings and related Suggests (and often MSA binaries on PATH).
+    contents:
+      - pileup_specific_snps
+      - translate_loci_of_interest
+      - per_locus_popgen_summary
+
+  - title: Specialist wrappers
+    desc: Optional packages must be installed separately (see README Suggests table). Prefer these file/CLI entry points.
+    contents:
+      - coiaf_wrapper
+      - dcifer_slaf_wrapper
+      - dcifer_ibd_wrapper
+      - moire_wrapper
+      - malariaem_wrapper
+      - snpslice_wrapper
+      - FreqEstimationModel_wrapper
+      - calculate_fws_from_vcf
+      - IDM_wrapper
+      - MultiLociBiallelicModel_wrapper
+      - THEREALMcCOIL_wrapper
+
+  - title: In-memory helpers
+    desc: Optional `run_*` APIs for a few wrappers when data are already in R.
+    contents:
+      - run_coiaf
+      - run_moire
+      - run_malariaem
+
+articles:
+  - title: Vignettes
+    navbar: ~
+    contents:
+      - getting-started
+      - input-formats

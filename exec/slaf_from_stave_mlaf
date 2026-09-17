@@ -1,0 +1,36 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    c("-i", "--mlaf"),
+    help = "MLAF TSV (group_id, variant, freq). See vignette input-formats.",
+    type = "character",
+    default = NULL,
+    callback = function(opt, flag_string, value, parser, ...) {
+      if (!file.exists(value)) {
+        stop(paste0(value, " does not exist"), call. = FALSE)
+      }
+      value
+    }
+  ),
+  make_option(
+    c("-o", "--output"),
+    help = "Single-locus allele frequency TSV output (variant, freq). Default: %default",
+    type = "character",
+    default = "single_locus_allele_frequencies.tsv"
+  )
+)
+
+args <- parse_args(OptionParser(option_list = opts))
+if (is.null(args$mlaf)) {
+  stop("Missing required arguments: --mlaf", call. = FALSE)
+}
+
+invisible(
+  slaf_from_stave_mlaf(mlaf = args$mlaf, output = args$output)
+)

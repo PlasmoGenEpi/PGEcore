@@ -1,0 +1,49 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--mhaps_slaf",
+    help = "Microhaplotype SLAF TSV (target_name, seq, freq, sample_total). See vignette input-formats."
+  ),
+  make_option(
+    "--loci_of_interest_per_microhaps",
+    help = "Translated loci per microhaplotype TSV (target_name, gene_id, aa_position, seq, aa)."
+  ),
+  make_option(
+    "--slaf_output",
+    help = "Collapsed single-locus allele frequency TSV output (variant, freq, sample_total)."
+  ),
+  make_option(
+    "--per_target_slaf_output",
+    help = "Optional per-target SLAF TSV output."
+  )
+)
+
+args <- parse_args(OptionParser(option_list = opts))
+if (
+  is.null(args$mhaps_slaf) ||
+    is.null(args$loci_of_interest_per_microhaps) ||
+    is.null(args$slaf_output)
+) {
+  stop(
+    paste(
+      "Missing required arguments: --mhaps_slaf,",
+      "--loci_of_interest_per_microhaps, and --slaf_output"
+    ),
+    call. = FALSE
+  )
+}
+
+invisible(
+  slaf_from_mhaps_freqs(
+    mhaps_slaf = args$mhaps_slaf,
+    loci_of_interest_per_microhaps = args$loci_of_interest_per_microhaps,
+    slaf_output = args$slaf_output,
+    per_target_slaf_output = args$per_target_slaf_output
+  )
+)

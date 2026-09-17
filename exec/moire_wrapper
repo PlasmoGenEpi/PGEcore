@@ -1,0 +1,320 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = paste0(
+      "Allele table TSV (specimen_name, target_name, seq). ",
+      "See vignette input-formats."
+    )
+  ),
+  make_option(
+    "--seed",
+    type = "integer",
+    default = NULL,
+    help = paste0(
+      "Integer seed for reproducible sampling. Omitted by default, leaving ",
+      "MOIRE non-deterministic. Errors if the installed MOIRE has no `seed` ",
+      "argument rather than silently ignoring the request."
+    )
+  ),
+  make_option(
+    "--allow_relatedness",
+    type = "logical",
+    default = TRUE,
+    help = paste0(
+      "Logical flag to allow relatedness within samples. ",
+      "Set to TRUE by default"
+    )
+  ),
+  make_option(
+    "--burnin",
+    type = "integer",
+    default = 10000,
+    help = paste0(
+      "Number of burn-in iterations for the MCMC sampler. ",
+      "Default is set to 10000 iterations."
+    )
+  ),
+  make_option(
+    "--samples_per_chain",
+    type = "integer",
+    default = 1000,
+    help = paste0(
+      "Number of samples per chain for the MCMC sampler. ",
+      "Default is set to 1000 samples."
+    )
+  ),
+  make_option(
+    "--n_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of independent MCMC chains to run. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Note this is ",
+      "distinct from --pt_chains (parallel tempering rungs within a chain). ",
+      "Default set to 3."
+    )
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Number of threads used to run the independent chains in parallel ",
+      "(moire's num_cores). Default set to 1."
+    )
+  ),
+  make_option(
+    "--thin",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Thinning interval for the MCMC sampler; only every thin-th sample is ",
+      "retained. Default is set to 1 (no thinning)."
+    )
+  ),
+  make_option(
+    "--verbose",
+    type = "logical",
+    default = FALSE,
+    help = paste0(
+      "Logical flag to enable verbose output during processing. ",
+      "Set to FALSE by default."
+    )
+  ),
+  make_option(
+    "--eps_pos_alpha",
+    type = "integer",
+    default = 1,
+    help = "Alpha parameter for the positive error rate prior. Default set to 1."
+  ),
+  make_option(
+    "--eps_pos_beta",
+    type = "integer",
+    default = 1,
+    help = "Beta parameter for the positive error rate prior. Default set to 1."
+  ),
+  make_option(
+    "--eps_neg_alpha",
+    type = "integer",
+    default = 1,
+    help = "Alpha parameter for the negative error rate prior. Default set to 1."
+  ),
+  make_option(
+    "--eps_neg_beta",
+    type = "integer",
+    default = 1,
+    help = "Beta parameter for the negative error rate prior. Default set to 1."
+  ),
+  make_option(
+    "--r_alpha",
+    type = "integer",
+    default = 1,
+    help = "Alpha parameter for the relatedness prior. Default set to 1."
+  ),
+  make_option(
+    "--r_beta",
+    type = "integer",
+    default = 1,
+    help = "Beta parameter for the relatedness prior. Default set to 1."
+  ),
+  make_option(
+    "--mean_coi_shape",
+    type = "double",
+    default = 0.1,
+    help = paste0(
+      "Shape parameter for the mean complexity of infection prior. ",
+      "Default set to 0.1."
+    )
+  ),
+  make_option(
+    "--mean_coi_scale",
+    type = "integer",
+    default = 10,
+    help = paste0(
+      "Scale parameter for the mean complexity of infection prior. ",
+      "Default set to 10"
+    )
+  ),
+  make_option(
+    "--max_eps_pos",
+    type = "integer",
+    default = 2,
+    help = "Maximum value for the positive error rate. Default set to 2."
+  ),
+  make_option(
+    "--max_eps_neg",
+    type = "integer",
+    default = 2,
+    help = "Maximum value for the negative error rate. Default set to 2."
+  ),
+  make_option(
+    "--record_latent_genotypes",
+    type = "logical",
+    default = FALSE,
+    help = paste0(
+      "Logical flag to record latent genotypes in the output. ",
+      "Default set to FALSE."
+    )
+  ),
+  make_option(
+    "--pt_chains",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Number of chains to run in the parallel tempering process. ",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--pt_grad_lower",
+    type = "double",
+    default = 0,
+    help = paste0(
+      "Lower bound for the gradient step size in the parallel tempering process. ",
+      "Default set to 0."
+    )
+  ),
+  make_option(
+    "--pt_num_threads",
+    type = "integer",
+    default = 1,
+    help = paste0(
+      "Number of threads to use in the parallel tempering process. ",
+      "Default set to 1."
+    )
+  ),
+  make_option(
+    "--adapt_temp",
+    type = "logical",
+    default = TRUE,
+    help = paste0(
+      "Logical flag to enable adaptive temperature in the MCMC process. ",
+      "Default set to TRUE."
+    )
+  ),
+  make_option(
+    "--max_runtime",
+    type = "double",
+    default = Inf,
+    help = "Maximum runtime for the MCMC process. Default set to Inf."
+  ),
+  make_option(
+    "--coi_output",
+    default = "coi_output.tsv",
+    help = paste0(
+      "Output COI TSV (specimen_name, coi, ...). Default: %default"
+    )
+  ),
+  make_option(
+    "--he_output",
+    default = "he_output.tsv",
+    help = paste0(
+      "Output He TSV (target_name, he, ...). Default: %default"
+    )
+  ),
+  make_option(
+    "--allele_freq_output",
+    default = "allele_freq_output.tsv",
+    help = paste0(
+      "Output allele-frequency TSV (target_name, seq, freq, ...). ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--relatedness_output",
+    default = "relatedness_output.tsv",
+    help = paste0(
+      "Output within-host relatedness TSV (specimen_name, within_host_rel, ...). ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--effective_coi_output",
+    default = "effective_coi_output.tsv",
+    help = paste0(
+      "Output effective COI TSV (specimen_name, ecoi, ...). Default: %default"
+    )
+  ),
+  make_option(
+    "--mcmc_results_output",
+    help = paste0(
+      "Optional RDS path for the full MOIRE MCMC result object."
+    )
+  ),
+  make_option(
+    "--convergence_summary_output",
+    type = "character",
+    default = "convergence_summary.tsv",
+    help = paste0(
+      "Output run-level convergence summary TSV: one row of degenerate-parameter ",
+      "counts, R-hat exceedance percentages and ESS minima. Optional. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "Output MCMC convergence diagnostics TSV. Default: %default"
+    )
+  ),
+  make_option(
+    "--acceptance_rates_output",
+    default = NULL,
+    help = paste0(
+      "Optional PT swap-acceptance rates TSV (when --pt_chains > 1)."
+    )
+  )
+)
+
+parser <- OptionParser(option_list = opts)
+arg <- parse_args(parser)
+if (is.null(arg$allele_table)) {
+  stop("Missing the following arguments: --allele_table", call. = FALSE)
+}
+
+invisible(
+  moire_wrapper(
+    allele_table = arg$allele_table,
+    seed = arg$seed,
+    allow_relatedness = arg$allow_relatedness,
+    burnin = arg$burnin,
+    samples_per_chain = arg$samples_per_chain,
+    n_chains = arg$n_chains,
+    threads = arg$threads,
+    thin = arg$thin,
+    verbose = arg$verbose,
+    eps_pos_alpha = arg$eps_pos_alpha,
+    eps_pos_beta = arg$eps_pos_beta,
+    eps_neg_alpha = arg$eps_neg_alpha,
+    eps_neg_beta = arg$eps_neg_beta,
+    r_alpha = arg$r_alpha,
+    r_beta = arg$r_beta,
+    mean_coi_shape = arg$mean_coi_shape,
+    mean_coi_scale = arg$mean_coi_scale,
+    max_eps_pos = arg$max_eps_pos,
+    max_eps_neg = arg$max_eps_neg,
+    record_latent_genotypes = arg$record_latent_genotypes,
+    pt_chains = arg$pt_chains,
+    pt_grad_lower = arg$pt_grad_lower,
+    pt_num_threads = arg$pt_num_threads,
+    adapt_temp = arg$adapt_temp,
+    max_runtime = arg$max_runtime,
+    coi_output = arg$coi_output,
+    he_output = arg$he_output,
+    allele_freq_output = arg$allele_freq_output,
+    relatedness_output = arg$relatedness_output,
+    effective_coi_output = arg$effective_coi_output,
+    mcmc_results_output = arg$mcmc_results_output,
+    convergence_output = arg$convergence_output,
+    convergence_summary_output = arg$convergence_summary_output,
+    acceptance_rates_output = arg$acceptance_rates_output
+  )
+)

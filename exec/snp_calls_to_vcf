@@ -1,0 +1,83 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--snp_calls",
+    help = "SNP calls TSV (specimen_name, chrom, pos, snp_name, strand, ref_base, seq_base, reads). See vignette input-formats."
+  ),
+  make_option(
+    "--genome",
+    help = "Reference genome FASTA for ##contig lengths."
+  ),
+  make_option(
+    "--vcf_output",
+    help = "Output VCF path; gzip-compressed if it ends in .gz."
+  ),
+  make_option(
+    "--biallelic",
+    action = "store_true",
+    default = FALSE,
+    help = "Keep only biallelic sites (REF + exactly one ALT); multi-allelic sites are skipped"
+  ),
+  make_option(
+    "--ploidy",
+    type = "integer",
+    default = 2L,
+    help = "Ploidy used to render the GT field [default %default]"
+  ),
+  make_option(
+    "--gt_min_reads",
+    type = "integer",
+    default = 1L,
+    help = "Minimum reads for an allele to count as present when deriving GT [default %default]"
+  ),
+  make_option(
+    "--overwrite",
+    action = "store_true",
+    default = FALSE,
+    help = "Overwrite --vcf_output if it already exists"
+  ),
+  make_option(
+    "--verbose",
+    action = "store_true",
+    default = FALSE,
+    help = "Print a summary message when finished (otherwise run silently)"
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+missing <- character()
+if (is.null(arg$snp_calls)) {
+  missing <- c(missing, "--snp_calls")
+}
+if (is.null(arg$genome)) {
+  missing <- c(missing, "--genome")
+}
+if (is.null(arg$vcf_output)) {
+  missing <- c(missing, "--vcf_output")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  snp_calls_to_vcf(
+    snp_calls = arg$snp_calls,
+    genome = arg$genome,
+    vcf_output = arg$vcf_output,
+    biallelic = isTRUE(arg$biallelic),
+    ploidy = arg$ploidy,
+    gt_min_reads = arg$gt_min_reads,
+    overwrite = isTRUE(arg$overwrite),
+    verbose = isTRUE(arg$verbose)
+  )
+)

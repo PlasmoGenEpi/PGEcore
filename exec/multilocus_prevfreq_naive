@@ -1,0 +1,85 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_calls",
+    type = "character",
+    help = "AA calls TSV (specimen_name, gene, gene_id, aa_position, reads, aa). See vignette input-formats."
+  ),
+  make_option(
+    "--loci_groups",
+    type = "character",
+    help = "Loci groups TSV (group_id, gene_id, aa_position). See vignette input-formats."
+  ),
+  make_option(
+    "--output",
+    type = "character",
+    help = "Multilocus prev/freq TSV output."
+  ),
+  make_option(
+    "--single_locus_output",
+    type = "character",
+    help = "Optional single-locus prev/freq TSV recalculated from multilocus calls."
+  ),
+  make_option(
+    c("--method"),
+    help = paste0(
+      "Method to use for estimating allele frequency. Options are: ",
+      "wsaf_prop (frequencies are weighted by their within-sample-allele-frequency, no allele_counts will be exported in this case), presence_absence (simply count by how many times each allele appears). Default: %default"
+    ),
+    type = "character",
+    default = "wsaf_prop",
+    callback = function(opt, flag_string, value, parser, ...) {
+      if (!value %in% c("wsaf_prop", "presence_absence")) {
+        stop(paste0(value, " is not a valid method"), call. = FALSE)
+      }
+      value
+    }
+  ),
+  make_option(
+    "--wsaf_cut_off",
+    type = "double",
+    default = 0.70,
+    help = paste0(
+      "To help determine multi-locus variants, we filter off minor variants to determine ",
+      "a \"dominant\" strain at each loci that will then be reasonable to assume at least ",
+      "one haplotype with all variants above that cut off exists"
+    )
+  )
+)
+
+args <- parse_args(OptionParser(option_list = opts))
+
+missing <- character()
+if (is.null(args$aa_calls)) {
+  missing <- c(missing, "--aa_calls")
+}
+if (is.null(args$loci_groups)) {
+  missing <- c(missing, "--loci_groups")
+}
+if (is.null(args$output)) {
+  missing <- c(missing, "--output")
+}
+if (length(missing) > 0) {
+  stop(
+    "Missing the following arguments: ",
+    paste(missing, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+invisible(
+  multilocus_prevfreq_naive(
+    aa_calls = args$aa_calls,
+    loci_groups = args$loci_groups,
+    output = args$output,
+    single_locus_output = args$single_locus_output,
+    method = args$method,
+    wsaf_cut_off = args$wsaf_cut_off
+  )
+)

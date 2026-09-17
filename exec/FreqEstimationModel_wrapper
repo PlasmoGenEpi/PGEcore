@@ -1,0 +1,131 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--aa_calls",
+    help = paste0(
+      "AA calls TSV (specimen_name, gene_id, aa_position, aa, ...). ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--coi",
+    help = paste0(
+      "COI table TSV (specimen_name, coi) or a numeric average COI. ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--loci_groups",
+    help = paste0(
+      "Loci groups TSV (group_id, gene_id, aa_position). ",
+      "See vignette input-formats. Required."
+    )
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    help = "Number of threads to use. Optional.",
+    default = 1
+  ),
+  make_option(
+    "--seed",
+    type = "integer",
+    help = "Random number seed. Optional.",
+    default = 1
+  ),
+  make_option(
+    "--n_chains",
+    type = "integer",
+    default = 3,
+    help = paste0(
+      "Number of MCMC chains to run per group. Multiple chains are required ",
+      "to compute the Gelman-Rubin R-hat convergence diagnostic. Optional."
+    )
+  ),
+  make_option(
+    "--mlaf_output",
+    help = paste0(
+      "Output MLAF TSV (variant, freq, ...). Required."
+    )
+  ),
+  make_option(
+    "--no_traces_preburnin",
+    type = "integer",
+    default = 10000L,
+    help = paste0(
+      "MCMC traces retained per chain before burn-in. Dominant driver of ",
+      "memory: the sampler pre-allocates a no_traces_preburnin x n_samples x ",
+      "n_haplotypes x n_chains array of doubles. Optional. Default: %default"
+    )
+  ),
+  make_option(
+    "--moi_max",
+    type = "integer",
+    default = 8L,
+    help = paste0(
+      "Largest MOI the model can assign to a specimen. Specimens whose true ",
+      "MOI exceeds it are censored at the ceiling. Optional. Default: %default"
+    )
+  ),
+  make_option(
+    "--thinning_interval",
+    type = "integer",
+    default = 1L,
+    help = paste0(
+      "Metropolis-Hastings updates per retained trace. Total sampler effort is ",
+      "no_traces_preburnin * thinning_interval, so 2500 x 4 runs the chain as ",
+      "far as the default 10000 x 1 while storing a quarter of the draws. ",
+      "Optional. Default: %default"
+    )
+  ),
+  make_option(
+    "--convergence_summary_output",
+    type = "character",
+    default = "convergence_summary.tsv",
+    help = paste0(
+      "Output run-level convergence summary TSV: one row of degenerate-parameter ",
+      "counts, R-hat exceedance percentages and ESS minima. Optional. ",
+      "Default: %default"
+    )
+  ),
+  make_option(
+    "--convergence_output",
+    default = "convergence_diag.tsv",
+    help = paste0(
+      "Output per-group MCMC convergence diagnostics TSV. Optional. ",
+      "Default: %default"
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$aa_calls) || is.null(arg$coi) ||
+    is.null(arg$loci_groups) || is.null(arg$mlaf_output)) {
+  stop(
+    "Missing required arguments: --aa_calls, --coi, --loci_groups, --mlaf_output",
+    call. = FALSE
+  )
+}
+
+invisible(
+  FreqEstimationModel_wrapper(
+    aa_calls = arg$aa_calls,
+    coi = arg$coi,
+    loci_groups = arg$loci_groups,
+    mlaf_output = arg$mlaf_output,
+    threads = arg$threads,
+    seed = arg$seed,
+    n_chains = arg$n_chains,
+    no_traces_preburnin = arg$no_traces_preburnin,
+    thinning_interval = arg$thinning_interval,
+    moi_max = arg$moi_max,
+    convergence_output = arg$convergence_output,
+    convergence_summary_output = arg$convergence_summary_output
+  )
+)

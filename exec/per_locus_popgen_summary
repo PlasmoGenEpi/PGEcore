@@ -1,0 +1,61 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(PGEcore)
+})
+
+opts <- list(
+  make_option(
+    "--allele_table",
+    help = "Allele table TSV (specimen_name, target_name, seq by default). See vignette input-formats."
+  ),
+  make_option(
+    "--specimen_name_col",
+    default = "specimen_name",
+    help = "String giving the name of the specimen ID column"
+  ),
+  make_option(
+    "--target_name_col",
+    default = "target_name",
+    help = "String giving the name of the target name column (e.g., the locus name)"
+  ),
+  make_option(
+    "--target_value_col",
+    default = "seq",
+    help = paste(
+      "String giving the name of the target value column (e.g., the allele",
+      "call)"
+    )
+  ),
+  make_option(
+    "--output",
+    default = "per_locus_popgen_summary.tsv",
+    help = "Per-locus popgen summary TSV output. Default: %default"
+  ),
+  make_option(
+    "--msa_method",
+    default = "Muscle",
+    help = paste(
+      "the default is %default, options are 'ClustalW', 'ClustalOmega',",
+      "'Muscle'. Requires the matching binary on PATH (muscle, clustalw, or",
+      "clustalo); the msa R package does not install those tools."
+    )
+  )
+)
+
+arg <- parse_args(OptionParser(option_list = opts))
+if (is.null(arg$allele_table)) {
+  stop("Missing required arguments: --allele_table", call. = FALSE)
+}
+
+invisible(
+  per_locus_popgen_summary(
+    allele_table = arg$allele_table,
+    specimen_name_col = arg$specimen_name_col,
+    target_name_col = arg$target_name_col,
+    target_value_col = arg$target_value_col,
+    output = arg$output,
+    msa_method = arg$msa_method
+  )
+)
