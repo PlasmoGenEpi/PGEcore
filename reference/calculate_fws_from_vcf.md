@@ -60,15 +60,9 @@ sorted by `fws`.
 [`moimix::getFws()`](https://rdrr.io/pkg/moimix/man/getFws.html) is
 biallelic-only and does not check: on a record with more than one ALT it
 reads only the first two `AD` columns while dividing by the depth over
-all of them, and its MAF becomes the rarest allele's frequency. Both
-errors bias Fws downward, so multi-allelic input reads as spuriously
-polyclonal. Sites with more than two alleles are therefore dropped
-before `getFws()` runs, with a warning naming how many. The ALT count is
-the one declared in the VCF, so a site whose extra ALT no sample here
-has reads for is still dropped; split and left-normalise upstream
-(`bcftools norm -m-`) if that loses too many sites. For an Fws that uses
-every allele instead of discarding these sites, see
-`plasgenomicsutils calculate_fws --multiallelic collapse`.
+all of them, and its MAF becomes the rarest allele's frequency, so
+function filters to biallelic only before passing to
+[`moimix::getFws()`](https://rdrr.io/pkg/moimix/man/getFws.html)
 
 ### Outputs
 
