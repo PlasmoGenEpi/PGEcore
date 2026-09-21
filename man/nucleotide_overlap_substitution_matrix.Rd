@@ -7,7 +7,7 @@
 nucleotide_overlap_substitution_matrix()
 }
 \value{
-A substitution matrix from \code{\link[pwalign:substitution_matrices]{pwalign::nucleotideSubstitutionMatrix()}}.
+A substitution matrix from \code{\link[pwalign:nucleotideSubstitutionMatrix]{pwalign::nucleotideSubstitutionMatrix()}}.
 }
 \description{
 Default nucleotide substitution matrix used by pileup and translate

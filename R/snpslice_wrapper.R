@@ -43,10 +43,15 @@ create_snpslice_allele_table_input <- function(allele_table_path,
 
 #' Read loci groups for SNP-Slice multilocus frequencies
 #'
+#' @param allow_multiallelic Keep targets with more than two alleles. The
+#'   biallelic observation models drop them (SNP-Slice cannot represent a
+#'   third allele), so by default they are excluded from every group with a
+#'   warning; the multinomial model keeps them.
 #' @keywords internal
 create_snpslice_loci_group_input <- function(loci_groups_path,
                                              allele_table,
-                                             target_name_col = "target_name") {
+                                             target_name_col = "target_name",
+                                             allow_multiallelic = FALSE) {
   stopifnot(is.character(loci_groups_path))
 
   loci_groups <- readr::read_tsv(
@@ -82,12 +87,16 @@ create_snpslice_loci_group_input <- function(loci_groups_path,
         call. = FALSE
       )
     }
-    non_biallelic_trgs <- allele_table |>
-      dplyr::filter(.data$target_name %in% loci_groups[[lg]]) |>
-      dplyr::group_by(.data$target_name) |>
-      dplyr::filter(dplyr::n_distinct(.data$target_value) > 2) |>
-      dplyr::pull("target_name") |>
-      unique()
+    non_biallelic_trgs <- if (allow_multiallelic) {
+      character()
+    } else {
+      allele_table |>
+        dplyr::filter(.data$target_name %in% loci_groups[[lg]]) |>
+        dplyr::group_by(.data$target_name) |>
+        dplyr::filter(dplyr::n_distinct(.data$target_value) > 2) |>
+        dplyr::pull("target_name") |>
+        unique()
+    }
     if (length(non_biallelic_trgs) > 0) {
       warning(
         "The target(s) ",
@@ -109,10 +118,93 @@ create_snpslice_loci_group_input <- function(loci_groups_path,
   loci_groups
 }
 
+#' Collapse identical dictionary rows of a SNP-Slice allocation
+#'
+#' Ju et al. (2024) count identical SNP haplotypes once when computing MOI,
+#' allele frequencies and heterozygosity: duplicated dictionary rows are
+#' removed before any estimate is formed. SNP-Slice can hold two active
+#' strains with the same haplotype, and a specimen assigned both would then
+#' contribute two to its COI and two strain copies to every frequency. This
+#' merges such strains: a specimen carries the merged strain if it carried
+#' any of the duplicates.
+#'
+#' @param A Allocation matrix, specimens x strains.
+#' @param D Dictionary matrix, strains x targets.
+#' @return List with the merged `A` and `D`; strains keep first-appearance
+#'   order.
+#' @keywords internal
+snpslice_dedup_matrices <- function(A, D) {
+  if (nrow(D) == 0L) {
+    return(list(A = A, D = D))
+  }
+  key <- apply(D, 1L, paste0, collapse = ",")
+  first <- match(unique(key), key)
+  members <- split(seq_along(key), factor(key, levels = key[first]))
+  A_merged <- vapply(members, function(k) {
+    as.numeric(rowSums(A[, k, drop = FALSE]) > 0)
+  }, numeric(nrow(A)))
+  A_merged <- matrix(A_merged, nrow = nrow(A), dimnames = list(rownames(A), NULL))
+  list(A = A_merged, D = D[first, , drop = FALSE])
+}
+
+#' Apply [snpslice_dedup_matrices()] to every estimate a chain carries
+#'
+#' @param chain A single-chain `snp_slice_results` object from
+#'   [snp.slicer::get_chain()].
+#' @return The chain with its MAP, final-sample and (if present) stored MCMC
+#'   sample matrices de-duplicated.
+#' @keywords internal
+snpslice_dedup_chain <- function(chain) {
+  m <- snpslice_dedup_matrices(chain$map_allocation_matrix, chain$map_dictionary_matrix)
+  chain$map_allocation_matrix <- m$A
+  chain$map_dictionary_matrix <- m$D
+  if (!is.null(chain$final_allocation_matrix)) {
+    f <- snpslice_dedup_matrices(chain$final_allocation_matrix, chain$final_dictionary_matrix)
+    chain$final_allocation_matrix <- f$A
+    chain$final_dictionary_matrix <- f$D
+  }
+  if (!is.null(chain$mcmc_samples)) {
+    chain$mcmc_samples <- lapply(chain$mcmc_samples, function(s) {
+      d <- snpslice_dedup_matrices(s$A, s$D)
+      s$A <- d$A
+      s$D <- d$D
+      s
+    })
+  }
+  chain
+}
+
+#' Split a SNP-Slice result into single-chain objects
+#'
+#' @param snpslice_res Result of [snp.slicer::snp_slice()].
+#' @param dedup_haplotypes Collapse identical haplotypes in every chain; see
+#'   [snpslice_dedup_matrices()].
+#' @return List with `chains` (single-chain results in chain order) and
+#'   `best`, the index of the chain SNP-Slice reports (highest MAP log
+#'   posterior).
+#' @keywords internal
+snpslice_split_chains <- function(snpslice_res, dedup_haplotypes = FALSE) {
+  n <- if (is.null(snpslice_res$chains)) 1L else length(snpslice_res$chains)
+  chains <- lapply(seq_len(n), function(i) snp.slicer::get_chain(snpslice_res, i))
+  if (dedup_haplotypes) {
+    chains <- lapply(chains, snpslice_dedup_chain)
+  }
+  best <- if (is.null(snpslice_res$best_chain)) 1L else as.integer(snpslice_res$best_chain)
+  list(chains = chains, best = best)
+}
+
 #' Format SNP-Slice allele frequencies with variantstring names
 #'
+#' `freq` is the estimate from the chain SNP-Slice reports (highest MAP log
+#' posterior). `averaged_freq` follows Ju et al. (2024), who report the mean
+#' of the per-chain estimates over independently initialised chains: it is
+#' the mean over all chains of that chain's frequency for the haplotype, with
+#' a haplotype a chain never produced counting as zero there. A row is kept
+#' when either column is positive.
+#'
+#' @param chains,best Output of [snpslice_split_chains()].
 #' @keywords internal
-prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
+prepare_snpslice_af_output <- function(chains, best, loci_groups, estimator) {
   format_af_table_w_variantstring <- function(af_table, group_id, loci_groups) {
     prep_variantstring_input <- function(allele, loci_names) {
       aa <- stringr::str_split_1(allele, "\\|")
@@ -133,7 +225,7 @@ prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
     }
 
     tibble::as_tibble(af_table) |>
-      dplyr::filter(.data$frequency > 0) |>
+      dplyr::filter(.data$frequency > 0 | .data$averaged_freq > 0) |>
       dplyr::mutate(
         allele = lapply(
           .data$allele,
@@ -144,14 +236,26 @@ prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
       dplyr::mutate(allele = variantstring::long_to_variant(.data$allele))
   }
 
-  snp_slicer_af_by_group <- snp.slicer::calculate_allele_frequencies_by_sets(
-    snpslice_res,
-    loci_groups,
-    estimate = estimator
-  )
+  # One frequency table per group per chain. Every chain enumerates the same
+  # haplotype rows for a group, so they can be joined on `allele`.
+  per_chain <- lapply(chains, function(ch) {
+    snp.slicer::calculate_allele_frequencies_by_sets(ch, loci_groups, estimate = estimator)
+  })
+  by_group <- lapply(names(loci_groups), function(g) {
+    tab <- tibble::as_tibble(per_chain[[best]][[g]])
+    freq_mat <- vapply(per_chain, function(pc) {
+      pc[[g]]$frequency[match(tab$allele, pc[[g]]$allele)]
+    }, numeric(nrow(tab)))
+    freq_mat <- matrix(freq_mat, nrow = nrow(tab))
+    freq_mat[is.na(freq_mat)] <- 0
+    tab$averaged_freq <- rowMeans(freq_mat)
+    tab
+  })
+  names(by_group) <- names(loci_groups)
+
   af_tib <- tibble::tibble(
-    group_id = names(snp_slicer_af_by_group),
-    af_tib = unname(snp_slicer_af_by_group)
+    group_id = names(by_group),
+    af_tib = unname(by_group)
   ) |>
     dplyr::mutate(
       af_tib = purrr::map2(
@@ -162,7 +266,8 @@ prepare_snpslice_af_output <- function(snpslice_res, loci_groups, estimator) {
       )
     ) |>
     tidyr::unnest("af_tib") |>
-    dplyr::rename(variant = "allele", freq = "frequency")
+    dplyr::rename(variant = "allele", freq = "frequency") |>
+    dplyr::relocate("averaged_freq", .after = "freq")
 
   if (identical(estimator, "posterior")) {
     af_tib <- dplyr::select(af_tib, -"mean_count", -"n_samples")
@@ -263,12 +368,22 @@ snpslice_consensus_coi <- function(chains, estimate) {
 
 #' Format SNP-Slice COI estimates
 #'
+#' Three per-specimen columns:
+#' - `coi`: strains assigned in the reported chain (highest MAP log
+#'   posterior), the row sum of its allocation matrix.
+#' - `coi_cons_weighted`: [snpslice_consensus_coi()] across chains.
+#' - `coi_chain_mean`: the mean over all chains of that chain's `coi`, which
+#'   is how Ju et al. (2024) report MOI (the average of the final-sample
+#'   estimate over independently initialised chains).
+#'
+#' @param chains,best Output of [snpslice_split_chains()].
 #' @keywords internal
-prepare_snpslice_coi_output <- function(snpslice_res,
+prepare_snpslice_coi_output <- function(chains,
+                                        best,
                                         specimen_name_col,
                                         estimator) {
   coi_tib <- snp.slicer::calculate_individual_coi(
-    snpslice_res,
+    chains[[best]],
     estimate = estimator
   ) |>
     dplyr::select(-"host_index") |>
@@ -276,21 +391,18 @@ prepare_snpslice_coi_output <- function(snpslice_res,
   if (!identical(estimator, "posterior")) {
     coi_tib <- dplyr::select(coi_tib, -"coi_sd", -"coi_lower", -"coi_upper")
   }
-  chains <- if (is.null(snpslice_res$chains)) {
-    snp.slicer::get_chain(snpslice_res, NULL)
-  } else {
-    snpslice_res$chains
-  }
-  consensus <- snpslice_consensus_coi(
-    chains,
-    if (identical(estimator, "posterior")) "map" else estimator
-  )
+  point_estimate <- if (identical(estimator, "posterior")) "map" else estimator
+  consensus <- snpslice_consensus_coi(chains, point_estimate)
   if (length(consensus) != nrow(coi_tib)) {
     stop("Consensus COI length does not match the per-host COI table.",
          call. = FALSE)
   }
+  per_chain_coi <- vapply(chains, function(ch) {
+    snp.slicer::calculate_individual_coi(ch, estimate = estimator)$coi_estimate
+  }, numeric(nrow(coi_tib)))
   coi_tib$coi_cons_weighted <- consensus
-  dplyr::relocate(coi_tib, "coi_cons_weighted", .after = "coi")
+  coi_tib$coi_chain_mean <- rowMeans(matrix(per_chain_coi, nrow = nrow(coi_tib)))
+  dplyr::relocate(coi_tib, "coi_cons_weighted", "coi_chain_mean", .after = "coi")
 }
 
 #' Lin's concordance correlation coefficient
@@ -396,22 +508,36 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' - **`loci_groups`**: Loci-groups TSV (`group_id` plus a locus column
 #'   matching `target_name_col`).
 #'
+#' ## Multi-allelic targets
+#'
+#' The biallelic observation models (`"negative_binomial"`, `"binomial"`,
+#' `"poisson"`, `"categorical"`) cannot represent a third allele, so any target
+#' with more than two alleles is dropped from its group with a warning, and
+#' extra loci drawn under `loci_limit` come from biallelic targets only. With
+#' `model = "multinomial"` every allele at every target is kept, groups with
+#' multi-allelic codons (for example dhfr 108 or dhps 540) are estimated in
+#' full, and extra loci are drawn from all polymorphic targets. The
+#' multinomial dictionary prior is set by `dict_prior`; `rho` is ignored.
+#'
 #' ## Outputs
 #'
 #' - **`mlaf_output`**: Multilocus allele frequencies (`group_id`, `variant`,
-#'   `freq`, …).
+#'   `freq`, `averaged_freq`, …). `freq` comes from the chain SNP-Slice
+#'   reports (highest MAP log posterior); `averaged_freq` is the mean of the
+#'   per-chain estimates over all chains, the estimator of Ju et al. (2024).
 #' - **`coi_output`**: COI estimates (`specimen_name`, `coi`,
-#'   `coi_cons_weighted`; uncertainty columns when `estimator = "posterior"`).
+#'   `coi_cons_weighted`, `coi_chain_mean`; uncertainty columns when
+#'   `estimator = "posterior"`).
 #'   `coi` counts every strain assigned to a host in the best restart.
 #'   `coi_cons_weighted` pools haplotype membership across all restarts and
 #'   weights each haplotype by its consensus support, which counters the
-#'   dictionary over-parameterisation that inflates `coi`.
-#' - **`convergence_output`**: Per-restart optimization diagnostics
-#'   (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
-#'   `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`, `coi_mean`,
-#'   `coi_ccc_to_best`). SNP-Slice reports the restart with the highest MAP log
-#'   posterior rather than pooling chains, so between-chain R-hat and ESS do not
-#'   describe its output and are not emitted.
+#'   dictionary over-parameterisation that inflates `coi`. `coi_chain_mean`
+#'   is the mean of `coi` over all restarts, as Ju et al. (2024) report MOI.
+#'
+#' With `dedup_haplotypes = TRUE` (the default), strains with identical
+#' haplotypes are merged in every chain before any of these are computed, so
+#' a specimen assigned two copies of the same haplotype counts it once, as in
+#' Ju et al. (2024). `FALSE` restores the earlier raw counts.
 #'
 #' ## Running
 #'
@@ -443,7 +569,12 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' @param specimen_name_col,target_name_col,target_value_col,target_count_col
 #'   Column names in `allele_table`.
 #' @param loci_limit Optional cap on the number of loci.
-#' @param model Observation model for SNP-Slice.
+#' @param model Observation model for SNP-Slice: `"negative_binomial"`
+#'   (default), `"binomial"`, `"poisson"`, `"categorical"`, or
+#'   `"multinomial"`. See *Multi-allelic targets*.
+#' @param dict_prior Dictionary prior for the multinomial model, passed to
+#'   [snp.slicer::snp_slice()]: `"empirical"` (default; pooled allele read
+#'   fractions with a pseudocount) or `"uniform"`. Ignored by other models.
 #' @param n_sample Post-burn-in MCMC iterations retained per chain.
 #' @param n_burnin Burn-in iterations per chain. If `NULL`, SNP-Slice uses
 #'   `floor(n_sample / 2)`.
@@ -454,6 +585,8 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' @param estimator Estimator for COI and allele frequencies: `"final_sample"`
 #'   (default, matching the SNP-Slice paper), `"map"`, or `"posterior"` (the
 #'   posterior mean, which also yields uncertainty columns).
+#' @param dedup_haplotypes Merge strains with identical haplotypes in every
+#'   chain before computing COI and frequencies. See *Outputs*.
 #' @param n_chains Number of independent MCMC chains. More than one is required
 #'   for the Gelman-Rubin R-hat diagnostic.
 #' @param threads Cores used to run chains simultaneously (capped at `n_chains`).
@@ -476,6 +609,7 @@ snpslice_wrapper <- function(allele_table,
                              target_count_col = "reads",
                              loci_limit = NULL,
                              model = "negative_binomial",
+                             dict_prior = "empirical",
                              n_sample = 10000L,
                              n_burnin = NULL,
                              alpha = 2.6,
@@ -483,6 +617,7 @@ snpslice_wrapper <- function(allele_table,
                              threshold = 0.001,
                              gap = NULL,
                              estimator = "final_sample",
+                             dedup_haplotypes = TRUE,
                              n_chains = 3L,
                              threads = 1L,
                              verbose = FALSE,
@@ -513,6 +648,19 @@ snpslice_wrapper <- function(allele_table,
     )
   }
 
+  valid_models <- c(
+    "negative_binomial", "binomial", "poisson", "categorical", "multinomial"
+  )
+  if (!model %in% valid_models) {
+    stop(
+      "--model must be one of: ",
+      paste(valid_models, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  # Only the multinomial model can carry more than two alleles per target.
+  multiallelic <- identical(model, "multinomial")
+
   set.seed(seed)
   allele_tbl <- create_snpslice_allele_table_input(
     allele_table,
@@ -524,7 +672,8 @@ snpslice_wrapper <- function(allele_table,
   loci_groups <- create_snpslice_loci_group_input(
     loci_groups,
     allele_tbl,
-    target_name_col = target_name_col
+    target_name_col = target_name_col,
+    allow_multiallelic = multiallelic
   )
 
   if (!is.null(loci_limit)) {
@@ -537,19 +686,27 @@ snpslice_wrapper <- function(allele_table,
           length(loci_oi), "); no extra loci will be sampled."
         )
       }
-      # SNP-Slice keeps only targets with at most two alleles, so the extra
-      # loci are drawn from the biallelic targets alone. Monomorphic targets
-      # are excluded because they carry no allelic variation.
-      biallelic_trgs <- allele_tbl |>
+      # The biallelic models keep only targets with at most two alleles, so
+      # their extra loci are drawn from the biallelic targets alone; the
+      # multinomial model can draw from any polymorphic target. Monomorphic
+      # targets are excluded because they carry no allelic variation.
+      n_alleles_by_target <- allele_tbl |>
         dplyr::group_by(.data$target_name) |>
-        dplyr::filter(dplyr::n_distinct(.data$target_value) == 2) |>
-        dplyr::pull("target_name") |>
-        unique()
-      candidates <- setdiff(biallelic_trgs, loci_oi)
+        dplyr::summarise(
+          n_alleles = dplyr::n_distinct(.data$target_value),
+          .groups = "drop"
+        )
+      eligible <- if (multiallelic) {
+        n_alleles_by_target$n_alleles >= 2
+      } else {
+        n_alleles_by_target$n_alleles == 2
+      }
+      candidate_kind <- if (multiallelic) "polymorphic" else "biallelic"
+      candidates <- setdiff(n_alleles_by_target$target_name[eligible], loci_oi)
       if (n_loci_select > length(candidates)) {
         message(
-          "Note: only ", length(candidates), " biallelic target(s) are ",
-          "available to sample; requested ", n_loci_select, "."
+          "Note: only ", length(candidates), " ", candidate_kind,
+          " target(s) are available to sample; requested ", n_loci_select, "."
         )
         n_loci_select <- length(candidates)
       }
@@ -586,11 +743,17 @@ snpslice_wrapper <- function(allele_table,
   if (!is.null(rho)) {
     snpslice_args$rho <- rho
   }
+  # dict_prior is a multinomial-only argument; the other models' loaders
+  # would reject it.
+  if (multiallelic) {
+    snpslice_args$dict_prior <- dict_prior
+  }
   snpslice_res <- do.call(snp.slicer::snp_slice, snpslice_args)
 
-  mlaf <- prepare_snpslice_af_output(snpslice_res, loci_groups, estimator)
+  split <- snpslice_split_chains(snpslice_res, dedup_haplotypes = dedup_haplotypes)
+  mlaf <- prepare_snpslice_af_output(split$chains, split$best, loci_groups, estimator)
   readr::write_tsv(mlaf, mlaf_output)
-  coi <- prepare_snpslice_coi_output(snpslice_res, specimen_name_col, estimator)
+  coi <- prepare_snpslice_coi_output(split$chains, split$best, specimen_name_col, estimator)
   readr::write_tsv(coi, coi_output)
   convergence <- prepare_snpslice_optim_output(snpslice_res)
   readr::write_tsv(convergence, convergence_output)

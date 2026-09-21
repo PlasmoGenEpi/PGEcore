@@ -4,9 +4,20 @@
 \alias{prepare_snpslice_coi_output}
 \title{Format SNP-Slice COI estimates}
 \usage{
-prepare_snpslice_coi_output(snpslice_res, specimen_name_col, estimator)
+prepare_snpslice_coi_output(chains, best, specimen_name_col, estimator)
+}
+\arguments{
+\item{chains, best}{Output of \code{\link[=snpslice_split_chains]{snpslice_split_chains()}}.}
 }
 \description{
-Format SNP-Slice COI estimates
+Three per-specimen columns:
+\itemize{
+\item \code{coi}: strains assigned in the reported chain (highest MAP log
+posterior), the row sum of its allocation matrix.
+\item \code{coi_cons_weighted}: \code{\link[=snpslice_consensus_coi]{snpslice_consensus_coi()}} across chains.
+\item \code{coi_chain_mean}: the mean over all chains of that chain's \code{coi}, which
+is how Ju et al. (2024) report MOI (the average of the final-sample
+estimate over independently initialised chains).
+}
 }
 \keyword{internal}

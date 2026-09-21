@@ -16,6 +16,7 @@ snpslice_wrapper(
   target_count_col = "reads",
   loci_limit = NULL,
   model = "negative_binomial",
+  dict_prior = "empirical",
   n_sample = 10000L,
   n_burnin = NULL,
   alpha = 2.6,
@@ -23,6 +24,7 @@ snpslice_wrapper(
   threshold = 0.001,
   gap = NULL,
   estimator = "final_sample",
+  dedup_haplotypes = TRUE,
   n_chains = 3L,
   threads = 1L,
   verbose = FALSE,
@@ -45,7 +47,13 @@ See \emph{Outputs}.}
 
 \item{loci_limit}{Optional cap on the number of loci.}
 
-\item{model}{Observation model for SNP-Slice.}
+\item{model}{Observation model for SNP-Slice: \code{"negative_binomial"}
+(default), \code{"binomial"}, \code{"poisson"}, \code{"categorical"}, or
+\code{"multinomial"}. See \emph{Multi-allelic targets}.}
+
+\item{dict_prior}{Dictionary prior for the multinomial model, passed to
+\code{\link[snp.slicer:snp_slice]{snp.slicer::snp_slice()}}: \code{"empirical"} (default; pooled allele read
+fractions with a pseudocount) or \code{"uniform"}. Ignored by other models.}
 
 \item{n_sample}{Post-burn-in MCMC iterations retained per chain.}
 
@@ -61,6 +69,9 @@ and the global minor allele frequency for count models.}
 \item{estimator}{Estimator for COI and allele frequencies: \code{"final_sample"}
 (default, matching the SNP-Slice paper), \code{"map"}, or \code{"posterior"} (the
 posterior mean, which also yields uncertainty columns).}
+
+\item{dedup_haplotypes}{Merge strains with identical haplotypes in every
+chain before computing COI and frequencies. See \emph{Outputs}.}
 
 \item{n_chains}{Number of independent MCMC chains. More than one is required
 for the Gelman-Rubin R-hat diagnostic.}
@@ -90,23 +101,38 @@ matching \code{target_name_col}).
 }
 }
 
+\subsection{Multi-allelic targets}{
+
+The biallelic observation models (\code{"negative_binomial"}, \code{"binomial"},
+\code{"poisson"}, \code{"categorical"}) cannot represent a third allele, so any target
+with more than two alleles is dropped from its group with a warning, and
+extra loci drawn under \code{loci_limit} come from biallelic targets only. With
+\code{model = "multinomial"} every allele at every target is kept, groups with
+multi-allelic codons (for example dhfr 108 or dhps 540) are estimated in
+full, and extra loci are drawn from all polymorphic targets. The
+multinomial dictionary prior is set by \code{dict_prior}; \code{rho} is ignored.
+}
+
 \subsection{Outputs}{
 \itemize{
 \item \strong{\code{mlaf_output}}: Multilocus allele frequencies (\code{group_id}, \code{variant},
-\code{freq}, …).
+\code{freq}, \code{averaged_freq}, …). \code{freq} comes from the chain SNP-Slice
+reports (highest MAP log posterior); \code{averaged_freq} is the mean of the
+per-chain estimates over all chains, the estimator of Ju et al. (2024).
 \item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi},
-\code{coi_cons_weighted}; uncertainty columns when \code{estimator = "posterior"}).
+\code{coi_cons_weighted}, \code{coi_chain_mean}; uncertainty columns when
+\code{estimator = "posterior"}).
 \code{coi} counts every strain assigned to a host in the best restart.
 \code{coi_cons_weighted} pools haplotype membership across all restarts and
 weights each haplotype by its consensus support, which counters the
-dictionary over-parameterisation that inflates \code{coi}.
-\item \strong{\code{convergence_output}}: Per-restart optimization diagnostics
-(\code{chain_id}, \code{seed}, \code{map_logpost}, \code{is_best}, \code{map_iteration},
-\code{final_iteration}, \code{plateau_frac}, \code{map_kstar}, \code{map_ktrunc}, \code{coi_mean},
-\code{coi_ccc_to_best}). SNP-Slice reports the restart with the highest MAP log
-posterior rather than pooling chains, so between-chain R-hat and ESS do not
-describe its output and are not emitted.
+dictionary over-parameterisation that inflates \code{coi}. \code{coi_chain_mean}
+is the mean of \code{coi} over all restarts, as Ju et al. (2024) report MOI.
 }
+
+With \code{dedup_haplotypes = TRUE} (the default), strains with identical
+haplotypes are merged in every chain before any of these are computed, so
+a specimen assigned two copies of the same haplotype counts it once, as in
+Ju et al. (2024). \code{FALSE} restores the earlier raw counts.
 }
 
 \subsection{Running}{

@@ -4,9 +4,17 @@
 \alias{prepare_snpslice_af_output}
 \title{Format SNP-Slice allele frequencies with variantstring names}
 \usage{
-prepare_snpslice_af_output(snpslice_res, loci_groups, estimator)
+prepare_snpslice_af_output(chains, best, loci_groups, estimator)
+}
+\arguments{
+\item{chains, best}{Output of \code{\link[=snpslice_split_chains]{snpslice_split_chains()}}.}
 }
 \description{
-Format SNP-Slice allele frequencies with variantstring names
+\code{freq} is the estimate from the chain SNP-Slice reports (highest MAP log
+posterior). \code{averaged_freq} follows Ju et al. (2024), who report the mean
+of the per-chain estimates over independently initialised chains: it is
+the mean over all chains of that chain's frequency for the haplotype, with
+a haplotype a chain never produced counting as zero there. A row is kept
+when either column is positive.
 }
 \keyword{internal}

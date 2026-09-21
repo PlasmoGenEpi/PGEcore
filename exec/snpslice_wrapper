@@ -65,8 +65,19 @@ opts <- list(
     "--model",
     default = "negative_binomial",
     help = paste0(
-      "Observation model to use. Options: 'poisson', ",
-      "'binomial', 'negative_binomial' (default). Optional."
+      "Observation model to use. Options: 'poisson', 'binomial', ",
+      "'negative_binomial' (default), 'categorical', 'multinomial'. Only ",
+      "'multinomial' keeps targets with more than two alleles; the others ",
+      "drop them from the loci groups. Optional."
+    )
+  ),
+  make_option(
+    "--dict_prior",
+    default = "empirical",
+    help = paste0(
+      "Dictionary prior for the multinomial model: 'empirical' (default; ",
+      "pooled allele read fractions with a pseudocount) or 'uniform'. ",
+      "Ignored by other models. Optional."
     )
   ),
   make_option(
@@ -127,6 +138,18 @@ opts <- list(
       "default), 'map' (the maximum a posteriori state), or 'posterior' ",
       "(the posterior mean over retained MCMC samples, which also yields ",
       "uncertainty columns). Optional."
+    )
+  ),
+  make_option(
+    "--dedup_haplotypes",
+    type = "logical",
+    default = TRUE,
+    help = paste0(
+      "TRUE/FALSE. Merge strains with identical haplotypes in every chain ",
+      "before computing COI and frequencies, so a specimen carrying two ",
+      "copies of the same haplotype counts it once (as in Ju et al. 2024). ",
+      "Takes a value so it can be set from a benchmark paramset. Optional. ",
+      "Default: %default"
     )
   ),
   make_option(
@@ -208,6 +231,7 @@ invisible(
     target_count_col = arg$target_count_col,
     loci_limit = arg$loci_limit,
     model = arg$model,
+    dict_prior = arg$dict_prior,
     n_sample = arg$n_sample,
     n_burnin = arg$n_burnin,
     alpha = arg$alpha,
@@ -215,6 +239,7 @@ invisible(
     threshold = arg$threshold,
     gap = arg$gap,
     estimator = arg$estimator,
+    dedup_haplotypes = isTRUE(arg$dedup_haplotypes),
     n_chains = arg$n_chains,
     threads = arg$threads,
     verbose = isTRUE(arg$verbose) || isTRUE(arg$v),
