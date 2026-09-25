@@ -27,7 +27,8 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 
 
 	double varP=0.1;
-	double varE=0.0001;
+	// proposal SD for the error rates (rnorm takes an SD, not a variance)
+	double sdE=0.01;
 	double upper_bound_e1=0.2;
 	double upper_bound_e2=0.2;
 
@@ -151,10 +152,17 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 		if (err_method==2){
 			e1 = runif(0.0,upper_bound_e1);
 			e2 = runif(0.0,upper_bound_e2);
+			// cached likelihoods depend on e1 and e2
+			for (y=1;y<=n;y++){
+				for (x=1;x<=k;x++){
+					ll[y][x]= logLike_het(M[y], P[x], S2[y][x], e1, e2);
+					llcan[y][x]= ll[y][x];
+				}
+			}
 		}
 		if (err_method==3){
 
-			e1_can= rnorm(e1,varE);
+			e1_can= rnorm(e1,sdE);
 			if ((e1_can>=0) && (e1_can<=1)){
 
 				sumcan=0;
@@ -192,7 +200,7 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 			}
 
 
-			e2_can= rnorm(e2,varE);
+			e2_can= rnorm(e2,sdE);
 			if ((e2_can>=0) && (e2_can<=1)){
 
 				sumcan=0;
@@ -236,7 +244,7 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 		fprintf(V0,"%d", i);
 		for (x=1;x<=n;x++) fprintf(V0,"\t%d",  M[x]);
 		for (x=1;x<=k;x++) fprintf(V0,"\t%.6f", P[x]);
-		if (err_method==3) fprintf(V0,"\t%.6f\t%.6f", e1, e2);
+		if (err_method>=2) fprintf(V0,"\t%.6f\t%.6f", e1, e2);
 		fprintf(V0,"\n");
 
 	}
@@ -244,7 +252,7 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 	fprintf(V0, "total_acceptance");
 	for (x=1;x<=n;x++) fprintf(V0,"\t%d",  Maccept[x]);
 	for (x=1;x<=k;x++) fprintf(V0,"\t%d", Paccept[x]);
-	if (err_method==3) fprintf(V0,"\t%d\t%d", e1_accept, e2_accept);
+	if (err_method>=2) fprintf(V0,"\t%d\t%d", e1_accept, e2_accept);
 	fprintf(V0,"\n");
 
 	t2 = time(NULL);

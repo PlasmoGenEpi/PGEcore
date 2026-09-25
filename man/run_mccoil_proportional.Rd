@@ -32,7 +32,8 @@ run_mccoil_proportional(
 
 \item{epsilon}{Sequencing error parameter for the proportional model.}
 
-\item{err_method}{\code{1}/\code{2} treat epsilon as constant; \code{3} estimates it.}
+\item{err_method}{\code{1} fixes epsilon; \code{2} redraws it uniformly each
+iteration; \code{3} estimates it.}
 
 \item{path}{Directory for MCMC output files.}
 

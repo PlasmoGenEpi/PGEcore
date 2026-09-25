@@ -19,7 +19,8 @@
 #' @param M0 Initial COI.
 #' @param e1 Probability of calling homozygous loci heterozygous.
 #' @param e2 Probability of calling heterozygous loci homozygous.
-#' @param err_method `1`/`2` treat error rates as constants; `3` estimates them.
+#' @param err_method `1` fixes error rates; `2` redraws them uniformly each
+#'   iteration; `3` estimates them.
 #' @param path Directory for MCMC output files.
 #' @param output Base filename for MCMC traces (`<output>_summary.txt` is also
 #'   written).
@@ -190,7 +191,8 @@ run_mccoil_categorical <- function(data,
 #' @param burnin Burn-in iterations discarded when summarising.
 #' @param M0 Initial COI.
 #' @param epsilon Sequencing error parameter for the proportional model.
-#' @param err_method `1`/`2` treat epsilon as constant; `3` estimates it.
+#' @param err_method `1` fixes epsilon; `2` redraws it uniformly each
+#'   iteration; `3` estimates it.
 #' @param path Directory for MCMC output files.
 #' @param output Base filename for MCMC traces.
 #'
@@ -307,4 +309,81 @@ run_mccoil_proportional <- function(dataA1,
     quote = FALSE
   )
   invisible(Kc)
+}
+
+#' THEREALMcCOIL proportional MCMC with strain proportions shared across loci
+#'
+#' Each sample has one set of strain proportions shared by all its loci, and
+#' each strain carries one allele per locus. Read noise (`rho`) and the outlier
+#' rate (`pout`) are estimated; minor alleles below the smallest observed minor
+#' fraction and read count are treated as censored. Writes a trace and a
+#' `<output>_summary.txt` in the same layout as [run_mccoil_proportional()],
+#' with `rho` and `pout` as extra parameters.
+#'
+#' @inheritParams run_mccoil_proportional
+#' @param M0 Starting COI for every sample (default `1`).
+#' @param err Per-read error rate.
+#'
+#' @return `NULL`. Called for the files it writes.
+#' @keywords internal
+run_mccoil_proportional_joint <- function(dataA1,
+                                          dataA2,
+                                          maxCOI = 25,
+                                          totalrun = 10000,
+                                          burnin = 1000,
+                                          M0 = 1,
+                                          err = 1e-4,
+                                          path = getwd(),
+                                          output = "output.txt") {
+  n <- nrow(dataA1)
+  k <- ncol(dataA1)
+  if (n <= 10 || k <= 10) {
+    stop("Sample size is too small (n=", n, ", k=", k, ").", call. = FALSE)
+  }
+  # detection limit: smallest observed minor-allele fraction and read count
+  minor <- pmin(dataA1, dataA2)
+  seen <- dataA1 >= 0 & minor > 0
+  tau <- if (any(seen)) min((minor / (dataA1 + dataA2))[seen]) else 0.01
+  minreads <- if (any(seen)) min(minor[seen]) else 1
+  trace_path <- file.path(path, output)
+  .C(
+    "McCOIL_prop_joint",
+    as.integer(maxCOI),
+    as.integer(totalrun),
+    as.integer(n),
+    as.integer(k),
+    as.double(t(dataA1)),
+    as.double(t(dataA2)),
+    as.double(err),
+    as.double(0.01),
+    as.double(0.02),
+    as.double(tau),
+    as.double(minreads),
+    as.integer(rep(M0, length.out = n)),
+    as.character(trace_path),
+    PACKAGE = "PGEcore"
+  )
+
+  trace <- utils::read.table(trace_path, header = FALSE, nrows = totalrun)
+  post <- as.matrix(trace[(burnin + 1):totalrun, -1, drop = FALSE])
+  qs <- apply(post, 2, stats::quantile, probs = c(0.025, 0.975))
+  output_sum <- data.frame(
+    file = output,
+    CorP = c(rep("C", n), rep("P", k), "rho", "pout"),
+    name = c(rownames(dataA1), colnames(dataA1), "rho", "pout"),
+    mean = colMeans(post),
+    median = apply(post, 2, stats::median),
+    sd = round(apply(post, 2, stats::sd), 5),
+    quantile0.025 = qs[1, ],
+    quantile0.975 = qs[2, ]
+  )
+  utils::write.table(
+    output_sum,
+    paste0(trace_path, "_summary.txt"),
+    sep = "\t",
+    col.names = TRUE,
+    row.names = FALSE,
+    quote = FALSE
+  )
+  invisible(NULL)
 }

@@ -25,9 +25,9 @@ run_mccoil_chain(
 \arguments{
 \item{mccoil_input}{Prepared model input: the genotype matrix for the
 categorical model, or a list with \code{a1}/\code{a2} matrices for the proportional
-model.}
+models.}
 
-\item{model}{\code{"categorical"} or \code{"proportional"}.}
+\item{model}{\code{"categorical"}, \code{"proportional"} or \code{"proportional_joint"}.}
 
 \item{maxCOI}{Upper bound for COI.}
 
@@ -48,7 +48,7 @@ model.}
 \item{epsilon}{Error parameter for the proportional model.}
 
 \item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies.}
+with COI and allele frequencies (categorical model only).}
 
 \item{seed}{Random seed for this chain.}
 

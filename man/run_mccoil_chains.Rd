@@ -19,6 +19,7 @@ run_mccoil_chains(
   err_method = 1,
   seed = 321,
   n_chains = 3,
+  threads = 1,
   work_dir,
   output = "McCOIL_out.txt"
 )
@@ -26,7 +27,7 @@ run_mccoil_chains(
 \arguments{
 \item{df}{Preprocessed SNP calls.}
 
-\item{model}{\code{"categorical"} or \code{"proportional"}.}
+\item{model}{\code{"categorical"}, \code{"proportional"} or \code{"proportional_joint"}.}
 
 \item{maxCOI}{Upper bound for COI.}
 
@@ -47,12 +48,15 @@ run_mccoil_chains(
 \item{epsilon}{Error parameter for the proportional model.}
 
 \item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies.}
+with COI and allele frequencies (categorical model only).}
 
 \item{seed}{Random seed for the first chain; chain \code{i} uses \code{seed + i - 1}.}
 
 \item{n_chains}{Number of independent MCMC chains. More than one chain is
 required for the Gelman-Rubin R-hat diagnostic.}
+
+\item{threads}{Cores used to run chains simultaneously (capped at
+\code{n_chains}).}
 
 \item{work_dir}{Directory for McCOIL temp traces (typically under
 \code{tempdir()}).}
@@ -67,7 +71,8 @@ and \code{summary_path}, the summary file written by chain 1.
 \description{
 Prepares the model input once, then runs \code{n_chains} chains with seeds
 \verb{seed, seed + 1, ...}. Chains are independent and write to distinct trace
-files in \code{work_dir}, so they can run in parallel forks; on Windows, where
-forking is unavailable, they run sequentially.
+files in \code{work_dir}, so up to \code{threads} of them run in parallel forks; on
+Windows, where forking is unavailable, they run sequentially. Each chain
+seeds itself, so results are identical either way.
 }
 \keyword{internal}

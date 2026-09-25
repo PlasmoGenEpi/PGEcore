@@ -115,6 +115,22 @@ test_that("run_mccoil_categorical stops when n or k is too small", {
   )
 })
 
+test_that("run_mccoil_chains rejects unsupported err_method values", {
+  df <- tibble::tibble(
+    specimen_name = "S1", snp_name = "L1", seq_base = "A", reads = 5L
+  )
+  expect_error(
+    PGEcore:::run_mccoil_chains(df, err_method = 2, work_dir = tempdir()),
+    "one of 1\\|3"
+  )
+  expect_error(
+    PGEcore:::run_mccoil_chains(
+      df, model = "proportional", err_method = 3, work_dir = tempdir()
+    ),
+    "must be 1 for the proportional model"
+  )
+})
+
 test_that("THEREALMcCOIL_wrapper short MCMC on example data", {
   skip_on_cran()
   skip_if_not_installed("posterior")

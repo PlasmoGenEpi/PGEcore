@@ -83,6 +83,8 @@ derive_gt <- function(depths, ploidy, min_reads) {
 #' @param biallelic If `TRUE`, keep only sites with a single ALT.
 #' @param ploidy Ploidy used to render the GT field.
 #' @param gt_min_reads Minimum reads for an allele to count as present in GT.
+#' @param exclude_snp_names Optional comma-separated names, path to a
+#'   one-column file, or character vector of SNPs to leave out of the VCF.
 #' @param overwrite If `FALSE` (default), refuse to overwrite `vcf_output`.
 #' @param verbose If `TRUE`, print a summary message when finished.
 #'
@@ -97,6 +99,7 @@ snp_calls_to_vcf <- function(snp_calls,
                              biallelic = FALSE,
                              ploidy = 2L,
                              gt_min_reads = 1L,
+                             exclude_snp_names = NULL,
                              overwrite = FALSE,
                              verbose = FALSE) {
   options(dplyr.summarise.inform = FALSE)
@@ -125,6 +128,10 @@ snp_calls_to_vcf <- function(snp_calls,
     stop("`snp_calls` must be a file path or a data frame.", call. = FALSE)
   }
   validate_required_columns(calls, needed, "snp_calls")
+  exclude <- parse_name_list_arg(exclude_snp_names)
+  if (length(exclude) > 0) {
+    calls <- dplyr::filter(calls, !.data$snp_name %in% exclude)
+  }
 
   genome_set <- read_genome_dna_string_set(
     genome,

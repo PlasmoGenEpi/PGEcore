@@ -48,6 +48,33 @@ opts <- list(
     action = "store_true",
     default = FALSE,
     type = "logical"
+  ),
+  make_option(
+    "--exclude_snp_names",
+    help = "SNPs to drop before ranking (comma-separated or one-column TSV)"
+  ),
+  make_option(
+    "--drop_artifact_snps",
+    help = "drop SNPs whose minor allele recurs in otherwise-monoclonal specimens (e.g. PCR stutter). Default: %default",
+    action = "store_true",
+    default = FALSE,
+    type = "logical"
+  ),
+  make_option(
+    "--artifact_min_minor_rate",
+    type = "double",
+    default = 0.02,
+    help = "min share of otherwise-monoclonal specimens showing the minor allele to drop a SNP. Default: %default"
+  ),
+  make_option(
+    "--artifact_min_samples",
+    type = "integer",
+    default = 3,
+    help = "min number of those specimens showing it. Default: %default"
+  ),
+  make_option(
+    "--dropped_snps_output",
+    help = "write the names of dropped SNPs here, one per line"
   )
 )
 
@@ -68,6 +95,11 @@ invisible(
     select_specimen_names = arg$select_specimen_names,
     overwrite = isTRUE(arg$overwrite),
     only_biallelic = isTRUE(arg$only_biallelic),
-    only_informative = isTRUE(arg$only_informative)
+    only_informative = isTRUE(arg$only_informative),
+    exclude_snp_names = arg$exclude_snp_names,
+    drop_artifact_snps = isTRUE(arg$drop_artifact_snps),
+    artifact_min_minor_rate = arg$artifact_min_minor_rate,
+    artifact_min_samples = arg$artifact_min_samples,
+    dropped_snps_output = arg$dropped_snps_output
   )
 )

@@ -14,6 +14,9 @@ parse_name_list_arg <- function(value) {
     return(character(0))
   }
   if (file.exists(value)) {
+    if (file.size(value) == 0) {
+      return(character(0))
+    }
     as.character(
       readr::read_tsv(value, col_names = FALSE, show_col_types = FALSE)[[1]]
     )
@@ -125,6 +128,52 @@ validate_snp_table_column_types <- function(snp_table) {
     !is.na(is_biallelic)
   )
   stop_on_validate_fails(snp_table, snp_table_rules, "snp_table")
+}
+
+#' Flag SNPs whose minor allele recurs in otherwise-monoclonal specimens
+#'
+#' A real minor strain shows minor alleles at many SNPs of a specimen, so a SNP
+#' whose minor allele keeps appearing in specimens with at most one minor
+#' allele elsewhere is an artifact (e.g. PCR stutter in a tandem repeat).
+#'
+#' @param snp_table SNP call tibble.
+#' @param min_minor_rate Minimum share of eligible specimens showing the SNP's
+#'   minor allele.
+#' @param min_samples Minimum number of eligible specimens showing it.
+#' @param min_depth Minimum reads at a SNP for a specimen to be considered.
+#'
+#' @return A tibble with one row per SNP: `snp_name`, `eligible` specimens,
+#'   `hits`, `minor_rate` and `artifact`.
+#' @keywords internal
+flag_artifact_snps <- function(snp_table,
+                               min_minor_rate = 0.02,
+                               min_samples = 3,
+                               min_depth = 30) {
+  cells <- snp_table |>
+    dplyr::group_by(.data$specimen_name, .data$snp_name) |>
+    dplyr::summarise(
+      depth = sum(.data$reads),
+      minor = .data$depth - max(.data$reads),
+      .groups = "drop"
+    ) |>
+    dplyr::filter(.data$depth >= min_depth) |>
+    dplyr::mutate(hit = .data$minor > 0) |>
+    dplyr::group_by(.data$specimen_name) |>
+    dplyr::mutate(other_hits = sum(.data$hit) - .data$hit) |>
+    dplyr::ungroup()
+
+  cells |>
+    dplyr::filter(.data$other_hits <= 1) |>
+    dplyr::group_by(.data$snp_name) |>
+    dplyr::summarise(
+      eligible = dplyr::n(),
+      hits = sum(.data$hit),
+      .groups = "drop"
+    ) |>
+    dplyr::mutate(
+      minor_rate = .data$hits / .data$eligible,
+      artifact = .data$minor_rate >= min_minor_rate & .data$hits >= min_samples
+    )
 }
 
 #' Core greedy filter on expected heterozygosity and distance
@@ -261,6 +310,19 @@ filter_highest_diversity_snps_core <- function(snp_table_in,
 #'   `TRUE`.
 #' @param only_informative If `TRUE`, drop SNPs with expected heterozygosity
 #'   of zero.
+#' @param exclude_snp_names Optional comma-separated names, path to a
+#'   one-column TSV, or character vector of SNPs to drop before ranking.
+#' @param drop_artifact_snps If `TRUE`, drop SNPs whose minor allele recurs in
+#'   specimens that look monoclonal at every other SNP (e.g. PCR stutter)
+#'   before ranking; artifacts inflate expected heterozygosity and would
+#'   otherwise be preferred.
+#' @param artifact_min_minor_rate Minimum share of those specimens showing the
+#'   minor allele for a SNP to be dropped (default `0.02`).
+#' @param artifact_min_samples Minimum number of those specimens showing it
+#'   (default `3`).
+#' @param dropped_snps_output Optional path; writes the names of SNPs dropped by
+#'   `exclude_snp_names` or `drop_artifact_snps`, one per line, so other steps
+#'   can exclude the same SNPs.
 #'
 #' @return Filtered SNP table including an `he` column.
 #'
@@ -274,7 +336,12 @@ filter_to_highest_diversity_independent_snp_call <- function(snp_calls,
                                                              select_specimen_names = NULL,
                                                              overwrite = FALSE,
                                                              only_biallelic = FALSE,
-                                                             only_informative = FALSE) {
+                                                             only_informative = FALSE,
+                                                             exclude_snp_names = NULL,
+                                                             drop_artifact_snps = FALSE,
+                                                             artifact_min_minor_rate = 0.02,
+                                                             artifact_min_samples = 3,
+                                                             dropped_snps_output = NULL) {
   options(dplyr.summarise.inform = FALSE)
 
   input_label <- "snp_calls"
@@ -319,6 +386,24 @@ filter_to_highest_diversity_independent_snp_call <- function(snp_calls,
   )
 
   stop_if_output_exists(snp_calls_output, overwrite)
+
+  drop_snps <- parse_name_list_arg(exclude_snp_names)
+  if (drop_artifact_snps) {
+    flags <- flag_artifact_snps(
+      snp_tbl,
+      min_minor_rate = artifact_min_minor_rate,
+      min_samples = artifact_min_samples
+    )
+    drop_snps <- union(drop_snps, flags$snp_name[flags$artifact])
+  }
+  dropped <- intersect(drop_snps, unique(snp_tbl$snp_name))
+  if (length(dropped) > 0) {
+    message("dropping ", length(dropped), " SNPs: ", paste(dropped, collapse = ","))
+    snp_tbl <- dplyr::filter(snp_tbl, !.data$snp_name %in% dropped)
+  }
+  if (!is.null(dropped_snps_output)) {
+    writeLines(dropped, dropped_snps_output)
+  }
 
   out <- filter_highest_diversity_snps_core(
     snp_tbl,

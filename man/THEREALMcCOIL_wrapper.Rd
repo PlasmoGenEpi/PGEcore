@@ -21,6 +21,7 @@ THEREALMcCOIL_wrapper(
   err_method = 1L,
   seed = 321L,
   n_chains = 3L,
+  threads = 1L,
   convergence_output = "convergence_diag.tsv",
   convergence_summary_output = "convergence_summary.tsv"
 )
@@ -32,8 +33,12 @@ THEREALMcCOIL_wrapper(
 
 \item{coi_output}{Output TSV of COI estimates. See \emph{Outputs}.}
 
-\item{model}{\code{"categorical"} (heterozygous/homozygous calls) or
-\code{"proportional"} (allele frequency / read-count data).}
+\item{model}{\code{"categorical"} (heterozygous/homozygous calls),
+\code{"proportional"} (allele frequency / read-count data), or
+\code{"proportional_joint"} (read counts, with each sample's strain proportions
+shared across loci; estimates its own read noise and spreads chain starts
+evenly from 1 to 15 strains, so \code{M0}, \code{epsilon} and \code{err_method} do not
+apply).}
 
 \item{maxCOI}{Upper bound for COI.}
 
@@ -54,12 +59,15 @@ THEREALMcCOIL_wrapper(
 \item{epsilon}{Error parameter for the proportional model.}
 
 \item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies.}
+with COI and allele frequencies (categorical model only).}
 
 \item{seed}{Random seed for the first chain; chain \code{i} uses \code{seed + i - 1}.}
 
 \item{n_chains}{Number of independent MCMC chains. More than one chain is
 required for the Gelman-Rubin R-hat diagnostic.}
+
+\item{threads}{Cores used to run chains simultaneously (capped at
+\code{n_chains}).}
 
 \item{convergence_output}{Output TSV of MCMC convergence diagnostics. See
 \emph{Outputs}.}
@@ -90,6 +98,10 @@ single-locus allele frequencies. Compiled C routines (\code{McCOIL_categorical},
 \itemize{
 \item \strong{\code{slaf_output}}: Single-locus allele frequencies (\code{variant}, \code{freq}).
 \item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi}).
+}
+
+Both are posterior medians over the post-burn-in draws of all chains.
+\itemize{
 \item \strong{\code{convergence_output}}: MCMC diagnostics (\code{variable}, \code{mean}, \code{median},
 \code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}).
 }

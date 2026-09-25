@@ -19,9 +19,10 @@ opts <- list(
     type = "character",
     default = "categorical",
     help = paste0(
-      "categorial or proprotional. ",
+      "categorical, proportional or proportional_joint. ",
       "The `categorical` one models heterozygous/homozygous calls; ",
-      "the `proportional` one models frequency data",
+      "the `proportional` one models frequency data; ",
+      "`proportional_joint` models read counts with strain proportions shared across loci. ",
       "Default: %default"
     )
   ),
@@ -117,8 +118,8 @@ opts <- list(
     default = 1,
     help = paste0(
       "1: use pre-specified e1 and e2 and treat them as constants; ",
-      "3: e1 and e2 are estimated with COI and allele frequencies",
-      "Can be used in both models. ",
+      "3: e1 and e2 are estimated with COI and allele frequencies ",
+      "(categorical model only). ",
       "Default: %default"
     )
   ),
@@ -131,6 +132,12 @@ opts <- list(
       "Can be used in both models. ",
       "Default: %default"
     )
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    default = 1,
+    help = "Cores used to run chains simultaneously (capped at n_chains). Default: %default"
   ),
   make_option(
     "--n_chains",
@@ -206,6 +213,7 @@ invisible(
     err_method = arg$err_method,
     seed = arg$seed,
     n_chains = arg$n_chains,
+    threads = arg$threads,
     convergence_output = arg$convergence_output,
     convergence_summary_output = arg$convergence_summary_output
   )

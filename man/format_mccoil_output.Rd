@@ -2,17 +2,17 @@
 % Please edit documentation in R/THEREALMcCOIL_wrapper.R
 \name{format_mccoil_output}
 \alias{format_mccoil_output}
-\title{Format McCOIL summary TSV into PGE COI and SLAF tables}
+\title{Format pooled McCOIL draws into PGE COI and SLAF tables}
 \usage{
-format_mccoil_output(summary_path)
+format_mccoil_output(draws)
 }
 \arguments{
-\item{summary_path}{Path to \verb{*_summary.txt} written by McCOIL.}
+\item{draws}{Output of \code{\link[=mccoil_draws]{mccoil_draws()}}.}
 }
 \value{
 A list with \code{slaf} and \code{coi} tibbles.
 }
 \description{
-Format McCOIL summary TSV into PGE COI and SLAF tables
+Estimates are posterior medians over the post-burn-in draws of all chains.
 }
 \keyword{internal}

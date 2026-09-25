@@ -73,7 +73,8 @@ void McCOIL_prop(int *max, int *iterations, int *n0, int *k0, double *A1,
 
   double varP = 0.1;
   double varS = 0.1;
-  double varE = 0.0001;
+  // proposal SD for the error rates (rnorm takes an SD, not a variance)
+  double sdE = 0.01;
   double upper_bound_c = 0.1;
 
   double temp_l_est = 0;
@@ -262,9 +263,17 @@ void McCOIL_prop(int *max, int *iterations, int *n0, int *k0, double *A1,
 
     if (err_method == 2) {
       c = runif(0.0, upper_bound_c);
+      // cached likelihoods depend on c
+      for (y = 1; y <= n; y++) {
+        for (x = 1; x <= k; x++) {
+          ll[y][x] = logLike(M[y], P[x], dataA1[y][x], dataA2[y][x],
+                             Strue[y][x], gridA, gridB, c);
+          llcan[y][x] = ll[y][x];
+        }
+      }
     }
     if (err_method == 3) {
-      c_can = rnorm(c, varE);
+      c_can = rnorm(c, sdE);
       if (c_can >= 0) {
 
         sumcan = 0;
@@ -307,7 +316,7 @@ void McCOIL_prop(int *max, int *iterations, int *n0, int *k0, double *A1,
       fprintf(V0, "\t%d", M[x]);
     for (x = 1; x <= k; x++)
       fprintf(V0, "\t%.6f", P[x]);
-    if (err_method == 3)
+    if (err_method >= 2)
       fprintf(V0, "\t%.6f", c);
     fprintf(V0, "\n");
   }
@@ -317,7 +326,7 @@ void McCOIL_prop(int *max, int *iterations, int *n0, int *k0, double *A1,
     fprintf(V0, "\t%d", Maccept[x]);
   for (x = 1; x <= k; x++)
     fprintf(V0, "\t%d", Paccept[x]);
-  if (err_method == 3)
+  if (err_method >= 2)
     fprintf(V0, "\t%d", c_accept);
   fprintf(V0, "\n");
 
