@@ -385,21 +385,22 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' Estimate multilocus allele frequency and COI with SNP-Slice
 #'
 #' Estimates multilocus allele frequencies and per-specimen COI. Requires
-#' **snp.slicer** (with multi-chain sampling and `estimate`) and
-#' **variantstring** 1.x (Suggests).
+#' **snp.slicer** (with multi-chain sampling and `estimate`) and, when loci
+#' groups are supplied, **variantstring** 1.x (Suggests).
 #'
 #' ## Inputs
 #'
 #' - **`allele_table`**: Allele / AA-style table with counts. Default column
 #'   names map AA-call fields (`aa_locus`, `aa`, `reads`). See
 #'   `vignette("input-formats", package = "PGEcore")`.
-#' - **`loci_groups`**: Loci-groups TSV (`group_id` plus a locus column
-#'   matching `target_name_col`).
+#' - **`loci_groups`** (optional): Loci-groups TSV (`group_id` plus a locus
+#'   column matching `target_name_col`). Supply together with `mlaf_output`.
+#'   Omit both to run in COI-only mode.
 #'
 #' ## Outputs
 #'
-#' - **`mlaf_output`**: Multilocus allele frequencies (`group_id`, `variant`,
-#'   `freq`, …).
+#' - **`mlaf_output`** (only with `loci_groups`): Multilocus allele
+#'   frequencies (`group_id`, `variant`, `freq`, …).
 #' - **`coi_output`**: COI estimates (`specimen_name`, `coi`,
 #'   `coi_cons_weighted`; uncertainty columns when `estimator = "posterior"`).
 #'   `coi` counts every strain assigned to a host in the best restart.
@@ -432,17 +433,32 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #'   --coi_output coi.tsv
 #' ```
 #'
-#' Requires **snp.slicer** and **variantstring** (Suggests).
+#' COI only:
+#'
+#' ```bash
+#' Rscript exec/snpslice_wrapper \
+#'   --allele_table aa_calls.tsv \
+#'   --loci_limit 100 \
+#'   --coi_output coi.tsv
+#' ```
+#'
+#' Requires **snp.slicer**, plus **variantstring** when `loci_groups` is
+#' supplied (Suggests).
 #'
 #' @param allele_table Path to allele / AA-calls TSV with counts. See *Inputs*.
-#' @param loci_groups Path to loci-groups TSV. See *Inputs*.
-#' @param mlaf_output Path for multilocus allele-frequency TSV. See *Outputs*.
+#' @param loci_groups Optional path to loci-groups TSV. Must be supplied
+#'   together with `mlaf_output`. See *Inputs*.
+#' @param mlaf_output Optional path for multilocus allele-frequency TSV. Must
+#'   be supplied together with `loci_groups`. See *Outputs*.
 #' @param coi_output Path for COI TSV. See *Outputs*.
 #' @param convergence_output Path for per-restart optimization-diagnostics TSV.
 #'   See *Outputs*.
 #' @param specimen_name_col,target_name_col,target_value_col,target_count_col
 #'   Column names in `allele_table`.
-#' @param loci_limit Optional cap on the number of loci.
+#' @param loci_limit Optional cap on the number of loci. With `loci_groups`,
+#'   the group loci are always kept and the remainder is filled with random
+#'   biallelic loci; without, all loci are random biallelic loci. If `NULL`,
+#'   all loci are used.
 #' @param model Observation model for SNP-Slice.
 #' @param n_sample Post-burn-in MCMC iterations retained per chain.
 #' @param n_burnin Burn-in iterations per chain. If `NULL`, SNP-Slice uses
@@ -461,14 +477,15 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' @param seed Random seed.
 #'
 #' @return Invisibly, a list with `mlaf`, `coi`, and `convergence` tibbles.
+#'   `mlaf` is `NULL` when `loci_groups` is not supplied.
 #'
 #' @seealso `vignette("input-formats", package = "PGEcore")`
 #'
 #' @export
 snpslice_wrapper <- function(allele_table,
-                             loci_groups,
-                             mlaf_output,
                              coi_output,
+                             loci_groups = NULL,
+                             mlaf_output = NULL,
                              convergence_output = "convergence_diag.tsv",
                              specimen_name_col = "specimen_name",
                              target_name_col = "aa_locus",
@@ -488,12 +505,12 @@ snpslice_wrapper <- function(allele_table,
                              verbose = FALSE,
                              seed = 1L) {
   check_suggested_pkg("snp.slicer", "SNP-Slice via snpslice_wrapper()")
-  check_variantstring_v1("variant strings via snpslice_wrapper()")
+  if (!is.null(loci_groups)) {
+    check_variantstring_v1("variant strings via snpslice_wrapper()")
+  }
 
   required <- list(
     allele_table = allele_table,
-    loci_groups = loci_groups,
-    mlaf_output = mlaf_output,
     coi_output = coi_output
   )
   missing <- names(required)[vapply(required, is.null, logical(1))]
@@ -501,6 +518,13 @@ snpslice_wrapper <- function(allele_table,
     stop(
       "missing the following arguments: ",
       paste(paste0("--", missing), collapse = ", "),
+      call. = FALSE
+    )
+  }
+  if (is.null(loci_groups) != is.null(mlaf_output)) {
+    stop(
+      "--loci_groups and --mlaf_output must be supplied together. Omit both ",
+      "to estimate COI only.",
       call. = FALSE
     )
   }
@@ -521,14 +545,18 @@ snpslice_wrapper <- function(allele_table,
     target_value_col = target_value_col,
     target_count_col = target_count_col
   )
-  loci_groups <- create_snpslice_loci_group_input(
-    loci_groups,
-    allele_tbl,
-    target_name_col = target_name_col
-  )
+  if (!is.null(loci_groups)) {
+    loci_groups <- create_snpslice_loci_group_input(
+      loci_groups,
+      allele_tbl,
+      target_name_col = target_name_col
+    )
+  }
 
   if (!is.null(loci_limit)) {
     if (dplyr::n_distinct(allele_tbl$target_name) > loci_limit) {
+      # Without loci groups (COI-only mode) loci_oi is empty, so every
+      # selected locus is drawn at random.
       loci_oi <- unique(unlist(loci_groups))
       n_loci_select <- max(0L, loci_limit - length(loci_oi))
       if (n_loci_select == 0L) {
@@ -588,8 +616,11 @@ snpslice_wrapper <- function(allele_table,
   }
   snpslice_res <- do.call(snp.slicer::snp_slice, snpslice_args)
 
-  mlaf <- prepare_snpslice_af_output(snpslice_res, loci_groups, estimator)
-  readr::write_tsv(mlaf, mlaf_output)
+  mlaf <- NULL
+  if (!is.null(loci_groups)) {
+    mlaf <- prepare_snpslice_af_output(snpslice_res, loci_groups, estimator)
+    readr::write_tsv(mlaf, mlaf_output)
+  }
   coi <- prepare_snpslice_coi_output(snpslice_res, specimen_name_col, estimator)
   readr::write_tsv(coi, coi_output)
   convergence <- prepare_snpslice_optim_output(snpslice_res)

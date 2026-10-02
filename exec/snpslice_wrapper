@@ -47,7 +47,8 @@ opts <- list(
     type = "character",
     help = paste0(
       "Loci groups TSV (group_id plus locus column matching ",
-      "--target_name_col). See vignette input-formats. Required."
+      "--target_name_col). See vignette input-formats. Optional; supply ",
+      "together with --mlaf_output. Omit both to estimate COI only."
     )
   ),
   make_option(
@@ -58,7 +59,8 @@ opts <- list(
       "the input loci can be subsetted to contain the loci of interest in ",
       "loci_groups and additional random loci, up to the limit ",
       "specified here. Using more loci will improve COI estimation, but ",
-      "increase computation time. If not provided, all loci will be used."
+      "increase computation time. Without --loci_groups, all selected loci ",
+      "are random. If not provided, all loci will be used."
     )
   ),
   make_option(
@@ -162,7 +164,8 @@ opts <- list(
   make_option(
     "--mlaf_output",
     help = paste0(
-      "Output MLAF TSV (group_id, variant, freq). Required."
+      "Output MLAF TSV (group_id, variant, freq). Required if ",
+      "--loci_groups is supplied; omit otherwise."
     )
   ),
   make_option(
@@ -184,8 +187,6 @@ parser <- OptionParser(option_list = opts)
 arg <- parse_args(parser)
 missing <- character()
 if (is.null(arg$allele_table)) missing <- c(missing, "--allele_table")
-if (is.null(arg$loci_groups)) missing <- c(missing, "--loci_groups")
-if (is.null(arg$mlaf_output)) missing <- c(missing, "--mlaf_output")
 if (is.null(arg$coi_output)) missing <- c(missing, "--coi_output")
 if (length(missing) > 0) {
   stop(
