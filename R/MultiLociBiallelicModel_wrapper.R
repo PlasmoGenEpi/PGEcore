@@ -149,13 +149,55 @@ create_MultiLociBiallelicModel_input <- function(input_path,
     )
 
   result_list <- stats::setNames(grouped_list$identifiers, grouped_list$group_id)
-  result_tables <- lapply(names(result_list), function(group_name) {
+
+  # Loci listed in a group but absent from the calls (e.g. removed upstream as
+  # non-biallelic or uncovered) silently shrink the group; report them, and
+  # drop groups left with fewer than 2 loci since the model needs >= 2.
+  runnable_groups <- character(0)
+  for (group_name in unique(loci_groups$group_id)) {
+    in_group <- loci_groups$group_id == group_name
+    expected <- unique(paste(
+      loci_groups$gene_id[in_group],
+      loci_groups$aa_position[in_group],
+      sep = ":"
+    ))
+    present <- result_list[[group_name]]
+    missing_loci <- setdiff(expected, present)
+    if (length(present) < 2) {
+      warning(
+        "Skipping loci group ", group_name, ": only ", length(present),
+        " of its ", length(expected), " loci are present in the amino acid ",
+        "calls (need at least 2). Missing: ",
+        paste(missing_loci, collapse = ", "),
+        call. = FALSE
+      )
+      next
+    }
+    if (length(missing_loci) > 0) {
+      warning(
+        "Loci group ", group_name, " is missing ", length(missing_loci),
+        " of its ", length(expected), " loci from the amino acid calls; ",
+        "running on the remaining ", length(present), ". Missing: ",
+        paste(missing_loci, collapse = ", "),
+        call. = FALSE
+      )
+    }
+    runnable_groups <- c(runnable_groups, group_name)
+  }
+  if (length(runnable_groups) == 0) {
+    stop(
+      "No loci group has at least 2 loci present in the amino acid calls.",
+      call. = FALSE
+    )
+  }
+
+  result_tables <- lapply(runnable_groups, function(group_name) {
     columns <- c("specimen_name", result_list[[group_name]])
     dplyr::select(MLBM_data, dplyr::all_of(columns))
   })
-  names(result_tables) <- names(result_list)
+  names(result_tables) <- runnable_groups
   MLBM_object$by_group_table <- result_tables
-  MLBM_object$groups <- unique(loci_groups$group_id)
+  MLBM_object$groups <- runnable_groups
   MLBM_object
 }
 
