@@ -427,7 +427,7 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #'
 #' ```bash
 #' Rscript exec/snpslice_wrapper \
-#'   --allele_table aa_calls.tsv \
+#'   --allele_table ./inst/extdata/example_aa_calls.tsv \
 #'   --loci_groups loci_groups.tsv \
 #'   --mlaf_output mlaf.tsv \
 #'   --coi_output coi.tsv
