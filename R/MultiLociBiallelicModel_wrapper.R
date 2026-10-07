@@ -152,7 +152,8 @@ create_MultiLociBiallelicModel_input <- function(input_path,
 
   # Loci listed in a group but absent from the calls (e.g. removed upstream as
   # non-biallelic or uncovered) silently shrink the group; report them, and
-  # drop groups left with fewer than 2 loci since the model needs >= 2.
+  # drop groups left with fewer than 2 loci since the model needs >= 2. If this 
+  # is not done the wrapper hard errors out and no results are produced  
   runnable_groups <- character(0)
   for (group_name in unique(loci_groups$group_id)) {
     in_group <- loci_groups$group_id == group_name
