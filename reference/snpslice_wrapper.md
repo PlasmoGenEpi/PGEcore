@@ -1,17 +1,17 @@
 # Estimate multilocus allele frequency and COI with SNP-Slice
 
 Estimates multilocus allele frequencies and per-specimen COI. Requires
-**snp.slicer** (with multi-chain sampling and `estimate`) and
-**variantstring** 1.x (Suggests).
+**snp.slicer** (with multi-chain sampling and `estimate`) and, when loci
+groups are supplied, **variantstring** 1.x (Suggests).
 
 ## Usage
 
 ``` r
 snpslice_wrapper(
   allele_table,
-  loci_groups,
-  mlaf_output,
   coi_output,
+  loci_groups = NULL,
+  mlaf_output = NULL,
   convergence_output = "convergence_diag.tsv",
   specimen_name_col = "specimen_name",
   target_name_col = "aa_locus",
@@ -39,17 +39,19 @@ snpslice_wrapper(
 
   Path to allele / AA-calls TSV with counts. See *Inputs*.
 
-- loci_groups:
-
-  Path to loci-groups TSV. See *Inputs*.
-
-- mlaf_output:
-
-  Path for multilocus allele-frequency TSV. See *Outputs*.
-
 - coi_output:
 
   Path for COI TSV. See *Outputs*.
+
+- loci_groups:
+
+  Optional path to loci-groups TSV. Must be supplied together with
+  `mlaf_output`. See *Inputs*.
+
+- mlaf_output:
+
+  Optional path for multilocus allele-frequency TSV. Must be supplied
+  together with `loci_groups`. See *Outputs*.
 
 - convergence_output:
 
@@ -62,7 +64,10 @@ snpslice_wrapper(
 
 - loci_limit:
 
-  Optional cap on the number of loci.
+  Optional cap on the number of loci. With `loci_groups`, the group loci
+  are always kept and the remainder is filled with random biallelic
+  loci; without, all loci are random biallelic loci. If `NULL`, all loci
+  are used.
 
 - model:
 
@@ -113,7 +118,8 @@ snpslice_wrapper(
 
 ## Value
 
-Invisibly, a list with `mlaf`, `coi`, and `convergence` tibbles.
+Invisibly, a list with `mlaf`, `coi`, and `convergence` tibbles. `mlaf`
+is `NULL` when `loci_groups` is not supplied.
 
 ## Details
 
@@ -123,13 +129,14 @@ Invisibly, a list with `mlaf`, `coi`, and `convergence` tibbles.
   column names map AA-call fields (`aa_locus`, `aa`, `reads`). See
   [`vignette("input-formats", package = "PGEcore")`](https://plasmogenepi.github.io/PGEcore/articles/input-formats.md).
 
-- **`loci_groups`**: Loci-groups TSV (`group_id` plus a locus column
-  matching `target_name_col`).
+- **`loci_groups`** (optional): Loci-groups TSV (`group_id` plus a locus
+  column matching `target_name_col`). Supply together with
+  `mlaf_output`. Omit both to run in COI-only mode.
 
 ### Outputs
 
-- **`mlaf_output`**: Multilocus allele frequencies (`group_id`,
-  `variant`, `freq`, …).
+- **`mlaf_output`** (only with `loci_groups`): Multilocus allele
+  frequencies (`group_id`, `variant`, `freq`, …).
 
 - **`coi_output`**: COI estimates (`specimen_name`, `coi`,
   `coi_cons_weighted`; uncertainty columns when
@@ -161,7 +168,15 @@ Invisibly, a list with `mlaf`, `coi`, and `convergence` tibbles.
       --mlaf_output mlaf.tsv \
       --coi_output coi.tsv
 
-Requires **snp.slicer** and **variantstring** (Suggests).
+COI only:
+
+    Rscript exec/snpslice_wrapper \
+      --allele_table aa_calls.tsv \
+      --loci_limit 100 \
+      --coi_output coi.tsv
+
+Requires **snp.slicer**, plus **variantstring** when `loci_groups` is
+supplied (Suggests).
 
 ## See also
 
