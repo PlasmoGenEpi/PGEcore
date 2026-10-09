@@ -10,15 +10,15 @@ run_mccoil_proportional(
   maxCOI = 25,
   totalrun = 10000,
   burnin = 1000,
-  M0 = 15,
-  epsilon = 0.02,
-  err_method = 1,
+  M0 = 1,
+  err = 1e-04,
   path = getwd(),
   output = "output.txt"
 )
 }
 \arguments{
-\item{dataA1}{Allele-1 read counts (samples x sites).}
+\item{dataA1}{Allele-1 read counts (samples x sites); negative marks a
+missing locus.}
 
 \item{dataA2}{Allele-2 read counts (samples x sites).}
 
@@ -28,22 +28,24 @@ run_mccoil_proportional(
 
 \item{burnin}{Burn-in iterations discarded when summarising.}
 
-\item{M0}{Initial COI.}
+\item{M0}{Starting COI for every sample.}
 
-\item{epsilon}{Sequencing error parameter for the proportional model.}
-
-\item{err_method}{\code{1}/\code{2} treat epsilon as constant; \code{3} estimates it.}
+\item{err}{Per-read error rate.}
 
 \item{path}{Directory for MCMC output files.}
 
-\item{output}{Base filename for MCMC traces.}
+\item{output}{Base filename for the MCMC trace.}
 }
 \value{
 \code{NULL}. Called for the files it writes.
 }
 \description{
-Ported from \code{McCOIL_proportional.R}. Reads the fitted beta grid from package
-\code{extdata} and calls compiled \code{McCOIL_prop}. Named \code{run_mccoil_proportional}
-so it does not collide with registered C symbols.
+Each sample has one set of strain proportions shared by all its loci, and
+each strain carries one allele per locus. Read noise (\code{rho}) and the outlier
+weight (\code{pout}) are estimated. A minor allele below the detection limit,
+taken as the smallest minor-allele fraction and read count seen in the data,
+is treated as censored. Calls compiled \code{McCOIL_prop} and writes its trace and
+a \verb{<output>_summary.txt} in the same layout as \code{\link[=run_mccoil_categorical]{run_mccoil_categorical()}},
+with \code{rho} and \code{pout} as extra parameters.
 }
 \keyword{internal}

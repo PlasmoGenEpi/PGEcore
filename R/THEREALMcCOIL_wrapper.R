@@ -139,14 +139,10 @@ prep_input_prop <- function(df) {
   row.names(df_allele2) <- df_allele2$specimen_name
   df_allele2 <- df_allele2[, -1, drop = FALSE]
 
-  # The two subsets are pivoted independently, so each names its columns in the
-  # order it happens to meet the loci and carries only the specimens that have a
-  # read for that allele. McCOIL_prop sizes both matrices from a1 and reads them
-  # as flat vectors, so anything not on a shared grid pairs one locus's allele-1
-  # count with another locus's allele-2 count -- the likelihood never improves
-  # and every specimen stays at its starting COI. Put both on the full
-  # specimen x locus grid; an absent combination is a count of zero, and no
-  # specimen is dropped for lacking one of the two alleles.
+  # Each pivot orders columns by first appearance and keeps only specimens with a
+  # read for that allele. McCOIL_prop reads both matrices as flat vectors of the
+  # same shape, so place both on the full specimen x locus grid, with a missing
+  # combination counted as zero reads.
   specimens <- unique(df_with_allele_idx$specimen_name)
   loci <- unique(df_with_allele_idx$snp_name)
   on_grid <- function(d) {
@@ -163,16 +159,44 @@ prep_input_prop <- function(df) {
   a1 <- on_grid(df_allele1)
   a2 <- on_grid(df_allele2)
 
-  # McCOIL_prop reads a locus as missing only when a count is negative; its
-  # likelihood divides by the two counts, so a locus with no reads for either
-  # allele gives 0/0 and turns the whole per-specimen sum into NaN. No proposal
-  # then clears the acceptance test and that specimen keeps its starting COI for
-  # the entire chain. Mark uncovered specimen-locus pairs as missing instead.
+  # McCOIL_prop treats a negative count as a missing locus; mark specimen-locus
+  # pairs with no reads for either allele that way.
   uncovered <- (a1 + a2) == 0
   a1[uncovered] <- -1
   a2[uncovered] <- -1
 
   list(a1 = a1, a2 = a2)
+}
+
+#' Starting COI for each McCOIL chain
+#'
+#' @param M0 One starting COI for every chain, or one per chain, as a numeric
+#'   vector or a comma-separated string such as `"1,5,15"`.
+#' @param n_chains Number of chains.
+#' @param maxCOI Upper bound for COI.
+#' @return Integer vector with one starting COI per chain.
+#' @keywords internal
+mccoil_chain_starts <- function(M0, n_chains, maxCOI) {
+  starts <- if (is.character(M0)) {
+    suppressWarnings(as.numeric(trimws(unlist(strsplit(M0, ",", fixed = TRUE)))))
+  } else {
+    as.numeric(M0)
+  }
+  if (length(starts) == 0 || anyNA(starts) || any(starts != round(starts)) ||
+      any(starts < 1) || any(starts > maxCOI)) {
+    stop("--M0 must be whole numbers from 1 to maxCOI (", maxCOI, ")", call. = FALSE)
+  }
+  if (length(starts) == 1) {
+    starts <- rep(starts, n_chains)
+  }
+  if (length(starts) != n_chains) {
+    stop(
+      "--M0 gives ", length(starts), " starting COIs but n_chains is ", n_chains,
+      "; give one value for all chains or one per chain",
+      call. = FALSE
+    )
+  }
+  as.integer(starts)
 }
 
 #' Run a single McCOIL chain and return its per-iteration trace
@@ -184,6 +208,7 @@ prep_input_prop <- function(df) {
 #'   categorical model, or a list with `a1`/`a2` matrices for the proportional
 #'   model.
 #' @param model `"categorical"` or `"proportional"`.
+#' @param M0 Starting COI for this chain.
 #' @param seed Random seed for this chain.
 #' @param work_dir Directory for McCOIL temp traces.
 #' @param output Trace filename (under `work_dir`) for this chain.
@@ -202,7 +227,6 @@ run_mccoil_chain <- function(mccoil_input,
                              M0,
                              e1,
                              e2,
-                             epsilon,
                              err_method,
                              seed,
                              work_dir,
@@ -233,8 +257,6 @@ run_mccoil_chain <- function(mccoil_input,
       totalrun = totalrun,
       burnin = burnin,
       M0 = M0,
-      epsilon = epsilon,
-      err_method = err_method,
       path = work_dir,
       output = output
     )
@@ -246,8 +268,9 @@ run_mccoil_chain <- function(mccoil_input,
 #'
 #' Prepares the model input once, then runs `n_chains` chains with seeds
 #' `seed, seed + 1, ...`. Chains are independent and write to distinct trace
-#' files in `work_dir`, so they can run in parallel forks; on Windows, where
-#' forking is unavailable, they run sequentially.
+#' files in `work_dir`, so up to `threads` of them run in parallel forks; on
+#' Windows, where forking is unavailable, they run sequentially. Each chain
+#' seeds itself, so results are identical either way.
 #'
 #' @param df Preprocessed SNP calls.
 #' @param model `"categorical"` or `"proportional"`.
@@ -267,25 +290,31 @@ run_mccoil_chains <- function(df,
                               threshold_site = 20,
                               totalrun = 10000,
                               burnin = 1000,
-                              M0 = 15,
+                              M0 = "1,5,15",
                               e1 = 0.05,
                               e2 = 0.05,
-                              epsilon = 0.02,
                               err_method = 1,
                               seed = 321,
                               n_chains = 3,
+                              threads = 1,
                               work_dir,
                               output = "McCOIL_out.txt") {
   if (!model %in% c("categorical", "proportional")) {
     stop("--model must be one of categorical|proportional", call. = FALSE)
   }
+  # err_method 2 draws error rates without regard to the data; the proportional
+  # model estimates its own noise, so only 1 applies to it.
   if (!err_method %in% c(1, 3)) {
     stop("--err_method must be one of 1|3", call. = FALSE)
+  }
+  if (model == "proportional" && err_method != 1) {
+    stop("--err_method must be 1 for the proportional model", call. = FALSE)
   }
   n_chains <- as.integer(n_chains)
   if (is.na(n_chains) || n_chains < 1L) {
     stop("--n_chains must be a positive integer", call. = FALSE)
   }
+  starts <- mccoil_chain_starts(M0, n_chains, maxCOI)
   dir.create(work_dir, recursive = TRUE, showWarnings = FALSE)
 
   mccoil_input <- if (model == "categorical") {
@@ -294,7 +323,7 @@ run_mccoil_chains <- function(df,
     prep_input_prop(df)
   }
 
-  # Chain 1 keeps the base filename, so its summary drives the COI/SLAF output.
+  # Chain 1 keeps the base filename; its summary supplies the parameter names.
   chains <- seq_len(n_chains)
   output_names <- ifelse(
     chains == 1L,
@@ -312,10 +341,9 @@ run_mccoil_chains <- function(df,
       threshold_site = threshold_site,
       totalrun = totalrun,
       burnin = burnin,
-      M0 = M0,
+      M0 = starts[i],
       e1 = e1,
       e2 = e2,
-      epsilon = epsilon,
       err_method = err_method,
       seed = seeds[i],
       work_dir = work_dir,
@@ -323,8 +351,11 @@ run_mccoil_chains <- function(df,
     )
   }
 
-  traces <- if (n_chains > 1L && .Platform$OS.type != "windows") {
-    parallel::mclapply(chains, run_chain, mc.cores = n_chains)
+  # Each chain seeds itself before sampling, so results do not depend on how
+  # many run at once.
+  cores <- min(as.integer(threads), n_chains)
+  traces <- if (cores > 1L && .Platform$OS.type != "windows") {
+    parallel::mclapply(chains, run_chain, mc.cores = cores)
   } else {
     lapply(chains, run_chain)
   }
@@ -345,20 +376,17 @@ run_mccoil_chains <- function(df,
   )
 }
 
-#' Compute MCMC convergence diagnostics across McCOIL chains
-#'
-#' Assembles a posterior draws array from the post-burn-in portion of the
-#' per-chain traces and summarises it with [summarize_convergence_draws()].
+#' Assemble post-burn-in McCOIL draws across chains
 #'
 #' @param traces Per-chain trace data frames from [run_mccoil_chains()].
 #' @param summary_path Path to the `*_summary.txt` written by chain 1, used for
 #'   the parameter names and their order in the traces.
 #' @inheritParams THEREALMcCOIL_wrapper
 #'
-#' @return A data frame of convergence diagnostics, one row per parameter.
+#' @return A list with `draws` (iteration x chain x variable array) and the
+#'   `coi_names` and `freq_names` it covers.
 #' @keywords internal
-prepare_mccoil_convergence_output <- function(traces, summary_path, totalrun, burnin) {
-  check_suggested_pkg("posterior", "MCMC convergence diagnostics")
+mccoil_draws <- function(traces, summary_path, totalrun, burnin) {
   summary_df <- utils::read.table(
     summary_path,
     sep = "\t",
@@ -392,33 +420,39 @@ prepare_mccoil_convergence_output <- function(traces, summary_path, totalrun, bu
   for (i in seq_along(traces)) {
     draws[, i, ] <- as.matrix(traces[[i]][keep_rows, keep_cols])
   }
-  summarize_convergence_draws(posterior::as_draws_array(draws))
+  list(draws = draws, coi_names = coi_names, freq_names = freq_names)
 }
 
-#' Format McCOIL summary TSV into PGE COI and SLAF tables
+#' Compute MCMC convergence diagnostics across McCOIL chains
 #'
-#' @param summary_path Path to `*_summary.txt` written by McCOIL.
+#' @param draws Output of [mccoil_draws()].
+#'
+#' @return A data frame of convergence diagnostics, one row per parameter.
+#' @keywords internal
+prepare_mccoil_convergence_output <- function(draws) {
+  check_suggested_pkg("posterior", "MCMC convergence diagnostics")
+  summarize_convergence_draws(posterior::as_draws_array(draws$draws))
+}
+
+#' Format pooled McCOIL draws into PGE COI and SLAF tables
+#'
+#' Estimates are posterior medians over the post-burn-in draws of all chains.
+#'
+#' @param draws Output of [mccoil_draws()].
 #' @return A list with `slaf` and `coi` tibbles.
 #' @keywords internal
-format_mccoil_output <- function(summary_path) {
-  df_mccoil <- utils::read.table(
-    summary_path,
-    sep = "\t",
-    header = TRUE,
-    colClasses = c(name = "character")
+format_mccoil_output <- function(draws) {
+  med <- apply(draws$draws, 3, stats::median)
+  list(
+    slaf = tibble::tibble(
+      variant = draws$freq_names,
+      freq = unname(med[paste0("freq[", draws$freq_names, "]")])
+    ),
+    coi = tibble::tibble(
+      specimen_name = draws$coi_names,
+      coi = unname(med[paste0("coi[", draws$coi_names, "]")])
+    )
   )
-
-  df_slaf <- df_mccoil |>
-    dplyr::filter(.data$CorP == "P") |>
-    dplyr::select("name", "median") |>
-    dplyr::rename(variant = "name", freq = "median")
-
-  df_coi <- df_mccoil |>
-    dplyr::filter(.data$CorP == "C") |>
-    dplyr::select("name", "median") |>
-    dplyr::rename(specimen_name = "name", coi = "median")
-
-  list(slaf = df_slaf, coi = df_coi)
 }
 
 #' Write formatted McCOIL output
@@ -468,6 +502,8 @@ mccoil_blank <- function(x) {
 #'
 #' - **`slaf_output`**: Single-locus allele frequencies (`variant`, `freq`).
 #' - **`coi_output`**: COI estimates (`specimen_name`, `coi`).
+#'
+#' Both are posterior medians over the post-burn-in draws of all chains.
 #' - **`convergence_output`**: MCMC diagnostics (`variable`, `mean`, `median`,
 #'   `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`).
 #'
@@ -492,21 +528,25 @@ mccoil_blank <- function(x) {
 #' @param slaf_output Output TSV of allele frequencies. See *Outputs*.
 #' @param coi_output Output TSV of COI estimates. See *Outputs*.
 #' @param model `"categorical"` (heterozygous/homozygous calls) or
-#'   `"proportional"` (allele frequency / read-count data).
+#'   `"proportional"` (allele read counts, with each sample's strain
+#'   proportions shared across loci and read noise estimated).
 #' @param maxCOI Upper bound for COI.
 #' @param threshold_ind Minimum sites per sample (categorical model).
 #' @param threshold_site Minimum samples per locus (categorical model).
 #' @param totalrun Total MCMC iterations.
 #' @param burnin Burn-in iterations.
-#' @param M0 Initial COI.
+#' @param M0 Starting COI: one value for every chain, or one per chain as a
+#'   vector or comma-separated string (default `"1,5,15"`, for 3 chains).
+#'   Spread starts let R-hat reveal a chain that has not converged.
 #' @param e1 Probability of calling homozygous loci heterozygous (categorical).
 #' @param e2 Probability of calling heterozygous loci homozygous (categorical).
-#' @param epsilon Error parameter for the proportional model.
-#' @param err_method `1`: treat error rates as constants; `3`: estimate them
-#'   with COI and allele frequencies.
+#' @param err_method `1`: treat `e1`/`e2` as constants; `3`: estimate them with
+#'   COI and allele frequencies (categorical model).
 #' @param seed Random seed for the first chain; chain `i` uses `seed + i - 1`.
 #' @param n_chains Number of independent MCMC chains. More than one chain is
 #'   required for the Gelman-Rubin R-hat diagnostic.
+#' @param threads Cores used to run chains simultaneously (capped at
+#'   `n_chains`).
 #' @param convergence_summary_output Output TSV of the run-level convergence
 #'   summary. See *Outputs*.
 #' @param convergence_output Output TSV of MCMC convergence diagnostics. See
@@ -527,13 +567,13 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
                                   threshold_site = 20L,
                                   totalrun = 10000L,
                                   burnin = 1000L,
-                                  M0 = 15L,
+                                  M0 = "1,5,15",
                                   e1 = 0.05,
                                   e2 = 0.05,
-                                  epsilon = 0.02,
                                   err_method = 1L,
                                   seed = 321L,
                                   n_chains = 3L,
+                                  threads = 1L,
                                   convergence_output = "convergence_diag.tsv",
                                   convergence_summary_output =
                                     "convergence_summary.tsv") {
@@ -569,22 +609,23 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
     M0 = M0,
     e1 = e1,
     e2 = e2,
-    epsilon = epsilon,
     err_method = err_method,
     seed = seed,
     n_chains = n_chains,
+    threads = threads,
     work_dir = work_dir,
     output = "McCOIL_out.txt"
   )
-  df_formated <- format_mccoil_output(chains$summary_path)
-  write_mccoil_output(df_formated, slaf_output, coi_output)
-
-  convergence <- prepare_mccoil_convergence_output(
+  draws <- mccoil_draws(
     chains$traces,
     chains$summary_path,
     totalrun = totalrun,
     burnin = burnin
   )
+  df_formated <- format_mccoil_output(draws)
+  write_mccoil_output(df_formated, slaf_output, coi_output)
+
+  convergence <- prepare_mccoil_convergence_output(draws)
   readr::write_tsv(convergence, convergence_output)
   convergence_summary <- summarize_convergence_run(convergence)
   readr::write_tsv(convergence_summary, convergence_summary_output)

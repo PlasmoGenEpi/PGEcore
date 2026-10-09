@@ -102,3 +102,28 @@ test_that("snp_calls_to_vcf refuses to overwrite", {
     "already exists"
   )
 })
+
+test_that("snp_calls_to_vcf leaves out exclude_snp_names", {
+  skip_if_not_installed("Biostrings")
+  genome <- tempfile(fileext = ".fasta")
+  writeLines(c(">chr1", strrep("ACGT", 25)), genome)
+  calls <- data.frame(
+    specimen_name = c("s1", "s1", "s1", "s1"),
+    chrom = "chr1",
+    pos = c(4, 4, 8, 8),
+    snp_name = c("snp4", "snp4", "snp8", "snp8"),
+    strand = "+",
+    ref_base = "T",
+    seq_base = c("T", "C", "T", "G"),
+    reads = c(8, 2, 6, 4),
+    stringsAsFactors = FALSE
+  )
+  excl <- tempfile()
+  writeLines("snp8", excl)
+  vcf <- tempfile(fileext = ".vcf")
+  snp_calls_to_vcf(calls, genome, vcf, exclude_snp_names = excl)
+  body <- readLines(vcf)
+  body <- body[!startsWith(body, "#")]
+  expect_length(body, 1)
+  expect_equal(strsplit(body, "\t")[[1]][3], "snp4")
+})

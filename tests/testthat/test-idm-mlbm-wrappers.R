@@ -89,6 +89,70 @@ test_that("create_MultiLociBiallelicModel_input validates loci groups", {
   )
 })
 
+test_that("create_MultiLociBiallelicModel_input reports and skips groups with missing loci", {
+  aa <- tempfile(fileext = ".tsv")
+  lg <- tempfile(fileext = ".tsv")
+  on.exit(unlink(c(aa, lg)), add = TRUE)
+  readr::write_tsv(
+    tibble::tibble(
+      specimen_name = rep(c("S1", "S2"), each = 3),
+      gene_id = "g1",
+      aa_position = rep(c(1L, 2L, 3L), 2),
+      ref_aa = "A",
+      aa = c("A", "A", "A", "T", "A", "T")
+    ),
+    aa
+  )
+  # g1:9 is absent from the calls: "short" drops to 1 locus (skipped),
+  # "partial" drops to 2 (runs with a warning), "full" is untouched.
+  readr::write_tsv(
+    tibble::tibble(
+      group_id = c("short", "short", "partial", "partial", "partial", "full", "full"),
+      gene_id = "g1",
+      aa_position = c(1L, 9L, 1L, 2L, 9L, 2L, 3L)
+    ),
+    lg
+  )
+  warnings <- character(0)
+  obj <- withCallingHandlers(
+    create_MultiLociBiallelicModel_input(aa, lg),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_equal(obj$groups, c("partial", "full"))
+  expect_named(obj$by_group_table, c("partial", "full"))
+  expect_equal(colnames(obj$by_group_table$partial), c("specimen_name", "g1:1", "g1:2"))
+  expect_length(warnings, 2)
+  expect_match(warnings[1], "Skipping loci group short.*g1:9")
+  expect_match(warnings[2], "partial is missing 1 of its 3.*g1:9")
+})
+
+test_that("create_MultiLociBiallelicModel_input errors when no group is runnable", {
+  aa <- tempfile(fileext = ".tsv")
+  lg <- tempfile(fileext = ".tsv")
+  on.exit(unlink(c(aa, lg)), add = TRUE)
+  readr::write_tsv(
+    tibble::tibble(
+      specimen_name = c("S1", "S2"),
+      gene_id = "g1",
+      aa_position = 1L,
+      ref_aa = "A",
+      aa = c("A", "T")
+    ),
+    aa
+  )
+  readr::write_tsv(
+    tibble::tibble(group_id = "grp", gene_id = "g1", aa_position = c(1L, 9L)),
+    lg
+  )
+  expect_error(
+    suppressWarnings(create_MultiLociBiallelicModel_input(aa, lg)),
+    "No loci group has at least 2 loci"
+  )
+})
+
 test_that("make_stave groups mutations by gene", {
   variant <- "pfdhfr_1_150:51:N;pfdhfr_1_150:59:C;pfdhps_400_550:437:A"
   expect_equal(

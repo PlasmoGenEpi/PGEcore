@@ -14,3 +14,6 @@ src/*.o
 src/*.so
 src/*.dll
 *.o
+
+# outputs written by tests that use a default relative path
+tests/testthat/*.tsv

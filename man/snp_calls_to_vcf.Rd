@@ -11,6 +11,7 @@ snp_calls_to_vcf(
   biallelic = FALSE,
   ploidy = 2L,
   gt_min_reads = 1L,
+  exclude_snp_names = NULL,
   overwrite = FALSE,
   verbose = FALSE
 )
@@ -28,6 +29,9 @@ columns. See \emph{Inputs}.}
 \item{ploidy}{Ploidy used to render the GT field.}
 
 \item{gt_min_reads}{Minimum reads for an allele to count as present in GT.}
+
+\item{exclude_snp_names}{Optional comma-separated names, path to a
+one-column file, or character vector of SNPs to leave out of the VCF.}
 
 \item{overwrite}{If \code{FALSE} (default), refuse to overwrite \code{vcf_output}.}
 

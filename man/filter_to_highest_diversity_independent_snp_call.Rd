@@ -13,7 +13,12 @@ filter_to_highest_diversity_independent_snp_call(
   select_specimen_names = NULL,
   overwrite = FALSE,
   only_biallelic = FALSE,
-  only_informative = FALSE
+  only_informative = FALSE,
+  exclude_snp_names = NULL,
+  drop_artifact_snps = FALSE,
+  artifact_min_minor_rate = 0.02,
+  artifact_min_samples = 3,
+  dropped_snps_output = NULL
 )
 }
 \arguments{
@@ -38,6 +43,24 @@ one-column TSV, or character vector of specimens to keep.}
 
 \item{only_informative}{If \code{TRUE}, drop SNPs with expected heterozygosity
 of zero.}
+
+\item{exclude_snp_names}{Optional comma-separated names, path to a
+one-column TSV, or character vector of SNPs to drop before ranking.}
+
+\item{drop_artifact_snps}{If \code{TRUE}, drop SNPs whose minor allele recurs in
+specimens that look monoclonal at every other SNP (e.g. PCR stutter)
+before ranking; artifacts inflate expected heterozygosity and would
+otherwise be preferred.}
+
+\item{artifact_min_minor_rate}{Minimum share of those specimens showing the
+minor allele for a SNP to be dropped (default \code{0.02}).}
+
+\item{artifact_min_samples}{Minimum number of those specimens showing it
+(default \code{3}).}
+
+\item{dropped_snps_output}{Optional path; writes the names of SNPs dropped by
+\code{exclude_snp_names} or \code{drop_artifact_snps}, one per line, so other steps
+can exclude the same SNPs.}
 }
 \value{
 Filtered SNP table including an \code{he} column.

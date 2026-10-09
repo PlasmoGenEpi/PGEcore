@@ -12,13 +12,13 @@ run_mccoil_chains(
   threshold_site = 20,
   totalrun = 10000,
   burnin = 1000,
-  M0 = 15,
+  M0 = "1,5,15",
   e1 = 0.05,
   e2 = 0.05,
-  epsilon = 0.02,
   err_method = 1,
   seed = 321,
   n_chains = 3,
+  threads = 1,
   work_dir,
   output = "McCOIL_out.txt"
 )
@@ -38,21 +38,24 @@ run_mccoil_chains(
 
 \item{burnin}{Burn-in iterations.}
 
-\item{M0}{Initial COI.}
+\item{M0}{Starting COI: one value for every chain, or one per chain as a
+vector or comma-separated string (default \code{"1,5,15"}, for 3 chains).
+Spread starts let R-hat reveal a chain that has not converged.}
 
 \item{e1}{Probability of calling homozygous loci heterozygous (categorical).}
 
 \item{e2}{Probability of calling heterozygous loci homozygous (categorical).}
 
-\item{epsilon}{Error parameter for the proportional model.}
-
-\item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies.}
+\item{err_method}{\code{1}: treat \code{e1}/\code{e2} as constants; \code{3}: estimate them with
+COI and allele frequencies (categorical model).}
 
 \item{seed}{Random seed for the first chain; chain \code{i} uses \code{seed + i - 1}.}
 
 \item{n_chains}{Number of independent MCMC chains. More than one chain is
 required for the Gelman-Rubin R-hat diagnostic.}
+
+\item{threads}{Cores used to run chains simultaneously (capped at
+\code{n_chains}).}
 
 \item{work_dir}{Directory for McCOIL temp traces (typically under
 \code{tempdir()}).}
@@ -67,7 +70,8 @@ and \code{summary_path}, the summary file written by chain 1.
 \description{
 Prepares the model input once, then runs \code{n_chains} chains with seeds
 \verb{seed, seed + 1, ...}. Chains are independent and write to distinct trace
-files in \code{work_dir}, so they can run in parallel forks; on Windows, where
-forking is unavailable, they run sequentially.
+files in \code{work_dir}, so up to \code{threads} of them run in parallel forks; on
+Windows, where forking is unavailable, they run sequentially. Each chain
+seeds itself, so results are identical either way.
 }
 \keyword{internal}

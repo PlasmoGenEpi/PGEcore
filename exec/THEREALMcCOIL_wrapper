@@ -19,9 +19,9 @@ opts <- list(
     type = "character",
     default = "categorical",
     help = paste0(
-      "categorial or proprotional. ",
-      "The `categorical` one models heterozygous/homozygous calls; ",
-      "the `proportional` one models frequency data",
+      "categorical or proportional. ",
+      "`categorical` models heterozygous/homozygous calls; ",
+      "`proportional` models allele read counts with strain proportions shared across loci. ",
       "Default: %default"
     )
   ),
@@ -77,11 +77,10 @@ opts <- list(
   ),
   make_option(
     "--M0",
-    type = "integer",
-    default = 15,
+    type = "character",
+    default = "1,5,15",
     help = paste0(
-      "Initial COI",
-      "Can be used in both models. ",
+      "Starting COI: one value for every chain, or one per chain, comma-separated. ",
       "Default: %default"
     )
   ),
@@ -106,19 +105,13 @@ opts <- list(
     )
   ),
   make_option(
-    "--epsilon",
-    type = "double",
-    default = 0.02,
-    help = "[P] Default: %default"
-  ),
-  make_option(
     "--err_method",
     type = "integer",
     default = 1,
     help = paste0(
       "1: use pre-specified e1 and e2 and treat them as constants; ",
-      "3: e1 and e2 are estimated with COI and allele frequencies",
-      "Can be used in both models. ",
+      "3: e1 and e2 are estimated with COI and allele frequencies ",
+      "(categorical model only). ",
       "Default: %default"
     )
   ),
@@ -131,6 +124,12 @@ opts <- list(
       "Can be used in both models. ",
       "Default: %default"
     )
+  ),
+  make_option(
+    "--threads",
+    type = "integer",
+    default = 1,
+    help = "Cores used to run chains simultaneously (capped at n_chains). Default: %default"
   ),
   make_option(
     "--n_chains",
@@ -202,10 +201,10 @@ invisible(
     M0 = arg$M0,
     e1 = arg$e1,
     e2 = arg$e2,
-    epsilon = arg$epsilon,
     err_method = arg$err_method,
     seed = arg$seed,
     n_chains = arg$n_chains,
+    threads = arg$threads,
     convergence_output = arg$convergence_output,
     convergence_summary_output = arg$convergence_summary_output
   )

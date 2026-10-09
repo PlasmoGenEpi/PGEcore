@@ -14,13 +14,13 @@ THEREALMcCOIL_wrapper(
   threshold_site = 20L,
   totalrun = 10000L,
   burnin = 1000L,
-  M0 = 15L,
+  M0 = "1,5,15",
   e1 = 0.05,
   e2 = 0.05,
-  epsilon = 0.02,
   err_method = 1L,
   seed = 321L,
   n_chains = 3L,
+  threads = 1L,
   convergence_output = "convergence_diag.tsv",
   convergence_summary_output = "convergence_summary.tsv"
 )
@@ -33,7 +33,8 @@ THEREALMcCOIL_wrapper(
 \item{coi_output}{Output TSV of COI estimates. See \emph{Outputs}.}
 
 \item{model}{\code{"categorical"} (heterozygous/homozygous calls) or
-\code{"proportional"} (allele frequency / read-count data).}
+\code{"proportional"} (allele read counts, with each sample's strain
+proportions shared across loci and read noise estimated).}
 
 \item{maxCOI}{Upper bound for COI.}
 
@@ -45,21 +46,24 @@ THEREALMcCOIL_wrapper(
 
 \item{burnin}{Burn-in iterations.}
 
-\item{M0}{Initial COI.}
+\item{M0}{Starting COI: one value for every chain, or one per chain as a
+vector or comma-separated string (default \code{"1,5,15"}, for 3 chains).
+Spread starts let R-hat reveal a chain that has not converged.}
 
 \item{e1}{Probability of calling homozygous loci heterozygous (categorical).}
 
 \item{e2}{Probability of calling heterozygous loci homozygous (categorical).}
 
-\item{epsilon}{Error parameter for the proportional model.}
-
-\item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies.}
+\item{err_method}{\code{1}: treat \code{e1}/\code{e2} as constants; \code{3}: estimate them with
+COI and allele frequencies (categorical model).}
 
 \item{seed}{Random seed for the first chain; chain \code{i} uses \code{seed + i - 1}.}
 
 \item{n_chains}{Number of independent MCMC chains. More than one chain is
 required for the Gelman-Rubin R-hat diagnostic.}
+
+\item{threads}{Cores used to run chains simultaneously (capped at
+\code{n_chains}).}
 
 \item{convergence_output}{Output TSV of MCMC convergence diagnostics. See
 \emph{Outputs}.}
@@ -90,6 +94,10 @@ single-locus allele frequencies. Compiled C routines (\code{McCOIL_categorical},
 \itemize{
 \item \strong{\code{slaf_output}}: Single-locus allele frequencies (\code{variant}, \code{freq}).
 \item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi}).
+}
+
+Both are posterior medians over the post-burn-in draws of all chains.
+\itemize{
 \item \strong{\code{convergence_output}}: MCMC diagnostics (\code{variable}, \code{mean}, \code{median},
 \code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, \code{ess_tail}).
 }
