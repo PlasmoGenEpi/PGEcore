@@ -139,14 +139,10 @@ prep_input_prop <- function(df) {
   row.names(df_allele2) <- df_allele2$specimen_name
   df_allele2 <- df_allele2[, -1, drop = FALSE]
 
-  # The two subsets are pivoted independently, so each names its columns in the
-  # order it happens to meet the loci and carries only the specimens that have a
-  # read for that allele. McCOIL_prop sizes both matrices from a1 and reads them
-  # as flat vectors, so anything not on a shared grid pairs one locus's allele-1
-  # count with another locus's allele-2 count -- the likelihood never improves
-  # and every specimen stays at its starting COI. Put both on the full
-  # specimen x locus grid; an absent combination is a count of zero, and no
-  # specimen is dropped for lacking one of the two alleles.
+  # Each pivot orders columns by first appearance and keeps only specimens with a
+  # read for that allele. McCOIL_prop reads both matrices as flat vectors of the
+  # same shape, so place both on the full specimen x locus grid, with a missing
+  # combination counted as zero reads.
   specimens <- unique(df_with_allele_idx$specimen_name)
   loci <- unique(df_with_allele_idx$snp_name)
   on_grid <- function(d) {
@@ -163,16 +159,44 @@ prep_input_prop <- function(df) {
   a1 <- on_grid(df_allele1)
   a2 <- on_grid(df_allele2)
 
-  # McCOIL_prop reads a locus as missing only when a count is negative; its
-  # likelihood divides by the two counts, so a locus with no reads for either
-  # allele gives 0/0 and turns the whole per-specimen sum into NaN. No proposal
-  # then clears the acceptance test and that specimen keeps its starting COI for
-  # the entire chain. Mark uncovered specimen-locus pairs as missing instead.
+  # McCOIL_prop treats a negative count as a missing locus; mark specimen-locus
+  # pairs with no reads for either allele that way.
   uncovered <- (a1 + a2) == 0
   a1[uncovered] <- -1
   a2[uncovered] <- -1
 
   list(a1 = a1, a2 = a2)
+}
+
+#' Starting COI for each McCOIL chain
+#'
+#' @param M0 One starting COI for every chain, or one per chain, as a numeric
+#'   vector or a comma-separated string such as `"1,5,15"`.
+#' @param n_chains Number of chains.
+#' @param maxCOI Upper bound for COI.
+#' @return Integer vector with one starting COI per chain.
+#' @keywords internal
+mccoil_chain_starts <- function(M0, n_chains, maxCOI) {
+  starts <- if (is.character(M0)) {
+    suppressWarnings(as.numeric(trimws(unlist(strsplit(M0, ",", fixed = TRUE)))))
+  } else {
+    as.numeric(M0)
+  }
+  if (length(starts) == 0 || anyNA(starts) || any(starts != round(starts)) ||
+      any(starts < 1) || any(starts > maxCOI)) {
+    stop("--M0 must be whole numbers from 1 to maxCOI (", maxCOI, ")", call. = FALSE)
+  }
+  if (length(starts) == 1) {
+    starts <- rep(starts, n_chains)
+  }
+  if (length(starts) != n_chains) {
+    stop(
+      "--M0 gives ", length(starts), " starting COIs but n_chains is ", n_chains,
+      "; give one value for all chains or one per chain",
+      call. = FALSE
+    )
+  }
+  as.integer(starts)
 }
 
 #' Run a single McCOIL chain and return its per-iteration trace
@@ -182,8 +206,9 @@ prep_input_prop <- function(df) {
 #'
 #' @param mccoil_input Prepared model input: the genotype matrix for the
 #'   categorical model, or a list with `a1`/`a2` matrices for the proportional
-#'   models.
-#' @param model `"categorical"`, `"proportional"` or `"proportional_joint"`.
+#'   model.
+#' @param model `"categorical"` or `"proportional"`.
+#' @param M0 Starting COI for this chain.
 #' @param seed Random seed for this chain.
 #' @param work_dir Directory for McCOIL temp traces.
 #' @param output Trace filename (under `work_dir`) for this chain.
@@ -202,7 +227,6 @@ run_mccoil_chain <- function(mccoil_input,
                              M0,
                              e1,
                              e2,
-                             epsilon,
                              err_method,
                              seed,
                              work_dir,
@@ -225,17 +249,6 @@ run_mccoil_chain <- function(mccoil_input,
       path = work_dir,
       output = output
     )
-  } else if (model == "proportional_joint") {
-    run_mccoil_proportional_joint(
-      mccoil_input$a1,
-      mccoil_input$a2,
-      maxCOI = maxCOI,
-      totalrun = totalrun,
-      burnin = burnin,
-      M0 = M0,
-      path = work_dir,
-      output = output
-    )
   } else {
     run_mccoil_proportional(
       mccoil_input$a1,
@@ -244,8 +257,6 @@ run_mccoil_chain <- function(mccoil_input,
       totalrun = totalrun,
       burnin = burnin,
       M0 = M0,
-      epsilon = epsilon,
-      err_method = err_method,
       path = work_dir,
       output = output
     )
@@ -262,7 +273,7 @@ run_mccoil_chain <- function(mccoil_input,
 #' seeds itself, so results are identical either way.
 #'
 #' @param df Preprocessed SNP calls.
-#' @param model `"categorical"`, `"proportional"` or `"proportional_joint"`.
+#' @param model `"categorical"` or `"proportional"`.
 #' @param work_dir Directory for McCOIL temp traces (typically under
 #'   `tempdir()`).
 #' @param output Base filename for chain 1, written under `work_dir`; later
@@ -279,32 +290,31 @@ run_mccoil_chains <- function(df,
                               threshold_site = 20,
                               totalrun = 10000,
                               burnin = 1000,
-                              M0 = 15,
+                              M0 = "1,5,15",
                               e1 = 0.05,
                               e2 = 0.05,
-                              epsilon = 0.02,
                               err_method = 1,
                               seed = 321,
                               n_chains = 3,
                               threads = 1,
                               work_dir,
                               output = "McCOIL_out.txt") {
-  if (!model %in% c("categorical", "proportional", "proportional_joint")) {
-    stop("--model must be one of categorical|proportional|proportional_joint", call. = FALSE)
+  if (!model %in% c("categorical", "proportional")) {
+    stop("--model must be one of categorical|proportional", call. = FALSE)
   }
-  # 2 ignores the data when drawing error rates; for the proportional model,
-  # 3 has no stable epsilon under the censored-normal observation model; the
-  # joint model always estimates its own noise.
+  # err_method 2 draws error rates without regard to the data; the proportional
+  # model estimates its own noise, so only 1 applies to it.
   if (!err_method %in% c(1, 3)) {
     stop("--err_method must be one of 1|3", call. = FALSE)
   }
-  if (model != "categorical" && err_method != 1) {
-    stop("--err_method must be 1 for the proportional models", call. = FALSE)
+  if (model == "proportional" && err_method != 1) {
+    stop("--err_method must be 1 for the proportional model", call. = FALSE)
   }
   n_chains <- as.integer(n_chains)
   if (is.na(n_chains) || n_chains < 1L) {
     stop("--n_chains must be a positive integer", call. = FALSE)
   }
+  starts <- mccoil_chain_starts(M0, n_chains, maxCOI)
   dir.create(work_dir, recursive = TRUE, showWarnings = FALSE)
 
   mccoil_input <- if (model == "categorical") {
@@ -321,13 +331,6 @@ run_mccoil_chains <- function(df,
     paste0(sub("\\.txt$", "", output), "_chain", chains, ".txt")
   )
   seeds <- seed + chains - 1
-  # joint-model chains start spread from 1 to 15 strains so R-hat can reveal a
-  # stuck chain; the McCOIL models start every chain at M0
-  starts <- if (model == "proportional_joint") {
-    round(seq(1, min(15, maxCOI), length.out = n_chains))
-  } else {
-    rep(M0, n_chains)
-  }
 
   run_chain <- function(i) {
     run_mccoil_chain(
@@ -341,7 +344,6 @@ run_mccoil_chains <- function(df,
       M0 = starts[i],
       e1 = e1,
       e2 = e2,
-      epsilon = epsilon,
       err_method = err_method,
       seed = seeds[i],
       work_dir = work_dir,
@@ -525,23 +527,21 @@ mccoil_blank <- function(x) {
 #' @param snp_calls Path to SNP-calls TSV. See *Inputs*.
 #' @param slaf_output Output TSV of allele frequencies. See *Outputs*.
 #' @param coi_output Output TSV of COI estimates. See *Outputs*.
-#' @param model `"categorical"` (heterozygous/homozygous calls),
-#'   `"proportional"` (allele frequency / read-count data), or
-#'   `"proportional_joint"` (read counts, with each sample's strain proportions
-#'   shared across loci; estimates its own read noise and spreads chain starts
-#'   evenly from 1 to 15 strains, so `M0`, `epsilon` and `err_method` do not
-#'   apply).
+#' @param model `"categorical"` (heterozygous/homozygous calls) or
+#'   `"proportional"` (allele read counts, with each sample's strain
+#'   proportions shared across loci and read noise estimated).
 #' @param maxCOI Upper bound for COI.
 #' @param threshold_ind Minimum sites per sample (categorical model).
 #' @param threshold_site Minimum samples per locus (categorical model).
 #' @param totalrun Total MCMC iterations.
 #' @param burnin Burn-in iterations.
-#' @param M0 Initial COI.
+#' @param M0 Starting COI: one value for every chain, or one per chain as a
+#'   vector or comma-separated string (default `"1,5,15"`, for 3 chains).
+#'   Spread starts let R-hat reveal a chain that has not converged.
 #' @param e1 Probability of calling homozygous loci heterozygous (categorical).
 #' @param e2 Probability of calling heterozygous loci homozygous (categorical).
-#' @param epsilon Error parameter for the proportional model.
-#' @param err_method `1`: treat error rates as constants; `3`: estimate them
-#'   with COI and allele frequencies (categorical model only).
+#' @param err_method `1`: treat `e1`/`e2` as constants; `3`: estimate them with
+#'   COI and allele frequencies (categorical model).
 #' @param seed Random seed for the first chain; chain `i` uses `seed + i - 1`.
 #' @param n_chains Number of independent MCMC chains. More than one chain is
 #'   required for the Gelman-Rubin R-hat diagnostic.
@@ -567,10 +567,9 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
                                   threshold_site = 20L,
                                   totalrun = 10000L,
                                   burnin = 1000L,
-                                  M0 = 15L,
+                                  M0 = "1,5,15",
                                   e1 = 0.05,
                                   e2 = 0.05,
-                                  epsilon = 0.02,
                                   err_method = 1L,
                                   seed = 321L,
                                   n_chains = 3L,
@@ -610,7 +609,6 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
     M0 = M0,
     e1 = e1,
     e2 = e2,
-    epsilon = epsilon,
     err_method = err_method,
     seed = seed,
     n_chains = n_chains,

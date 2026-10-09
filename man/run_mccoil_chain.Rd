@@ -15,7 +15,6 @@ run_mccoil_chain(
   M0,
   e1,
   e2,
-  epsilon,
   err_method,
   seed,
   work_dir,
@@ -25,9 +24,9 @@ run_mccoil_chain(
 \arguments{
 \item{mccoil_input}{Prepared model input: the genotype matrix for the
 categorical model, or a list with \code{a1}/\code{a2} matrices for the proportional
-models.}
+model.}
 
-\item{model}{\code{"categorical"}, \code{"proportional"} or \code{"proportional_joint"}.}
+\item{model}{\code{"categorical"} or \code{"proportional"}.}
 
 \item{maxCOI}{Upper bound for COI.}
 
@@ -39,16 +38,14 @@ models.}
 
 \item{burnin}{Burn-in iterations.}
 
-\item{M0}{Initial COI.}
+\item{M0}{Starting COI for this chain.}
 
 \item{e1}{Probability of calling homozygous loci heterozygous (categorical).}
 
 \item{e2}{Probability of calling heterozygous loci homozygous (categorical).}
 
-\item{epsilon}{Error parameter for the proportional model.}
-
-\item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies (categorical model only).}
+\item{err_method}{\code{1}: treat \code{e1}/\code{e2} as constants; \code{3}: estimate them with
+COI and allele frequencies (categorical model).}
 
 \item{seed}{Random seed for this chain.}
 

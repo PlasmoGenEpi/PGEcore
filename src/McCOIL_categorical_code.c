@@ -1,7 +1,6 @@
 #include <R.h>
 #include <Rmath.h>
 #include <stdio.h>
-#include <time.h>
 
 double logLike_het(int M, double P, double S2, double e1, double e2) {
   double lltrue = 0.0;
@@ -50,7 +49,6 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 	double ll[(n+1)][(k+1)];
 	double llcan[(n+1)][(k+1)];
 	double S2[(n+1)][(k+1)];
-	double q1=0.0, q2=0.0;
 	double e1_can, e2_can;
 	int e1_accept=0, e2_accept=0;
 	for (i=1;i<=n;i++){
@@ -66,8 +64,6 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 			}
 		}
 	}
-	time_t t1, t2;
-	t1 = time(NULL);
 
 
 	char var_file[1000];
@@ -255,9 +251,6 @@ void McCOIL_categorical(int *max, int *iterations, int *n0, int *k0, double *sam
 	if (err_method>=2) fprintf(V0,"\t%d\t%d", e1_accept, e2_accept);
 	fprintf(V0,"\n");
 
-	t2 = time(NULL);
-  // comment out to avoid printing this information
-	// Rprintf("Time = %.2f s\n", difftime(t2, t1));
 	fclose(V0);
 	PutRNGstate();
 }

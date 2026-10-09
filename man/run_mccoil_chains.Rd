@@ -12,10 +12,9 @@ run_mccoil_chains(
   threshold_site = 20,
   totalrun = 10000,
   burnin = 1000,
-  M0 = 15,
+  M0 = "1,5,15",
   e1 = 0.05,
   e2 = 0.05,
-  epsilon = 0.02,
   err_method = 1,
   seed = 321,
   n_chains = 3,
@@ -27,7 +26,7 @@ run_mccoil_chains(
 \arguments{
 \item{df}{Preprocessed SNP calls.}
 
-\item{model}{\code{"categorical"}, \code{"proportional"} or \code{"proportional_joint"}.}
+\item{model}{\code{"categorical"} or \code{"proportional"}.}
 
 \item{maxCOI}{Upper bound for COI.}
 
@@ -39,16 +38,16 @@ run_mccoil_chains(
 
 \item{burnin}{Burn-in iterations.}
 
-\item{M0}{Initial COI.}
+\item{M0}{Starting COI: one value for every chain, or one per chain as a
+vector or comma-separated string (default \code{"1,5,15"}, for 3 chains).
+Spread starts let R-hat reveal a chain that has not converged.}
 
 \item{e1}{Probability of calling homozygous loci heterozygous (categorical).}
 
 \item{e2}{Probability of calling heterozygous loci homozygous (categorical).}
 
-\item{epsilon}{Error parameter for the proportional model.}
-
-\item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies (categorical model only).}
+\item{err_method}{\code{1}: treat \code{e1}/\code{e2} as constants; \code{3}: estimate them with
+COI and allele frequencies (categorical model).}
 
 \item{seed}{Random seed for the first chain; chain \code{i} uses \code{seed + i - 1}.}
 

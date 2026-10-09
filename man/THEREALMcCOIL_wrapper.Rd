@@ -14,10 +14,9 @@ THEREALMcCOIL_wrapper(
   threshold_site = 20L,
   totalrun = 10000L,
   burnin = 1000L,
-  M0 = 15L,
+  M0 = "1,5,15",
   e1 = 0.05,
   e2 = 0.05,
-  epsilon = 0.02,
   err_method = 1L,
   seed = 321L,
   n_chains = 3L,
@@ -33,12 +32,9 @@ THEREALMcCOIL_wrapper(
 
 \item{coi_output}{Output TSV of COI estimates. See \emph{Outputs}.}
 
-\item{model}{\code{"categorical"} (heterozygous/homozygous calls),
-\code{"proportional"} (allele frequency / read-count data), or
-\code{"proportional_joint"} (read counts, with each sample's strain proportions
-shared across loci; estimates its own read noise and spreads chain starts
-evenly from 1 to 15 strains, so \code{M0}, \code{epsilon} and \code{err_method} do not
-apply).}
+\item{model}{\code{"categorical"} (heterozygous/homozygous calls) or
+\code{"proportional"} (allele read counts, with each sample's strain
+proportions shared across loci and read noise estimated).}
 
 \item{maxCOI}{Upper bound for COI.}
 
@@ -50,16 +46,16 @@ apply).}
 
 \item{burnin}{Burn-in iterations.}
 
-\item{M0}{Initial COI.}
+\item{M0}{Starting COI: one value for every chain, or one per chain as a
+vector or comma-separated string (default \code{"1,5,15"}, for 3 chains).
+Spread starts let R-hat reveal a chain that has not converged.}
 
 \item{e1}{Probability of calling homozygous loci heterozygous (categorical).}
 
 \item{e2}{Probability of calling heterozygous loci homozygous (categorical).}
 
-\item{epsilon}{Error parameter for the proportional model.}
-
-\item{err_method}{\code{1}: treat error rates as constants; \code{3}: estimate them
-with COI and allele frequencies (categorical model only).}
+\item{err_method}{\code{1}: treat \code{e1}/\code{e2} as constants; \code{3}: estimate them with
+COI and allele frequencies (categorical model).}
 
 \item{seed}{Random seed for the first chain; chain \code{i} uses \code{seed + i - 1}.}
 

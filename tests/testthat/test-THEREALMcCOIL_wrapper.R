@@ -149,7 +149,8 @@ test_that("THEREALMcCOIL_wrapper short MCMC on example data", {
   slaf <- tempfile(fileext = ".tsv")
   coi <- tempfile(fileext = ".tsv")
   convergence <- tempfile(fileext = ".tsv")
-  on.exit(unlink(c(slaf, coi, convergence)), add = TRUE)
+  convergence_summary <- tempfile(fileext = ".tsv")
+  on.exit(unlink(c(slaf, coi, convergence, convergence_summary)), add = TRUE)
   # The toy run keeps too few draws for stable ESS estimates, so posterior
   # warns about capping them.
   res <- suppressWarnings(THEREALMcCOIL_wrapper(
@@ -157,6 +158,7 @@ test_that("THEREALMcCOIL_wrapper short MCMC on example data", {
     slaf_output = slaf,
     coi_output = coi,
     convergence_output = convergence,
+    convergence_summary_output = convergence_summary,
     model = "categorical",
     maxCOI = 5L,
     threshold_ind = 5L,
@@ -167,6 +169,7 @@ test_that("THEREALMcCOIL_wrapper short MCMC on example data", {
     n_chains = 2L
   ))
   expect_true(file.exists(slaf))
+  expect_true(file.exists(convergence_summary))
   expect_true(file.exists(coi))
   expect_true(file.exists(convergence))
   slaf_df <- readr::read_tsv(slaf, show_col_types = FALSE)
@@ -200,12 +203,14 @@ test_that("THEREALMcCOIL_wrapper is reproducible for a given seed", {
     slaf <- tempfile(fileext = ".tsv")
     coi <- tempfile(fileext = ".tsv")
     convergence <- tempfile(fileext = ".tsv")
-    on.exit(unlink(c(slaf, coi, convergence)), add = TRUE)
+    convergence_summary <- tempfile(fileext = ".tsv")
+    on.exit(unlink(c(slaf, coi, convergence, convergence_summary)), add = TRUE)
     suppressWarnings(THEREALMcCOIL_wrapper(
       snp_calls = path,
       slaf_output = slaf,
       coi_output = coi,
       convergence_output = convergence,
+      convergence_summary_output = convergence_summary,
       model = "categorical",
       maxCOI = 5L,
       threshold_ind = 5L,
