@@ -16,7 +16,7 @@ Three per-specimen columns:
 posterior), the row sum of its allocation matrix.
 \item \code{coi_cons_weighted}: \code{\link[=snpslice_consensus_coi]{snpslice_consensus_coi()}} across chains.
 \item \code{coi_chain_mean}: the mean over all chains of that chain's \code{coi}, which
-is how Ju et al. (2024) report MOI (the average of the final-sample
+is how Ju et al. (2024) report COI (the average of the final-sample
 estimate over independently initialised chains).
 }
 }

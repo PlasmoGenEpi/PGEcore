@@ -87,7 +87,8 @@ Suggests:
     SeqArray,
     snp.slicer,
     testthat (>= 3.0.0),
-    variantstring
+    variantstring,
+    withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/Needs/website: pkgdown
