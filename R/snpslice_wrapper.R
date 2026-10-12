@@ -120,7 +120,7 @@ create_snpslice_loci_group_input <- function(loci_groups_path,
 
 #' Collapse identical dictionary rows of a SNP-Slice allocation
 #'
-#' Ju et al. (2024) count identical SNP haplotypes once when computing MOI,
+#' In original implementation by Ju et al. (2024), identical SNP haplotypes are counted once when computing COI,
 #' allele frequencies and heterozygosity: duplicated dictionary rows are
 #' removed before any estimate is formed. SNP-Slice can hold two active
 #' strains with the same haplotype, and a specimen assigned both would then
@@ -195,12 +195,12 @@ snpslice_split_chains <- function(snpslice_res, dedup_haplotypes = FALSE) {
 
 #' Format SNP-Slice allele frequencies with variantstring names
 #'
-#' `freq` is the estimate from the chain SNP-Slice reports (highest MAP log
-#' posterior). `averaged_freq` follows Ju et al. (2024), who report the mean
-#' of the per-chain estimates over independently initialised chains: it is
-#' the mean over all chains of that chain's frequency for the haplotype, with
+#' `freq` is estimated from the choosen chain SNP-Slice reports (highest MAP log
+#' posterior by default) where as `averaged_freq` is similar to how Ju et al. (2024) 
+#' did COI with taking the average across the chains. `averaged_freq` is
+#' the mean over all chains's frequency for the haplotype, with
 #' a haplotype a chain never produced counting as zero there. A row is kept
-#' when either column is positive.
+#' when either column is positive. This increases sensitivity but also decrease precision 
 #'
 #' @param chains,best Output of [snpslice_split_chains()].
 #' @keywords internal
@@ -373,7 +373,7 @@ snpslice_consensus_coi <- function(chains, estimate) {
 #'   posterior), the row sum of its allocation matrix.
 #' - `coi_cons_weighted`: [snpslice_consensus_coi()] across chains.
 #' - `coi_chain_mean`: the mean over all chains of that chain's `coi`, which
-#'   is how Ju et al. (2024) report MOI (the average of the final-sample
+#'   is how Ju et al. (2024) report COI (the average of the final-sample
 #'   estimate over independently initialised chains).
 #'
 #' @param chains,best Output of [snpslice_split_chains()].
@@ -516,7 +516,7 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' with more than two alleles is dropped from its group with a warning, and
 #' extra loci drawn under `loci_limit` come from biallelic targets only. With
 #' `model = "multinomial"` every allele at every target is kept, groups with
-#' multi-allelic codons (for example dhfr 108 or dhps 540) are estimated in
+#' multi-allelic codons are estimated in
 #' full, and extra loci are drawn from all polymorphic targets. The
 #' multinomial dictionary prior is set by `dict_prior`; `rho` is ignored.
 #'
@@ -530,16 +530,16 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' - **`coi_output`**: COI estimates (`specimen_name`, `coi`,
 #'   `coi_cons_weighted`, `coi_chain_mean`; uncertainty columns when
 #'   `estimator = "posterior"`).
-#'   `coi` counts every strain assigned to a host in the best restart.
-#'   `coi_cons_weighted` pools haplotype membership across all restarts and
+#'   `coi` counts every strain assigned to a host in the best chain
+#'   `coi_cons_weighted` pools haplotype membership across all chains and
 #'   weights each haplotype by its consensus support, which counters the
 #'   dictionary over-parameterisation that inflates `coi`. `coi_chain_mean`
-#'   is the mean of `coi` over all restarts, as Ju et al. (2024) report MOI.
+#'   is the mean of `coi` over all chains, as Ju et al. (2024) report COI.
 #'
 #' With `dedup_haplotypes = TRUE` (the default), strains with identical
 #' haplotypes are merged in every chain before any of these are computed, so
 #' a specimen assigned two copies of the same haplotype counts it once, as in
-#' Ju et al. (2024). `FALSE` restores the earlier raw counts.
+#' Ju et al. (2024).
 #'
 #' ## Running
 #'
@@ -588,8 +588,8 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #'   the biallelic targets, or from any polymorphic target when `model` is
 #'   `"multinomial"`. If `NULL`, all loci are used.
 #' @param model Observation model for SNP-Slice: `"negative_binomial"`
-#'   (default), `"binomial"`, `"poisson"`, `"categorical"`, or
-#'   `"multinomial"`. See *Multi-allelic targets*.
+#'   , `"binomial"`, `"poisson"`, `"categorical"`, or
+#'   `"multinomial"`(default). See *Multi-allelic targets*.
 #' @param dict_prior Dictionary prior for the multinomial model, passed to
 #'   [snp.slicer::snp_slice()]: `"empirical"` (default; pooled allele read
 #'   fractions with a pseudocount) or `"uniform"`. Ignored by other models.
@@ -627,7 +627,7 @@ snpslice_wrapper <- function(allele_table,
                              target_value_col = "aa",
                              target_count_col = "reads",
                              loci_limit = NULL,
-                             model = "negative_binomial",
+                             model = "multinomial",
                              dict_prior = "empirical",
                              n_sample = 10000L,
                              n_burnin = NULL,

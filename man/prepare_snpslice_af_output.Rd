@@ -10,11 +10,11 @@ prepare_snpslice_af_output(chains, best, loci_groups, estimator)
 \item{chains, best}{Output of \code{\link[=snpslice_split_chains]{snpslice_split_chains()}}.}
 }
 \description{
-\code{freq} is the estimate from the chain SNP-Slice reports (highest MAP log
-posterior). \code{averaged_freq} follows Ju et al. (2024), who report the mean
-of the per-chain estimates over independently initialised chains: it is
-the mean over all chains of that chain's frequency for the haplotype, with
+\code{freq} is estimated from the choosen chain SNP-Slice reports (highest MAP log
+posterior by default) where as \code{averaged_freq} is similar to how Ju et al. (2024)
+did COI with taking the average across the chains. \code{averaged_freq} is
+the mean over all chains's frequency for the haplotype, with
 a haplotype a chain never produced counting as zero there. A row is kept
-when either column is positive.
+when either column is positive. This increases sensitivity but also decrease precision
 }
 \keyword{internal}

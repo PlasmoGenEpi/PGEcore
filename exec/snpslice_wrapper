@@ -65,10 +65,10 @@ opts <- list(
   ),
   make_option(
     "--model",
-    default = "negative_binomial",
+    default = "multinomial",
     help = paste0(
       "Observation model to use. Options: 'poisson', 'binomial', ",
-      "'negative_binomial' (default), 'categorical', 'multinomial'. Only ",
+      "'negative_binomial', 'categorical', 'multinomial'(default). Only ",
       "'multinomial' keeps targets with more than two alleles; the others ",
       "drop them from the loci groups. Optional."
     )

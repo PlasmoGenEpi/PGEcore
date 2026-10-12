@@ -16,7 +16,7 @@ List with the merged \code{A} and \code{D}; strains keep first-appearance
 order.
 }
 \description{
-Ju et al. (2024) count identical SNP haplotypes once when computing MOI,
+In original implementation by Ju et al. (2024), identical SNP haplotypes are counted once when computing COI,
 allele frequencies and heterozygosity: duplicated dictionary rows are
 removed before any estimate is formed. SNP-Slice can hold two active
 strains with the same haplotype, and a specimen assigned both would then

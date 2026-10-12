@@ -15,7 +15,7 @@ snpslice_wrapper(
   target_value_col = "aa",
   target_count_col = "reads",
   loci_limit = NULL,
-  model = "negative_binomial",
+  model = "multinomial",
   dict_prior = "empirical",
   n_sample = 10000L,
   n_burnin = NULL,
@@ -54,8 +54,8 @@ the biallelic targets, or from any polymorphic target when \code{model} is
 \code{"multinomial"}. If \code{NULL}, all loci are used.}
 
 \item{model}{Observation model for SNP-Slice: \code{"negative_binomial"}
-(default), \code{"binomial"}, \code{"poisson"}, \code{"categorical"}, or
-\code{"multinomial"}. See \emph{Multi-allelic targets}.}
+, \code{"binomial"}, \code{"poisson"}, \code{"categorical"}, or
+\code{"multinomial"}(default). See \emph{Multi-allelic targets}.}
 
 \item{dict_prior}{Dictionary prior for the multinomial model, passed to
 \code{\link[snp.slicer:snp_slice]{snp.slicer::snp_slice()}}: \code{"empirical"} (default; pooled allele read
@@ -116,7 +116,7 @@ The biallelic observation models (\code{"negative_binomial"}, \code{"binomial"},
 with more than two alleles is dropped from its group with a warning, and
 extra loci drawn under \code{loci_limit} come from biallelic targets only. With
 \code{model = "multinomial"} every allele at every target is kept, groups with
-multi-allelic codons (for example dhfr 108 or dhps 540) are estimated in
+multi-allelic codons are estimated in
 full, and extra loci are drawn from all polymorphic targets. The
 multinomial dictionary prior is set by \code{dict_prior}; \code{rho} is ignored.
 }
@@ -131,17 +131,17 @@ Ju et al. (2024).
 \item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi},
 \code{coi_cons_weighted}, \code{coi_chain_mean}; uncertainty columns when
 \code{estimator = "posterior"}).
-\code{coi} counts every strain assigned to a host in the best restart.
-\code{coi_cons_weighted} pools haplotype membership across all restarts and
+\code{coi} counts every strain assigned to a host in the best chain
+\code{coi_cons_weighted} pools haplotype membership across all chains and
 weights each haplotype by its consensus support, which counters the
 dictionary over-parameterisation that inflates \code{coi}. \code{coi_chain_mean}
-is the mean of \code{coi} over all restarts, as Ju et al. (2024) report MOI.
+is the mean of \code{coi} over all chains, as Ju et al. (2024) report COI.
 }
 
 With \code{dedup_haplotypes = TRUE} (the default), strains with identical
 haplotypes are merged in every chain before any of these are computed, so
 a specimen assigned two copies of the same haplotype counts it once, as in
-Ju et al. (2024). \code{FALSE} restores the earlier raw counts.
+Ju et al. (2024).
 }
 
 \subsection{Running}{
