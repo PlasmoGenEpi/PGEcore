@@ -176,19 +176,18 @@ snpslice_dedup_chain <- function(chain) {
 
 #' Split a SNP-Slice result into single-chain objects
 #'
+#' Identical haplotypes are always collapsed first; see
+#' [snpslice_dedup_matrices()].
+#'
 #' @param snpslice_res Result of [snp.slicer::snp_slice()].
-#' @param dedup_haplotypes Collapse identical haplotypes in every chain; see
-#'   [snpslice_dedup_matrices()].
 #' @return List with `chains` (single-chain results in chain order) and
 #'   `best`, the index of the chain SNP-Slice reports (highest MAP log
 #'   posterior).
 #' @keywords internal
-snpslice_split_chains <- function(snpslice_res, dedup_haplotypes = FALSE) {
+snpslice_split_chains <- function(snpslice_res) {
   n <- if (is.null(snpslice_res$chains)) 1L else length(snpslice_res$chains)
   chains <- lapply(seq_len(n), function(i) snp.slicer::get_chain(snpslice_res, i))
-  if (dedup_haplotypes) {
-    chains <- lapply(chains, snpslice_dedup_chain)
-  }
+  chains <- lapply(chains, snpslice_dedup_chain)
   best <- if (is.null(snpslice_res$best_chain)) 1L else as.integer(snpslice_res$best_chain)
   list(chains = chains, best = best)
 }
@@ -200,7 +199,7 @@ snpslice_split_chains <- function(snpslice_res, dedup_haplotypes = FALSE) {
 #' did COI with taking the average across the chains. `averaged_freq` is
 #' the mean over all chains's frequency for the haplotype, with
 #' a haplotype a chain never produced counting as zero there. A row is kept
-#' when either column is positive. This increases sensitivity but also decrease precision 
+#' when either column is non-zero This increases sensitivity but also decrease precision 
 #'
 #' @param chains,best Output of [snpslice_split_chains()].
 #' @keywords internal
@@ -369,7 +368,7 @@ snpslice_consensus_coi <- function(chains, estimate) {
 #' Format SNP-Slice COI estimates
 #'
 #' Three per-specimen columns:
-#' - `coi`: strains assigned in the reported chain (highest MAP log
+#' - `coi`: number of strains assigned in the reported chain (highest MAP log
 #'   posterior), the row sum of its allocation matrix.
 #' - `coi_cons_weighted`: [snpslice_consensus_coi()] across chains.
 #' - `coi_chain_mean`: the mean over all chains of that chain's `coi`, which
@@ -536,10 +535,6 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #'   dictionary over-parameterisation that inflates `coi`. `coi_chain_mean`
 #'   is the mean of `coi` over all chains, as Ju et al. (2024) report COI.
 #'
-#' With `dedup_haplotypes = TRUE` (the default), strains with identical
-#' haplotypes are merged in every chain before any of these are computed, so
-#' a specimen assigned two copies of the same haplotype counts it once, as in
-#' Ju et al. (2024).
 #'
 #' ## Running
 #'
@@ -603,8 +598,6 @@ prepare_snpslice_optim_output <- function(snpslice_res) {
 #' @param estimator Estimator for COI and allele frequencies: `"final_sample"`
 #'   (default, matching the SNP-Slice paper), `"map"`, or `"posterior"` (the
 #'   posterior mean, which also yields uncertainty columns).
-#' @param dedup_haplotypes Merge strains with identical haplotypes in every
-#'   chain before computing COI and frequencies. See *Outputs*.
 #' @param n_chains Number of independent MCMC chains. More than one is required
 #'   for the Gelman-Rubin R-hat diagnostic.
 #' @param threads Cores used to run chains simultaneously (capped at `n_chains`).
@@ -636,7 +629,6 @@ snpslice_wrapper <- function(allele_table,
                              threshold = 0.001,
                              gap = NULL,
                              estimator = "final_sample",
-                             dedup_haplotypes = TRUE,
                              n_chains = 3L,
                              threads = 1L,
                              verbose = FALSE,
@@ -780,7 +772,7 @@ snpslice_wrapper <- function(allele_table,
   }
   snpslice_res <- do.call(snp.slicer::snp_slice, snpslice_args)
 
-  split <- snpslice_split_chains(snpslice_res, dedup_haplotypes = dedup_haplotypes)
+  split <- snpslice_split_chains(snpslice_res)
   mlaf <- NULL
   if (!is.null(loci_groups)) {
     mlaf <- prepare_snpslice_af_output(split$chains, split$best, loci_groups, estimator)
