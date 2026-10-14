@@ -87,7 +87,10 @@ test_that("chains are identical whether run in parallel or one at a time", {
       )$traces
     }
     seq_tr <- run(1)
-    par_tr <- run(3)
+    # 2, not n_chains: R CMD check sets _R_CHECK_LIMIT_CORES_, and
+    # parallel::.check_ncores() errors above 2 workers. Three chains over two
+    # forks still exercises the parallel path.
+    par_tr <- run(2)
     for (i in 1:3) expect_identical(par_tr[[i]], seq_tr[[i]], info = model)
     # each chain has its own seed, so the chains themselves differ
     expect_false(identical(seq_tr[[1]], seq_tr[[2]]), info = model)
