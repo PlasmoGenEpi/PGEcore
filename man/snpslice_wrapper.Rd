@@ -24,7 +24,6 @@ snpslice_wrapper(
   threshold = 0.001,
   gap = NULL,
   estimator = "final_sample",
-  dedup_haplotypes = TRUE,
   n_chains = 3L,
   threads = 1L,
   verbose = FALSE,
@@ -75,9 +74,6 @@ and the global minor allele frequency for count models.}
 \item{estimator}{Estimator for COI and allele frequencies: \code{"final_sample"}
 (default, matching the SNP-Slice paper), \code{"map"}, or \code{"posterior"} (the
 posterior mean, which also yields uncertainty columns).}
-
-\item{dedup_haplotypes}{Merge strains with identical haplotypes in every
-chain before computing COI and frequencies. See \emph{Outputs}.}
 
 \item{n_chains}{Number of independent MCMC chains. More than one is required
 for the Gelman-Rubin R-hat diagnostic.}
@@ -138,10 +134,9 @@ dictionary over-parameterisation that inflates \code{coi}. \code{coi_chain_mean}
 is the mean of \code{coi} over all chains, as Ju et al. (2024) report COI.
 }
 
-With \code{dedup_haplotypes = TRUE} (the default), strains with identical
-haplotypes are merged in every chain before any of these are computed, so
-a specimen assigned two copies of the same haplotype counts it once, as in
-Ju et al. (2024).
+Strains with identical haplotypes are always merged in every chain before
+any of these are computed, so a specimen assigned two copies of the same
+haplotype counts it once, as in Ju et al. (2024).
 }
 
 \subsection{Running}{

@@ -12,7 +12,7 @@ prepare_snpslice_coi_output(chains, best, specimen_name_col, estimator)
 \description{
 Three per-specimen columns:
 \itemize{
-\item \code{coi}: strains assigned in the reported chain (highest MAP log
+\item \code{coi}: number of strains assigned in the reported chain (highest MAP log
 posterior), the row sum of its allocation matrix.
 \item \code{coi_cons_weighted}: \code{\link[=snpslice_consensus_coi]{snpslice_consensus_coi()}} across chains.
 \item \code{coi_chain_mean}: the mean over all chains of that chain's \code{coi}, which

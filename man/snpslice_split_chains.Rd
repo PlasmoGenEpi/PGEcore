@@ -4,13 +4,10 @@
 \alias{snpslice_split_chains}
 \title{Split a SNP-Slice result into single-chain objects}
 \usage{
-snpslice_split_chains(snpslice_res, dedup_haplotypes = FALSE)
+snpslice_split_chains(snpslice_res)
 }
 \arguments{
 \item{snpslice_res}{Result of \code{\link[snp.slicer:snp_slice]{snp.slicer::snp_slice()}}.}
-
-\item{dedup_haplotypes}{Collapse identical haplotypes in every chain; see
-\code{\link[=snpslice_dedup_matrices]{snpslice_dedup_matrices()}}.}
 }
 \value{
 List with \code{chains} (single-chain results in chain order) and
@@ -18,6 +15,7 @@ List with \code{chains} (single-chain results in chain order) and
 posterior).
 }
 \description{
-Split a SNP-Slice result into single-chain objects
+Identical haplotypes are always collapsed first; see
+\code{\link[=snpslice_dedup_matrices]{snpslice_dedup_matrices()}}.
 }
 \keyword{internal}

@@ -143,18 +143,6 @@ opts <- list(
     )
   ),
   make_option(
-    "--dedup_haplotypes",
-    type = "logical",
-    default = TRUE,
-    help = paste0(
-      "TRUE/FALSE. Merge strains with identical haplotypes in every chain ",
-      "before computing COI and frequencies, so a specimen carrying two ",
-      "copies of the same haplotype counts it once (as in Ju et al. 2024). ",
-      "Takes a value so it can be set from a benchmark paramset. Optional. ",
-      "Default: %default"
-    )
-  ),
-  make_option(
     c("-v", "--verbose"),
     action = "store_true",
     default = FALSE,
@@ -240,7 +228,6 @@ invisible(
     threshold = arg$threshold,
     gap = arg$gap,
     estimator = arg$estimator,
-    dedup_haplotypes = isTRUE(arg$dedup_haplotypes),
     n_chains = arg$n_chains,
     threads = arg$threads,
     verbose = isTRUE(arg$verbose) || isTRUE(arg$v),

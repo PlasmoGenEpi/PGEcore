@@ -15,6 +15,6 @@ posterior by default) where as \code{averaged_freq} is similar to how Ju et al. 
 did COI with taking the average across the chains. \code{averaged_freq} is
 the mean over all chains's frequency for the haplotype, with
 a haplotype a chain never produced counting as zero there. A row is kept
-when either column is positive. This increases sensitivity but also decrease precision
+when either column is non-zero This increases sensitivity but also decrease precision
 }
 \keyword{internal}

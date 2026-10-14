@@ -267,7 +267,7 @@ test_that("snpslice_dedup_matrices merges identical dictionary rows", {
   expect_equal(ncol(d0$A), 0)
 })
 
-test_that("snpslice_wrapper reports coi_chain_mean and averaged_freq, and dedup_haplotypes is honoured", {
+test_that("snpslice_wrapper reports coi_chain_mean and averaged_freq, always de-duplicated", {
   skip_if_not_installed("snp.slicer")
   skip_if_not_installed("variantstring")
   skip_if_not(
@@ -278,16 +278,13 @@ test_that("snpslice_wrapper reports coi_chain_mean and averaged_freq, and dedup_
   lg <- system.file("extdata", "example_loci_groups.tsv", package = "PGEcore")
   skip_if_not(nzchar(aa) && file.exists(aa))
   out <- withr::local_tempdir()
-  run <- function(dedup) {
-    snpslice_wrapper(
-      aa, lg,
-      mlaf_output = file.path(out, "mlaf.tsv"), coi_output = file.path(out, "coi.tsv"),
-      convergence_output = file.path(out, "conv.tsv"),
-      model = "multinomial", loci_limit = 12, n_sample = 30, n_burnin = 30, gap = 30,
-      n_chains = 2, seed = 3, estimator = "final_sample", dedup_haplotypes = dedup
-    )
-  }
-  res <- run(FALSE)
+  res <- snpslice_wrapper(
+    aa, lg,
+    mlaf_output = file.path(out, "mlaf.tsv"), coi_output = file.path(out, "coi.tsv"),
+    convergence_output = file.path(out, "conv.tsv"),
+    model = "multinomial", loci_limit = 12, n_sample = 30, n_burnin = 30, gap = 30,
+    n_chains = 2, seed = 3, estimator = "final_sample"
+  )
   expect_equal(names(res$coi), c("specimen_name", "coi", "coi_cons_weighted", "coi_chain_mean"))
   expect_true(all(c("freq", "averaged_freq", "allele_count", "allele_total") %in% names(res$mlaf)))
   sums <- res$mlaf |> dplyr::group_by(.data$group_id) |>
@@ -299,13 +296,8 @@ test_that("snpslice_wrapper reports coi_chain_mean and averaged_freq, and dedup_
   # multiple of 0.5 for the final-sample estimator.
   expect_true(all(res$coi$coi_chain_mean >= 1))
   expect_true(all(abs(res$coi$coi_chain_mean * 2 - round(res$coi$coi_chain_mean * 2)) < 1e-8))
-
-  res_dd <- run(TRUE)
-  expect_equal(names(res_dd$coi), names(res$coi))
-  # De-duplication can only lower strain counts, never raise them.
-  expect_true(all(res_dd$coi$coi <= res$coi$coi))
-  expect_true(all(res_dd$mlaf$allele_total <= max(res$mlaf$allele_total)))
-  # Dedup is the default.
-  expect_true(formals(snpslice_wrapper)$dedup_haplotypes)
+  # The toggle is gone: de-duplication is unconditional.
+  expect_false("dedup_haplotypes" %in% names(formals(snpslice_wrapper)))
+  expect_false("dedup_haplotypes" %in% names(formals(snpslice_split_chains)))
 })
 
