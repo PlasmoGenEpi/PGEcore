@@ -48,14 +48,14 @@ of zero.}
 one-column TSV, or character vector of SNPs to drop before ranking.}
 
 \item{drop_artifact_snps}{If \code{TRUE}, drop SNPs whose minor allele recurs in
-specimens that look monoclonal at every other SNP (e.g. PCR stutter)
+specimens that otherwise look monoclonal at every other SNP (e.g. PCR stutter)
 before ranking; artifacts inflate expected heterozygosity and would
-otherwise be preferred.}
+otherwise be selected over true high heterozygosity SNPs}
 
 \item{artifact_min_minor_rate}{Minimum share of those specimens showing the
 minor allele for a SNP to be dropped (default \code{0.02}).}
 
-\item{artifact_min_samples}{Minimum number of those specimens showing it
+\item{artifact_min_samples}{Minimum number of those specimens containing the artifact
 (default \code{3}).}
 
 \item{dropped_snps_output}{Optional path; writes the names of SNPs dropped by

@@ -142,13 +142,22 @@ validate_snp_table_column_types <- function(snp_table) {
 #' @param min_samples Minimum number of eligible specimens showing it.
 #' @param min_depth Minimum reads at a SNP for a specimen to be considered.
 #'
-#' @return A tibble with one row per SNP: `snp_name`, `eligible` specimens,
-#'   `hits`, `minor_rate` and `artifact`.
+#' @return A tibble with one row per SNP: `snp_name`, `eligible_specimens`
+#'   (specimens with at most one minor allele at other SNPs),
+#'   `total_minor_allele_detected` (those with a minor allele at this SNP),
+#'   `minor_rate` and `artifact`.
 #' @keywords internal
 flag_artifact_snps <- function(snp_table,
                                min_minor_rate = 0.02,
                                min_samples = 3,
                                min_depth = 30) {
+  
+  # count up the number of minor alleles detected and total number of other minor detected 
+  # likely artifact are when a specific allele has minor alleles detected but no other 
+  # sites have minor detected, this becomes even more unlikely as the number of alleles 
+  # increases, e.g. if there are 200+ snps and 1 snp is found to have minor alleles consistently 
+  # with no other minors detected ever is more likely to be artifact, this was leading to some 
+  # coi tools to over estimate monoclonal samples 
   cells <- snp_table |>
     dplyr::group_by(.data$specimen_name, .data$snp_name) |>
     dplyr::summarise(
@@ -157,22 +166,22 @@ flag_artifact_snps <- function(snp_table,
       .groups = "drop"
     ) |>
     dplyr::filter(.data$depth >= min_depth) |>
-    dplyr::mutate(hit = .data$minor > 0) |>
+    dplyr::mutate(minor_allele_detected = .data$minor > 0) |>
     dplyr::group_by(.data$specimen_name) |>
-    dplyr::mutate(other_hits = sum(.data$hit) - .data$hit) |>
+    dplyr::mutate(other_minor_allele_detected = sum(.data$minor_allele_detected) - .data$minor_allele_detected) |>
     dplyr::ungroup()
 
   cells |>
-    dplyr::filter(.data$other_hits <= 1) |>
+    dplyr::filter(.data$other_minor_allele_detected <= 1) |>
     dplyr::group_by(.data$snp_name) |>
     dplyr::summarise(
-      eligible = dplyr::n(),
-      hits = sum(.data$hit),
+      eligible_specimens = dplyr::n(),
+      total_minor_allele_detected = sum(.data$minor_allele_detected),
       .groups = "drop"
     ) |>
     dplyr::mutate(
-      minor_rate = .data$hits / .data$eligible,
-      artifact = .data$minor_rate >= min_minor_rate & .data$hits >= min_samples
+      minor_rate = .data$total_minor_allele_detected / .data$eligible_specimens,
+      artifact = .data$minor_rate >= min_minor_rate & .data$total_minor_allele_detected >= min_samples
     )
 }
 
@@ -313,12 +322,12 @@ filter_highest_diversity_snps_core <- function(snp_table_in,
 #' @param exclude_snp_names Optional comma-separated names, path to a
 #'   one-column TSV, or character vector of SNPs to drop before ranking.
 #' @param drop_artifact_snps If `TRUE`, drop SNPs whose minor allele recurs in
-#'   specimens that look monoclonal at every other SNP (e.g. PCR stutter)
+#'   specimens that otherwise look monoclonal at every other SNP (e.g. PCR stutter)
 #'   before ranking; artifacts inflate expected heterozygosity and would
-#'   otherwise be preferred.
+#'   otherwise be selected over true high heterozygosity SNPs 
 #' @param artifact_min_minor_rate Minimum share of those specimens showing the
 #'   minor allele for a SNP to be dropped (default `0.02`).
-#' @param artifact_min_samples Minimum number of those specimens showing it
+#' @param artifact_min_samples Minimum number of those specimens containing the artifact
 #'   (default `3`).
 #' @param dropped_snps_output Optional path; writes the names of SNPs dropped by
 #'   `exclude_snp_names` or `drop_artifact_snps`, one per line, so other steps

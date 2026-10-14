@@ -64,13 +64,13 @@ opts <- list(
     "--artifact_min_minor_rate",
     type = "double",
     default = 0.02,
-    help = "min share of otherwise-monoclonal specimens showing the minor allele to drop a SNP. Default: %default"
+    help = "min share of otherwise-monoclonal specimens containing the minor allele to drop a SNP. Default: %default"
   ),
   make_option(
     "--artifact_min_samples",
     type = "integer",
     default = 3,
-    help = "min number of those specimens showing it. Default: %default"
+    help = "min number of those specimens containing the artifact. Default: %default"
   ),
   make_option(
     "--dropped_snps_output",

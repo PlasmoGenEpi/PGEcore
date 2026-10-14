@@ -99,7 +99,7 @@ test_that("flag_artifact_snps flags a minor allele recurring in monoclonal speci
   flags <- PGEcore:::flag_artifact_snps(make_artifact_snp_table())
   expect_setequal(flags$snp_name[flags$artifact], "stut")
   # true mixtures carry minor alleles everywhere and are not eligible
-  expect_equal(flags$eligible[flags$snp_name == "good1"], 6)
+  expect_equal(flags$eligible_specimens[flags$snp_name == "good1"], 6)
 })
 
 test_that("drop_artifact_snps removes the artifact before ranking", {

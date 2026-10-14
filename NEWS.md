@@ -11,7 +11,8 @@
 * `THEREALMcCOIL_wrapper(model = "proportional")` gives each sample one set of
   strain proportions shared by all its loci, estimates read noise, and treats
   minor alleles below the detection limit as censored. The `epsilon`
-  argument and the fitted Beta grid it used are removed. COI and
+  argument and the precomputed fitted Beta grid it used are removed as they are no longer 
+  used by the new function as these are learned acorss all loci jointly. COI and
   allele-frequency outputs are medians pooled over all chains, and `threads`
   sets how many chains run at once. `M0` takes one starting COI per chain
   (default `"1,5,15"`) so R-hat can reveal a chain that has not converged.

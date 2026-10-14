@@ -23,8 +23,10 @@ minor allele.}
 \item{min_depth}{Minimum reads at a SNP for a specimen to be considered.}
 }
 \value{
-A tibble with one row per SNP: \code{snp_name}, \code{eligible} specimens,
-\code{hits}, \code{minor_rate} and \code{artifact}.
+A tibble with one row per SNP: \code{snp_name}, \code{eligible_specimens}
+(specimens with at most one minor allele at other SNPs),
+\code{total_minor_allele_detected} (those with a minor allele at this SNP),
+\code{minor_rate} and \code{artifact}.
 }
 \description{
 A real minor strain shows minor alleles at many SNPs of a specimen, so a SNP

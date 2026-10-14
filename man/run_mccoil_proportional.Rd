@@ -40,12 +40,15 @@ missing locus.}
 \code{NULL}. Called for the files it writes.
 }
 \description{
+Calls compiled \code{McCOIL_prop} and writes its trace and a
+\verb{<output>_summary.txt} in the same layout as \code{\link[=run_mccoil_categorical]{run_mccoil_categorical()}},
+with \code{rho} and \code{pout} as extra parameters.
+}
+\details{
 Each sample has one set of strain proportions shared by all its loci, and
 each strain carries one allele per locus. Read noise (\code{rho}) and the outlier
 weight (\code{pout}) are estimated. A minor allele below the detection limit,
 taken as the smallest minor-allele fraction and read count seen in the data,
-is treated as censored. Calls compiled \code{McCOIL_prop} and writes its trace and
-a \verb{<output>_summary.txt} in the same layout as \code{\link[=run_mccoil_categorical]{run_mccoil_categorical()}},
-with \code{rho} and \code{pout} as extra parameters.
+is treated as censored.
 }
 \keyword{internal}
