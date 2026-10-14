@@ -65,10 +65,21 @@ opts <- list(
   ),
   make_option(
     "--model",
-    default = "negative_binomial",
+    default = "multinomial",
     help = paste0(
-      "Observation model to use. Options: 'poisson', ",
-      "'binomial', 'negative_binomial' (default). Optional."
+      "Observation model to use. Options: 'poisson', 'binomial', ",
+      "'negative_binomial', 'categorical', 'multinomial'(default). Only ",
+      "'multinomial' keeps targets with more than two alleles; the others ",
+      "drop them from the loci groups. Optional."
+    )
+  ),
+  make_option(
+    "--dict_prior",
+    default = "empirical",
+    help = paste0(
+      "Dictionary prior for the multinomial model: 'empirical' (default; ",
+      "pooled allele read fractions with a pseudocount) or 'uniform'. ",
+      "Ignored by other models. Optional."
     )
   ),
   make_option(
@@ -209,6 +220,7 @@ invisible(
     target_count_col = arg$target_count_col,
     loci_limit = arg$loci_limit,
     model = arg$model,
+    dict_prior = arg$dict_prior,
     n_sample = arg$n_sample,
     n_burnin = arg$n_burnin,
     alpha = arg$alpha,

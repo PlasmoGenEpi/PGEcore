@@ -15,7 +15,8 @@ snpslice_wrapper(
   target_value_col = "aa",
   target_count_col = "reads",
   loci_limit = NULL,
-  model = "negative_binomial",
+  model = "multinomial",
+  dict_prior = "empirical",
   n_sample = 10000L,
   n_burnin = NULL,
   alpha = 2.6,
@@ -47,10 +48,17 @@ See \emph{Outputs}.}
 
 \item{loci_limit}{Optional cap on the number of loci. With \code{loci_groups},
 the group loci are always kept and the remainder is filled with random
-biallelic loci; without, all loci are random biallelic loci. If \code{NULL},
-all loci are used.}
+loci; without, every selected locus is random. Random loci are drawn from
+the biallelic targets, or from any polymorphic target when \code{model} is
+\code{"multinomial"}. If \code{NULL}, all loci are used.}
 
-\item{model}{Observation model for SNP-Slice.}
+\item{model}{Observation model for SNP-Slice: \code{"negative_binomial"}
+, \code{"binomial"}, \code{"poisson"}, \code{"categorical"}, or
+\code{"multinomial"}(default). See \emph{Multi-allelic targets}.}
+
+\item{dict_prior}{Dictionary prior for the multinomial model, passed to
+\code{\link[snp.slicer:snp_slice]{snp.slicer::snp_slice()}}: \code{"empirical"} (default; pooled allele read
+fractions with a pseudocount) or \code{"uniform"}. Ignored by other models.}
 
 \item{n_sample}{Post-burn-in MCMC iterations retained per chain.}
 
@@ -97,23 +105,38 @@ Omit both to run in COI-only mode.
 }
 }
 
+\subsection{Multi-allelic targets}{
+
+The biallelic observation models (\code{"negative_binomial"}, \code{"binomial"},
+\code{"poisson"}, \code{"categorical"}) cannot represent a third allele, so any target
+with more than two alleles is dropped from its group with a warning, and
+extra loci drawn under \code{loci_limit} come from biallelic targets only. With
+\code{model = "multinomial"} every allele at every target is kept, groups with
+multi-allelic codons are estimated in
+full, and extra loci are drawn from all polymorphic targets. The
+multinomial dictionary prior is set by \code{dict_prior}; \code{rho} is ignored.
+}
+
 \subsection{Outputs}{
 \itemize{
-\item \strong{\code{mlaf_output}} (only with \code{loci_groups}): Multilocus allele
-frequencies (\code{group_id}, \code{variant}, \code{freq}, …).
+\item \strong{\code{mlaf_output}} (only with \code{loci_groups}): Multilocus allele frequencies
+(\code{group_id}, \code{variant}, \code{freq}, \code{averaged_freq}, …). \code{freq} comes from the
+chain SNP-Slice reports (highest MAP log posterior); \code{averaged_freq} is the
+mean of the per-chain estimates over all chains, the estimator of
+Ju et al. (2024).
 \item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi},
-\code{coi_cons_weighted}; uncertainty columns when \code{estimator = "posterior"}).
-\code{coi} counts every strain assigned to a host in the best restart.
-\code{coi_cons_weighted} pools haplotype membership across all restarts and
+\code{coi_cons_weighted}, \code{coi_chain_mean}; uncertainty columns when
+\code{estimator = "posterior"}).
+\code{coi} counts every strain assigned to a host in the best chain
+\code{coi_cons_weighted} pools haplotype membership across all chains and
 weights each haplotype by its consensus support, which counters the
-dictionary over-parameterisation that inflates \code{coi}.
-\item \strong{\code{convergence_output}}: Per-restart optimization diagnostics
-(\code{chain_id}, \code{seed}, \code{map_logpost}, \code{is_best}, \code{map_iteration},
-\code{final_iteration}, \code{plateau_frac}, \code{map_kstar}, \code{map_ktrunc}, \code{coi_mean},
-\code{coi_ccc_to_best}). SNP-Slice reports the restart with the highest MAP log
-posterior rather than pooling chains, so between-chain R-hat and ESS do not
-describe its output and are not emitted.
+dictionary over-parameterisation that inflates \code{coi}. \code{coi_chain_mean}
+is the mean of \code{coi} over all chains, as Ju et al. (2024) report COI.
 }
+
+Strains with identical haplotypes are always merged in every chain before
+any of these are computed, so a specimen assigned two copies of the same
+haplotype counts it once, as in Ju et al. (2024).
 }
 
 \subsection{Running}{
@@ -127,7 +150,7 @@ describe its output and are not emitted.
 }\if{html}{\out{</div>}}
 
 \if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/snpslice_wrapper \\
-  --allele_table aa_calls.tsv \\
+  --allele_table ./inst/extdata/example_aa_calls.tsv \\
   --loci_groups loci_groups.tsv \\
   --mlaf_output mlaf.tsv \\
   --coi_output coi.tsv
