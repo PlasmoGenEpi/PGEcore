@@ -169,6 +169,9 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/snp_calls_to_vcf.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_ccc.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_consensus_coi.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_dedup_chain.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_dedup_matrices.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_split_chains.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/snpslice_wrapper.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/stop_if_output_exists.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/stop_on_duplicate_names.html</loc></url>

@@ -62,7 +62,8 @@ groups are supplied, <strong>variantstring</strong> 1.x (Suggests).</p>
 <span>  target_value_col <span class="op">=</span> <span class="st">"aa"</span>,</span>
 <span>  target_count_col <span class="op">=</span> <span class="st">"reads"</span>,</span>
 <span>  loci_limit <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  model <span class="op">=</span> <span class="st">"negative_binomial"</span>,</span>
+<span>  model <span class="op">=</span> <span class="st">"multinomial"</span>,</span>
+<span>  dict_prior <span class="op">=</span> <span class="st">"empirical"</span>,</span>
 <span>  n_sample <span class="op">=</span> <span class="fl">10000L</span>,</span>
 <span>  n_burnin <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  alpha <span class="op">=</span> <span class="fl">2.6</span>,</span>
@@ -111,12 +112,21 @@ See <em>Outputs</em>.</p></dd>
 <dt id="arg-loci-limit">loci_limit<a class="anchor" aria-label="anchor" href="#arg-loci-limit"></a></dt>
 <dd><p>Optional cap on the number of loci. With <code>loci_groups</code>,
 the group loci are always kept and the remainder is filled with random
-biallelic loci; without, all loci are random biallelic loci. If <code>NULL</code>,
-all loci are used.</p></dd>
+loci; without, every selected locus is random. Random loci are drawn from
+the biallelic targets, or from any polymorphic target when <code>model</code> is
+<code>"multinomial"</code>. If <code>NULL</code>, all loci are used.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p>Observation model for SNP-Slice.</p></dd>
+<dd><p>Observation model for SNP-Slice: <code>"negative_binomial"</code>
+, <code>"binomial"</code>, <code>"poisson"</code>, <code>"categorical"</code>, or
+<code>"multinomial"</code>(default). See <em>Multi-allelic targets</em>.</p></dd>
+
+
+<dt id="arg-dict-prior">dict_prior<a class="anchor" aria-label="anchor" href="#arg-dict-prior"></a></dt>
+<dd><p>Dictionary prior for the multinomial model, passed to
+<code><a href="https://plasmogenepi.github.io/snp.slicer/reference/snp_slice.html" class="external-link">snp.slicer::snp_slice()</a></code>: <code>"empirical"</code> (default; pooled allele read
+fractions with a pseudocount) or <code>"uniform"</code>. Ignored by other models.</p></dd>
 
 
 <dt id="arg-n-sample">n_sample<a class="anchor" aria-label="anchor" href="#arg-n-sample"></a></dt>
@@ -181,23 +191,39 @@ Omit both to run in COI-only mode.</p></li>
 </ul></div>
 
 <div class="section">
+<h3 id="multi-allelic-targets">Multi-allelic targets<a class="anchor" aria-label="anchor" href="#multi-allelic-targets"></a></h3>
+
+
+<p>The biallelic observation models (<code>"negative_binomial"</code>, <code>"binomial"</code>,
+<code>"poisson"</code>, <code>"categorical"</code>) cannot represent a third allele, so any target
+with more than two alleles is dropped from its group with a warning, and
+extra loci drawn under <code>loci_limit</code> come from biallelic targets only. With
+<code>model = "multinomial"</code> every allele at every target is kept, groups with
+multi-allelic codons are estimated in
+full, and extra loci are drawn from all polymorphic targets. The
+multinomial dictionary prior is set by <code>dict_prior</code>; <code>rho</code> is ignored.</p>
+</div>
+
+<div class="section">
 <h3 id="outputs">Outputs<a class="anchor" aria-label="anchor" href="#outputs"></a></h3>
 
-<ul><li><p><strong><code>mlaf_output</code></strong> (only with <code>loci_groups</code>): Multilocus allele
-frequencies (<code>group_id</code>, <code>variant</code>, <code>freq</code>, …).</p></li>
+<ul><li><p><strong><code>mlaf_output</code></strong> (only with <code>loci_groups</code>): Multilocus allele frequencies
+(<code>group_id</code>, <code>variant</code>, <code>freq</code>, <code>averaged_freq</code>, …). <code>freq</code> comes from the
+chain SNP-Slice reports (highest MAP log posterior); <code>averaged_freq</code> is the
+mean of the per-chain estimates over all chains, the estimator of
+Ju et al. (2024).</p></li>
 <li><p><strong><code>coi_output</code></strong>: COI estimates (<code>specimen_name</code>, <code>coi</code>,
-<code>coi_cons_weighted</code>; uncertainty columns when <code>estimator = "posterior"</code>).
-<code>coi</code> counts every strain assigned to a host in the best restart.
-<code>coi_cons_weighted</code> pools haplotype membership across all restarts and
+<code>coi_cons_weighted</code>, <code>coi_chain_mean</code>; uncertainty columns when
+<code>estimator = "posterior"</code>).
+<code>coi</code> counts every strain assigned to a host in the best chain
+<code>coi_cons_weighted</code> pools haplotype membership across all chains and
 weights each haplotype by its consensus support, which counters the
-dictionary over-parameterisation that inflates <code>coi</code>.</p></li>
-<li><p><strong><code>convergence_output</code></strong>: Per-restart optimization diagnostics
-(<code>chain_id</code>, <code>seed</code>, <code>map_logpost</code>, <code>is_best</code>, <code>map_iteration</code>,
-<code>final_iteration</code>, <code>plateau_frac</code>, <code>map_kstar</code>, <code>map_ktrunc</code>, <code>coi_mean</code>,
-<code>coi_ccc_to_best</code>). SNP-Slice reports the restart with the highest MAP log
-posterior rather than pooling chains, so between-chain R-hat and ESS do not
-describe its output and are not emitted.</p></li>
-</ul></div>
+dictionary over-parameterisation that inflates <code>coi</code>. <code>coi_chain_mean</code>
+is the mean of <code>coi</code> over all chains, as Ju et al. (2024) report COI.</p></li>
+</ul><p>Strains with identical haplotypes are always merged in every chain before
+any of these are computed, so a specimen assigned two copies of the same
+haplotype counts it once, as in Ju et al. (2024).</p>
+</div>
 
 <div class="section">
 <h3 id="running">Running<a class="anchor" aria-label="anchor" href="#running"></a></h3>
@@ -210,7 +236,7 @@ describe its output and are not emitted.</p></li>
 <span>  coi_output <span class="op">=</span> <span class="st">"coi.tsv"</span></span>
 <span><span class="op">)</span></span></code></pre><p></p></div>
 <p></p><div class="sourceCode bash"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="ex">Rscript</span> exec/snpslice_wrapper <span class="dt">\</span></span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="at">--allele_table</span> aa_calls.tsv <span class="dt">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="at">--allele_table</span> ./inst/extdata/example_aa_calls.tsv <span class="dt">\</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="at">--loci_groups</span> loci_groups.tsv <span class="dt">\</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="at">--mlaf_output</span> mlaf.tsv <span class="dt">\</span></span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="at">--coi_output</span> coi.tsv</span></code></pre><p></p></div>

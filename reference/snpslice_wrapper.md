@@ -18,7 +18,8 @@ snpslice_wrapper(
   target_value_col = "aa",
   target_count_col = "reads",
   loci_limit = NULL,
-  model = "negative_binomial",
+  model = "multinomial",
+  dict_prior = "empirical",
   n_sample = 10000L,
   n_burnin = NULL,
   alpha = 2.6,
@@ -65,13 +66,23 @@ snpslice_wrapper(
 - loci_limit:
 
   Optional cap on the number of loci. With `loci_groups`, the group loci
-  are always kept and the remainder is filled with random biallelic
-  loci; without, all loci are random biallelic loci. If `NULL`, all loci
-  are used.
+  are always kept and the remainder is filled with random loci; without,
+  every selected locus is random. Random loci are drawn from the
+  biallelic targets, or from any polymorphic target when `model` is
+  `"multinomial"`. If `NULL`, all loci are used.
 
 - model:
 
-  Observation model for SNP-Slice.
+  Observation model for SNP-Slice: `"negative_binomial"` , `"binomial"`,
+  `"poisson"`, `"categorical"`, or `"multinomial"`(default). See
+  *Multi-allelic targets*.
+
+- dict_prior:
+
+  Dictionary prior for the multinomial model, passed to
+  [`snp.slicer::snp_slice()`](https://plasmogenepi.github.io/snp.slicer/reference/snp_slice.html):
+  `"empirical"` (default; pooled allele read fractions with a
+  pseudocount) or `"uniform"`. Ignored by other models.
 
 - n_sample:
 
@@ -133,25 +144,37 @@ is `NULL` when `loci_groups` is not supplied.
   column matching `target_name_col`). Supply together with
   `mlaf_output`. Omit both to run in COI-only mode.
 
+### Multi-allelic targets
+
+The biallelic observation models (`"negative_binomial"`, `"binomial"`,
+`"poisson"`, `"categorical"`) cannot represent a third allele, so any
+target with more than two alleles is dropped from its group with a
+warning, and extra loci drawn under `loci_limit` come from biallelic
+targets only. With `model = "multinomial"` every allele at every target
+is kept, groups with multi-allelic codons are estimated in full, and
+extra loci are drawn from all polymorphic targets. The multinomial
+dictionary prior is set by `dict_prior`; `rho` is ignored.
+
 ### Outputs
 
 - **`mlaf_output`** (only with `loci_groups`): Multilocus allele
-  frequencies (`group_id`, `variant`, `freq`, …).
+  frequencies (`group_id`, `variant`, `freq`, `averaged_freq`, …).
+  `freq` comes from the chain SNP-Slice reports (highest MAP log
+  posterior); `averaged_freq` is the mean of the per-chain estimates
+  over all chains, the estimator of Ju et al. (2024).
 
 - **`coi_output`**: COI estimates (`specimen_name`, `coi`,
-  `coi_cons_weighted`; uncertainty columns when
+  `coi_cons_weighted`, `coi_chain_mean`; uncertainty columns when
   `estimator = "posterior"`). `coi` counts every strain assigned to a
-  host in the best restart. `coi_cons_weighted` pools haplotype
-  membership across all restarts and weights each haplotype by its
-  consensus support, which counters the dictionary over-parameterisation
-  that inflates `coi`.
+  host in the best chain `coi_cons_weighted` pools haplotype membership
+  across all chains and weights each haplotype by its consensus support,
+  which counters the dictionary over-parameterisation that inflates
+  `coi`. `coi_chain_mean` is the mean of `coi` over all chains, as Ju et
+  al. (2024) report COI.
 
-- **`convergence_output`**: Per-restart optimization diagnostics
-  (`chain_id`, `seed`, `map_logpost`, `is_best`, `map_iteration`,
-  `final_iteration`, `plateau_frac`, `map_kstar`, `map_ktrunc`,
-  `coi_mean`, `coi_ccc_to_best`). SNP-Slice reports the restart with the
-  highest MAP log posterior rather than pooling chains, so between-chain
-  R-hat and ESS do not describe its output and are not emitted.
+Strains with identical haplotypes are always merged in every chain
+before any of these are computed, so a specimen assigned two copies of
+the same haplotype counts it once, as in Ju et al. (2024).
 
 ### Running
 
@@ -163,7 +186,7 @@ is `NULL` when `loci_groups` is not supplied.
     )
 
     Rscript exec/snpslice_wrapper \
-      --allele_table aa_calls.tsv \
+      --allele_table ./inst/extdata/example_aa_calls.tsv \
       --loci_groups loci_groups.tsv \
       --mlaf_output mlaf.tsv \
       --coi_output coi.tsv
