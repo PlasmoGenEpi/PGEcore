@@ -46,6 +46,11 @@
 <li>Specialised analysis packages remain <strong>Suggests</strong> — installing PGEcore does not pull them in.</li>
 <li>
 <code>THEREALMcCOIL</code> C is compiled at install time from <code>src/</code>.</li>
+<li>
+<code>THEREALMcCOIL_wrapper(model = "proportional")</code> gives each sample one set of strain proportions shared by all its loci, estimates read noise, and treats minor alleles below the detection limit as censored. The <code>epsilon</code> argument and the precomputed fitted Beta grid it used are removed as they are no longer used by the new function as these are learned acorss all loci jointly. COI and allele-frequency outputs are medians pooled over all chains, and <code>threads</code> sets how many chains run at once. <code>M0</code> takes one starting COI per chain (default <code>"1,5,15"</code>) so R-hat can reveal a chain that has not converged.</li>
+<li>McCOIL error-rate proposals used a variance as the standard deviation; fixed. <code>err_method = 2</code> now refreshes its likelihoods after each redraw. The wrapper rejects <code>err_method = 2</code>, and any <code>err_method</code> other than 1 for the proportional model.</li>
+<li>
+<code><a href="../reference/filter_to_highest_diversity_independent_snp_call.html">filter_to_highest_diversity_independent_snp_call()</a></code> gains <code>drop_artifact_snps</code> (drop SNPs whose minor allele recurs in otherwise monoclonal specimens, such as PCR stutter) and <code>exclude_snp_names</code>; both act before SNPs are ranked.</li>
 </ul></div>
   </main></div>
 

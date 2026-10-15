@@ -15,6 +15,7 @@ snp_calls_to_vcf(
   biallelic = FALSE,
   ploidy = 2L,
   gt_min_reads = 1L,
+  exclude_snp_names = NULL,
   overwrite = FALSE,
   verbose = FALSE
 )
@@ -46,6 +47,11 @@ snp_calls_to_vcf(
 - gt_min_reads:
 
   Minimum reads for an allele to count as present in GT.
+
+- exclude_snp_names:
+
+  Optional comma-separated names, path to a one-column file, or
+  character vector of SNPs to leave out of the VCF.
 
 - overwrite:
 

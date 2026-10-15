@@ -61,6 +61,7 @@ strand. Monomorphic sites are skipped.</p>
 <span>  biallelic <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ploidy <span class="op">=</span> <span class="fl">2L</span>,</span>
 <span>  gt_min_reads <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  exclude_snp_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -93,6 +94,11 @@ columns. See <em>Inputs</em>.</p></dd>
 
 <dt id="arg-gt-min-reads">gt_min_reads<a class="anchor" aria-label="anchor" href="#arg-gt-min-reads"></a></dt>
 <dd><p>Minimum reads for an allele to count as present in GT.</p></dd>
+
+
+<dt id="arg-exclude-snp-names">exclude_snp_names<a class="anchor" aria-label="anchor" href="#arg-exclude-snp-names"></a></dt>
+<dd><p>Optional comma-separated names, path to a
+one-column file, or character vector of SNPs to leave out of the VCF.</p></dd>
 
 
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>

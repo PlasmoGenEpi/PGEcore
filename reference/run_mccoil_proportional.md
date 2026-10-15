@@ -1,9 +1,9 @@
 # THEREALMcCOIL proportional MCMC
 
-Ported from `McCOIL_proportional.R`. Reads the fitted beta grid from
-package `extdata` and calls compiled `McCOIL_prop`. Named
-`run_mccoil_proportional` so it does not collide with registered C
-symbols.
+Calls compiled `McCOIL_prop` and writes its trace and a
+`<output>_summary.txt` in the same layout as
+[`run_mccoil_categorical()`](https://plasmogenepi.github.io/PGEcore/reference/run_mccoil_categorical.md),
+with `rho` and `pout` as extra parameters.
 
 ## Usage
 
@@ -14,9 +14,8 @@ run_mccoil_proportional(
   maxCOI = 25,
   totalrun = 10000,
   burnin = 1000,
-  M0 = 15,
-  epsilon = 0.02,
-  err_method = 1,
+  M0 = 1,
+  err = 1e-04,
   path = getwd(),
   output = "output.txt"
 )
@@ -26,7 +25,8 @@ run_mccoil_proportional(
 
 - dataA1:
 
-  Allele-1 read counts (samples x sites).
+  Allele-1 read counts (samples x sites); negative marks a missing
+  locus.
 
 - dataA2:
 
@@ -46,15 +46,11 @@ run_mccoil_proportional(
 
 - M0:
 
-  Initial COI.
+  Starting COI for every sample.
 
-- epsilon:
+- err:
 
-  Sequencing error parameter for the proportional model.
-
-- err_method:
-
-  `1`/`2` treat epsilon as constant; `3` estimates it.
+  Per-read error rate.
 
 - path:
 
@@ -62,8 +58,16 @@ run_mccoil_proportional(
 
 - output:
 
-  Base filename for MCMC traces.
+  Base filename for the MCMC trace.
 
 ## Value
 
 `NULL`. Called for the files it writes.
+
+## Details
+
+Each sample has one set of strain proportions shared by all its loci,
+and each strain carries one allele per locus. Read noise (`rho`) and the
+outlier weight (`pout`) are estimated. A minor allele below the
+detection limit, taken as the smallest minor-allele fraction and read
+count seen in the data, is treated as censored.

@@ -1,18 +1,20 @@
-# Format McCOIL summary TSV into PGE COI and SLAF tables
+# Format pooled McCOIL draws into PGE COI and SLAF tables
 
-Format McCOIL summary TSV into PGE COI and SLAF tables
+Estimates are posterior medians over the post-burn-in draws of all
+chains.
 
 ## Usage
 
 ``` r
-format_mccoil_output(summary_path)
+format_mccoil_output(draws)
 ```
 
 ## Arguments
 
-- summary_path:
+- draws:
 
-  Path to `*_summary.txt` written by McCOIL.
+  Output of
+  [`mccoil_draws()`](https://plasmogenepi.github.io/PGEcore/reference/mccoil_draws.md).
 
 ## Value
 

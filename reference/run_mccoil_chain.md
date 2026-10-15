@@ -18,7 +18,6 @@ run_mccoil_chain(
   M0,
   e1,
   e2,
-  epsilon,
   err_method,
   seed,
   work_dir,
@@ -59,7 +58,7 @@ run_mccoil_chain(
 
 - M0:
 
-  Initial COI.
+  Starting COI for this chain.
 
 - e1:
 
@@ -69,14 +68,10 @@ run_mccoil_chain(
 
   Probability of calling heterozygous loci homozygous (categorical).
 
-- epsilon:
-
-  Error parameter for the proportional model.
-
 - err_method:
 
-  `1`: treat error rates as constants; `3`: estimate them with COI and
-  allele frequencies.
+  `1`: treat `e1`/`e2` as constants; `3`: estimate them with COI and
+  allele frequencies (categorical model).
 
 - seed:
 

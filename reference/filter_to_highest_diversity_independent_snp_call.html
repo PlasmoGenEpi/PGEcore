@@ -56,7 +56,12 @@ least <code>mindist_between_snps</code> apart on the same chromosome.</p>
 <span>  select_specimen_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  only_biallelic <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  only_informative <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  only_informative <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  exclude_snp_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  drop_artifact_snps <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  artifact_min_minor_rate <span class="op">=</span> <span class="fl">0.02</span>,</span>
+<span>  artifact_min_samples <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  dropped_snps_output <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -100,6 +105,34 @@ one-column TSV, or character vector of specimens to keep.</p></dd>
 <dt id="arg-only-informative">only_informative<a class="anchor" aria-label="anchor" href="#arg-only-informative"></a></dt>
 <dd><p>If <code>TRUE</code>, drop SNPs with expected heterozygosity
 of zero.</p></dd>
+
+
+<dt id="arg-exclude-snp-names">exclude_snp_names<a class="anchor" aria-label="anchor" href="#arg-exclude-snp-names"></a></dt>
+<dd><p>Optional comma-separated names, path to a
+one-column TSV, or character vector of SNPs to drop before ranking.</p></dd>
+
+
+<dt id="arg-drop-artifact-snps">drop_artifact_snps<a class="anchor" aria-label="anchor" href="#arg-drop-artifact-snps"></a></dt>
+<dd><p>If <code>TRUE</code>, drop SNPs whose minor allele recurs in
+specimens that otherwise look monoclonal at every other SNP (e.g. PCR stutter)
+before ranking; artifacts inflate expected heterozygosity and would
+otherwise be selected over true high heterozygosity SNPs</p></dd>
+
+
+<dt id="arg-artifact-min-minor-rate">artifact_min_minor_rate<a class="anchor" aria-label="anchor" href="#arg-artifact-min-minor-rate"></a></dt>
+<dd><p>Minimum share of those specimens showing the
+minor allele for a SNP to be dropped (default <code>0.02</code>).</p></dd>
+
+
+<dt id="arg-artifact-min-samples">artifact_min_samples<a class="anchor" aria-label="anchor" href="#arg-artifact-min-samples"></a></dt>
+<dd><p>Minimum number of those specimens containing the artifact
+(default <code>3</code>).</p></dd>
+
+
+<dt id="arg-dropped-snps-output">dropped_snps_output<a class="anchor" aria-label="anchor" href="#arg-dropped-snps-output"></a></dt>
+<dd><p>Optional path; writes the names of SNPs dropped by
+<code>exclude_snp_names</code> or <code>drop_artifact_snps</code>, one per line, so other steps
+can exclude the same SNPs.</p></dd>
 
 </dl></div>
     <div class="section level2">

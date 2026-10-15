@@ -64,13 +64,13 @@ single-locus allele frequencies. Compiled C routines (<code>McCOIL_categorical</
 <span>  threshold_site <span class="op">=</span> <span class="fl">20L</span>,</span>
 <span>  totalrun <span class="op">=</span> <span class="fl">10000L</span>,</span>
 <span>  burnin <span class="op">=</span> <span class="fl">1000L</span>,</span>
-<span>  M0 <span class="op">=</span> <span class="fl">15L</span>,</span>
+<span>  M0 <span class="op">=</span> <span class="st">"1,5,15"</span>,</span>
 <span>  e1 <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  e2 <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>  epsilon <span class="op">=</span> <span class="fl">0.02</span>,</span>
 <span>  err_method <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">321L</span>,</span>
 <span>  n_chains <span class="op">=</span> <span class="fl">3L</span>,</span>
+<span>  threads <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  convergence_output <span class="op">=</span> <span class="st">"convergence_diag.tsv"</span>,</span>
 <span>  convergence_summary_output <span class="op">=</span> <span class="st">"convergence_summary.tsv"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -94,7 +94,8 @@ single-locus allele frequencies. Compiled C routines (<code>McCOIL_categorical</
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
 <dd><p><code>"categorical"</code> (heterozygous/homozygous calls) or
-<code>"proportional"</code> (allele frequency / read-count data).</p></dd>
+<code>"proportional"</code> (allele read counts, with each sample's strain
+proportions shared across loci and read noise estimated).</p></dd>
 
 
 <dt id="arg-maxcoi">maxCOI<a class="anchor" aria-label="anchor" href="#arg-maxcoi"></a></dt>
@@ -118,7 +119,9 @@ single-locus allele frequencies. Compiled C routines (<code>McCOIL_categorical</
 
 
 <dt id="arg-m-">M0<a class="anchor" aria-label="anchor" href="#arg-m-"></a></dt>
-<dd><p>Initial COI.</p></dd>
+<dd><p>Starting COI: one value for every chain, or one per chain as a
+vector or comma-separated string (default <code>"1,5,15"</code>, for 3 chains).
+Spread starts let R-hat reveal a chain that has not converged.</p></dd>
 
 
 <dt id="arg-e-">e1<a class="anchor" aria-label="anchor" href="#arg-e-"></a></dt>
@@ -129,13 +132,9 @@ single-locus allele frequencies. Compiled C routines (<code>McCOIL_categorical</
 <dd><p>Probability of calling heterozygous loci homozygous (categorical).</p></dd>
 
 
-<dt id="arg-epsilon">epsilon<a class="anchor" aria-label="anchor" href="#arg-epsilon"></a></dt>
-<dd><p>Error parameter for the proportional model.</p></dd>
-
-
 <dt id="arg-err-method">err_method<a class="anchor" aria-label="anchor" href="#arg-err-method"></a></dt>
-<dd><p><code>1</code>: treat error rates as constants; <code>3</code>: estimate them
-with COI and allele frequencies.</p></dd>
+<dd><p><code>1</code>: treat <code>e1</code>/<code>e2</code> as constants; <code>3</code>: estimate them with
+COI and allele frequencies (categorical model).</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
@@ -145,6 +144,11 @@ with COI and allele frequencies.</p></dd>
 <dt id="arg-n-chains">n_chains<a class="anchor" aria-label="anchor" href="#arg-n-chains"></a></dt>
 <dd><p>Number of independent MCMC chains. More than one chain is
 required for the Gelman-Rubin R-hat diagnostic.</p></dd>
+
+
+<dt id="arg-threads">threads<a class="anchor" aria-label="anchor" href="#arg-threads"></a></dt>
+<dd><p>Cores used to run chains simultaneously (capped at
+<code>n_chains</code>).</p></dd>
 
 
 <dt id="arg-convergence-output">convergence_output<a class="anchor" aria-label="anchor" href="#arg-convergence-output"></a></dt>
@@ -178,7 +182,7 @@ outputs).</p>
 
 <ul><li><p><strong><code>slaf_output</code></strong>: Single-locus allele frequencies (<code>variant</code>, <code>freq</code>).</p></li>
 <li><p><strong><code>coi_output</code></strong>: COI estimates (<code>specimen_name</code>, <code>coi</code>).</p></li>
-<li><p><strong><code>convergence_output</code></strong>: MCMC diagnostics (<code>variable</code>, <code>mean</code>, <code>median</code>,
+</ul><p>Both are posterior medians over the post-burn-in draws of all chains.</p><ul><li><p><strong><code>convergence_output</code></strong>: MCMC diagnostics (<code>variable</code>, <code>mean</code>, <code>median</code>,
 <code>sd</code>, <code>q5</code>, <code>q95</code>, <code>rhat</code>, <code>ess_bulk</code>, <code>ess_tail</code>).</p></li>
 </ul></div>
 

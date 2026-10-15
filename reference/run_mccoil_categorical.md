@@ -65,7 +65,8 @@ run_mccoil_categorical(
 
 - err_method:
 
-  `1`/`2` treat error rates as constants; `3` estimates them.
+  `1` fixes error rates; `2` redraws them uniformly each iteration; `3`
+  estimates them.
 
 - path:
 

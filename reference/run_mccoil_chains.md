@@ -2,8 +2,9 @@
 
 Prepares the model input once, then runs `n_chains` chains with seeds
 `seed, seed + 1, ...`. Chains are independent and write to distinct
-trace files in `work_dir`, so they can run in parallel forks; on
-Windows, where forking is unavailable, they run sequentially.
+trace files in `work_dir`, so up to `threads` of them run in parallel
+forks; on Windows, where forking is unavailable, they run sequentially.
+Each chain seeds itself, so results are identical either way.
 
 ## Usage
 
@@ -16,13 +17,13 @@ run_mccoil_chains(
   threshold_site = 20,
   totalrun = 10000,
   burnin = 1000,
-  M0 = 15,
+  M0 = "1,5,15",
   e1 = 0.05,
   e2 = 0.05,
-  epsilon = 0.02,
   err_method = 1,
   seed = 321,
   n_chains = 3,
+  threads = 1,
   work_dir,
   output = "McCOIL_out.txt"
 )
@@ -60,7 +61,9 @@ run_mccoil_chains(
 
 - M0:
 
-  Initial COI.
+  Starting COI: one value for every chain, or one per chain as a vector
+  or comma-separated string (default `"1,5,15"`, for 3 chains). Spread
+  starts let R-hat reveal a chain that has not converged.
 
 - e1:
 
@@ -70,14 +73,10 @@ run_mccoil_chains(
 
   Probability of calling heterozygous loci homozygous (categorical).
 
-- epsilon:
-
-  Error parameter for the proportional model.
-
 - err_method:
 
-  `1`: treat error rates as constants; `3`: estimate them with COI and
-  allele frequencies.
+  `1`: treat `e1`/`e2` as constants; `3`: estimate them with COI and
+  allele frequencies (categorical model).
 
 - seed:
 
@@ -87,6 +86,10 @@ run_mccoil_chains(
 
   Number of independent MCMC chains. More than one chain is required for
   the Gelman-Rubin R-hat diagnostic.
+
+- threads:
+
+  Cores used to run chains simultaneously (capped at `n_chains`).
 
 - work_dir:
 

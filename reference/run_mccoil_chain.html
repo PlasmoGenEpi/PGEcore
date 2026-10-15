@@ -59,7 +59,6 @@ trace and summary to <code>output</code> under <code>work_dir</code>, and reads 
 <span>  <span class="va">M0</span>,</span>
 <span>  <span class="va">e1</span>,</span>
 <span>  <span class="va">e2</span>,</span>
-<span>  <span class="va">epsilon</span>,</span>
 <span>  <span class="va">err_method</span>,</span>
 <span>  <span class="va">seed</span>,</span>
 <span>  <span class="va">work_dir</span>,</span>
@@ -102,7 +101,7 @@ model.</p></dd>
 
 
 <dt id="arg-m-">M0<a class="anchor" aria-label="anchor" href="#arg-m-"></a></dt>
-<dd><p>Initial COI.</p></dd>
+<dd><p>Starting COI for this chain.</p></dd>
 
 
 <dt id="arg-e-">e1<a class="anchor" aria-label="anchor" href="#arg-e-"></a></dt>
@@ -113,13 +112,9 @@ model.</p></dd>
 <dd><p>Probability of calling heterozygous loci homozygous (categorical).</p></dd>
 
 
-<dt id="arg-epsilon">epsilon<a class="anchor" aria-label="anchor" href="#arg-epsilon"></a></dt>
-<dd><p>Error parameter for the proportional model.</p></dd>
-
-
 <dt id="arg-err-method">err_method<a class="anchor" aria-label="anchor" href="#arg-err-method"></a></dt>
-<dd><p><code>1</code>: treat error rates as constants; <code>3</code>: estimate them
-with COI and allele frequencies.</p></dd>
+<dd><p><code>1</code>: treat <code>e1</code>/<code>e2</code> as constants; <code>3</code>: estimate them with
+COI and allele frequencies (categorical model).</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>

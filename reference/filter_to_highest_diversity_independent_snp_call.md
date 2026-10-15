@@ -14,7 +14,12 @@ filter_to_highest_diversity_independent_snp_call(
   select_specimen_names = NULL,
   overwrite = FALSE,
   only_biallelic = FALSE,
-  only_informative = FALSE
+  only_informative = FALSE,
+  exclude_snp_names = NULL,
+  drop_artifact_snps = FALSE,
+  artifact_min_minor_rate = 0.02,
+  artifact_min_samples = 3,
+  dropped_snps_output = NULL
 )
 ```
 
@@ -54,6 +59,34 @@ filter_to_highest_diversity_independent_snp_call(
 - only_informative:
 
   If `TRUE`, drop SNPs with expected heterozygosity of zero.
+
+- exclude_snp_names:
+
+  Optional comma-separated names, path to a one-column TSV, or character
+  vector of SNPs to drop before ranking.
+
+- drop_artifact_snps:
+
+  If `TRUE`, drop SNPs whose minor allele recurs in specimens that
+  otherwise look monoclonal at every other SNP (e.g. PCR stutter) before
+  ranking; artifacts inflate expected heterozygosity and would otherwise
+  be selected over true high heterozygosity SNPs
+
+- artifact_min_minor_rate:
+
+  Minimum share of those specimens showing the minor allele for a SNP to
+  be dropped (default `0.02`).
+
+- artifact_min_samples:
+
+  Minimum number of those specimens containing the artifact (default
+  `3`).
+
+- dropped_snps_output:
+
+  Optional path; writes the names of SNPs dropped by `exclude_snp_names`
+  or `drop_artifact_snps`, one per line, so other steps can exclude the
+  same SNPs.
 
 ## Value
 

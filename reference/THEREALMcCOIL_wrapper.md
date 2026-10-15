@@ -18,13 +18,13 @@ THEREALMcCOIL_wrapper(
   threshold_site = 20L,
   totalrun = 10000L,
   burnin = 1000L,
-  M0 = 15L,
+  M0 = "1,5,15",
   e1 = 0.05,
   e2 = 0.05,
-  epsilon = 0.02,
   err_method = 1L,
   seed = 321L,
   n_chains = 3L,
+  threads = 1L,
   convergence_output = "convergence_diag.tsv",
   convergence_summary_output = "convergence_summary.tsv"
 )
@@ -47,7 +47,8 @@ THEREALMcCOIL_wrapper(
 - model:
 
   `"categorical"` (heterozygous/homozygous calls) or `"proportional"`
-  (allele frequency / read-count data).
+  (allele read counts, with each sample's strain proportions shared
+  across loci and read noise estimated).
 
 - maxCOI:
 
@@ -71,7 +72,9 @@ THEREALMcCOIL_wrapper(
 
 - M0:
 
-  Initial COI.
+  Starting COI: one value for every chain, or one per chain as a vector
+  or comma-separated string (default `"1,5,15"`, for 3 chains). Spread
+  starts let R-hat reveal a chain that has not converged.
 
 - e1:
 
@@ -81,14 +84,10 @@ THEREALMcCOIL_wrapper(
 
   Probability of calling heterozygous loci homozygous (categorical).
 
-- epsilon:
-
-  Error parameter for the proportional model.
-
 - err_method:
 
-  `1`: treat error rates as constants; `3`: estimate them with COI and
-  allele frequencies.
+  `1`: treat `e1`/`e2` as constants; `3`: estimate them with COI and
+  allele frequencies (categorical model).
 
 - seed:
 
@@ -98,6 +97,10 @@ THEREALMcCOIL_wrapper(
 
   Number of independent MCMC chains. More than one chain is required for
   the Gelman-Rubin R-hat diagnostic.
+
+- threads:
+
+  Cores used to run chains simultaneously (capped at `n_chains`).
 
 - convergence_output:
 
@@ -126,6 +129,8 @@ outputs).
   `freq`).
 
 - **`coi_output`**: COI estimates (`specimen_name`, `coi`).
+
+Both are posterior medians over the post-burn-in draws of all chains.
 
 - **`convergence_output`**: MCMC diagnostics (`variable`, `mean`,
   `median`, `sd`, `q5`, `q95`, `rhat`, `ess_bulk`, `ess_tail`).

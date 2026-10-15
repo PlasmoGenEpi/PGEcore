@@ -84,6 +84,7 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/filter_highest_diversity_snps_core.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/filter_snp_table_for_optional_subselecting.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/filter_to_highest_diversity_independent_snp_call.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/flag_artifact_snps.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/format_invariant_group_output.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/format_mccoil_output.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/format_naive_af_output.html</loc></url>
@@ -105,6 +106,8 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/load_mlaf.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/make_stave.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/malariaem_wrapper.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/mccoil_chain_starts.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/mccoil_draws.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/moire_supports_seed.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/moire_wrapper.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/msa_method_binary.html</loc></url>
