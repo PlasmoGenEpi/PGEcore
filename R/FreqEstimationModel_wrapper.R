@@ -42,10 +42,15 @@ check_fem_biallelic <- function(input_data) {
   mutants <- input_data |>
     dplyr::filter(.data$ref_aa != .data$aa) |>
     dplyr::distinct(.data$unique_targets, .data$aa, .keep_all = TRUE)
-  bad_targets <- mutants |>
-    dplyr::filter(.data$unique_targets %in% duplicated(.data$unique_targets))
+  # targets with more than one alternate amino acid
+  multi_alt <- unique(mutants$unique_targets[duplicated(mutants$unique_targets)])
+  bad_targets <- dplyr::filter(mutants, .data$unique_targets %in% multi_alt)
   if (nrow(bad_targets) > 0) {
-    warning("Not biallelic, dropped", bad_targets, call. = FALSE)
+    warning(
+      "Dropping targets with more than one alternate amino acid (FEM is ",
+      "biallelic): ", paste(multi_alt, collapse = ", "),
+      call. = FALSE
+    )
   }
   monoallelic <- input_data |>
     dplyr::group_by(.data$unique_targets) |>
@@ -157,13 +162,42 @@ fem_supports_seed <- function() {
   "seed" %in% names(formals(FreqEstimationModel::mcmc_sampling_parallel))
 }
 
+#' Seed arguments to forward to `mcmc_sampling_parallel()`
+#'
+#' `mcmc_sampling_parallel()` builds its per-chain RNG streams with `RNGseq()`,
+#' so the seed has to be passed to it directly. When `seed` is `NULL` a random
+#' seed is drawn; the wrapper records it in the convergence summary.
+#'
+#' @param seed Integer seed, or `NULL` to draw one at random.
+#' @return A list to splice into the `mcmc_sampling_parallel()` call: empty when
+#'   the installed build has no `seed` argument, otherwise `list(seed = <int>)`.
+#' @keywords internal
+fem_seed_args <- function(seed) {
+  if (!fem_supports_seed()) {
+    if (!is.null(seed)) {
+      stop(
+        "the installed FreqEstimationModel (",
+        as.character(utils::packageVersion("FreqEstimationModel")),
+        ") has no `seed` argument; omit --seed or update the package.",
+        call. = FALSE
+      )
+    }
+    return(list())
+  }
+  if (is.null(seed)) {
+    seed <- sample.int(.Machine$integer.max, 1L)
+  }
+  list(seed = as.integer(seed))
+}
+
 
 #' Run FreqEstimationModel MCMC for one group
 #'
 #' @param sample_matrix_list Output of [create_FEM_input()].
 #' @param COI Average complexity of infection.
 #' @param threads Number of threads.
-#' @param seed Random seed.
+#' @param seed Integer seed forwarded to `mcmc_sampling_parallel()`, or `NULL`
+#'   to draw one at random. See [fem_seed_args()].
 #' @param n_chains Number of MCMC chains to run. At least two are needed to
 #'   compute the Gelman-Rubin R-hat convergence diagnostic.
 #' @param no_traces_preburnin Number of MCMC traces retained per chain before
@@ -249,22 +283,9 @@ run_FreqEstimationModel <- function(sample_matrix_list,
       frequency_initial = frequency_initial
     )
 
-    # mcmc_sampling_parallel() builds its per-chain RNG streams with RNGseq(),
-    # so the seed must reach it directly; set.seed() alone does not control them.
-    # A build without that argument cannot honour the request, so error rather
-    # than return a result whose recorded seed had no effect.
-    set.seed(as.numeric(seed))
-    fem_seed_args <- list()
-    if (fem_supports_seed()) {
-      fem_seed_args$seed <- as.integer(seed)
-    } else if (!is.null(seed)) {
-      stop(
-        "current FreqEstimationModel version does not support seeding: ",
-        "mcmc_sampling_parallel() has no `seed` argument (installed version ",
-        as.character(utils::packageVersion("FreqEstimationModel")), "). ",
-        "Its RNG streams are fixed, so --seed cannot change the result.",
-        call. = FALSE
-      )
+    seed_args <- fem_seed_args(seed)
+    if (!is.null(seed_args$seed)) {
+      set.seed(seed_args$seed)
     }
     results <- do.call(FreqEstimationModel::mcmc_sampling_parallel, c(list(
       processed_data_list,
@@ -272,7 +293,7 @@ run_FreqEstimationModel <- function(sample_matrix_list,
       frequency_list,
       mcmc_variable_list,
       cores_max = threads
-    ), fem_seed_args))
+    ), seed_args))
 
     burnin <- 1:(0.5 * mcmc_variable_list$no_traces_preburnin)
     if (mcmc_variable_list$no_mcmc_chains > 1) {
@@ -528,7 +549,9 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 #' @param loci_groups Path to loci-groups TSV. See *Inputs*.
 #' @param mlaf_output Output TSV path. See *Outputs*.
 #' @param threads Number of threads.
-#' @param seed Random seed.
+#' @param seed Integer seed for reproducible sampling. `NULL` (the default)
+#'   draws a random seed. The seed used is written to
+#'   `convergence_summary_output`.
 #' @param n_chains Number of MCMC chains to run per group. At least two are
 #'   needed to compute the Gelman-Rubin R-hat convergence diagnostic.
 #' @param no_traces_preburnin Number of MCMC traces retained per chain before
@@ -541,7 +564,7 @@ format_invariant_group_output <- function(aa_calls, groups, group) {
 #' @param moi_max Largest MOI the model can assign to a specimen. Specimens
 #'   whose true MOI exceeds it are censored at the ceiling.
 #' @param convergence_summary_output Output TSV path for the per-group
-#'   run-level convergence summary. See *Outputs*.
+#'   run-level convergence summary, including the `seed` used. See *Outputs*.
 #' @param convergence_output Output TSV path for per-group MCMC convergence
 #'   diagnostics. See *Outputs*.
 #'
@@ -555,7 +578,7 @@ FreqEstimationModel_wrapper <- function(aa_calls,
                                         loci_groups,
                                         mlaf_output,
                                         threads = 1L,
-                                        seed = 1L,
+                                        seed = NULL,
                                         n_chains = 3L,
                                         no_traces_preburnin = 10000L,
                                         moi_max = 8L,
@@ -590,6 +613,8 @@ FreqEstimationModel_wrapper <- function(aa_calls,
   aa_tbl <- read_fem_aa_calls(aa_calls)
   groups_tbl <- read_fem_groups(loci_groups)
   COI <- calculate_avg_COI(coi)
+  # one seed for every group, drawn once if none was given
+  seed <- fem_seed_args(seed)$seed
   overall_output <- data.frame(
     sequence = character(),
     freq = numeric(),
@@ -630,10 +655,12 @@ FreqEstimationModel_wrapper <- function(aa_calls,
 
   convergence_diag <- dplyr::bind_rows(convergence_diags)
   readr::write_tsv(convergence_diag, convergence_output)
-  readr::write_tsv(
-    summarize_convergence_run(convergence_diag, group_cols = "group_id"),
-    convergence_summary_output
+  convergence_summary <- summarize_convergence_run(
+    convergence_diag,
+    group_cols = "group_id"
   )
+  convergence_summary$seed <- if (is.null(seed)) NA_integer_ else seed
+  readr::write_tsv(convergence_summary, convergence_summary_output)
 
   overall_output_df
 }
