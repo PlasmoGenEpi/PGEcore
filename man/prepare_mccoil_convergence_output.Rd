@@ -4,23 +4,15 @@
 \alias{prepare_mccoil_convergence_output}
 \title{Compute MCMC convergence diagnostics across McCOIL chains}
 \usage{
-prepare_mccoil_convergence_output(traces, summary_path, totalrun, burnin)
+prepare_mccoil_convergence_output(draws)
 }
 \arguments{
-\item{traces}{Per-chain trace data frames from \code{\link[=run_mccoil_chains]{run_mccoil_chains()}}.}
-
-\item{summary_path}{Path to the \verb{*_summary.txt} written by chain 1, used for
-the parameter names and their order in the traces.}
-
-\item{totalrun}{Total MCMC iterations.}
-
-\item{burnin}{Burn-in iterations.}
+\item{draws}{Output of \code{\link[=mccoil_draws]{mccoil_draws()}}.}
 }
 \value{
 A data frame of convergence diagnostics, one row per parameter.
 }
 \description{
-Assembles a posterior draws array from the post-burn-in portion of the
-per-chain traces and summarises it with \code{\link[=summarize_convergence_draws]{summarize_convergence_draws()}}.
+Compute MCMC convergence diagnostics across McCOIL chains
 }
 \keyword{internal}
