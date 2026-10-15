@@ -37,6 +37,10 @@ opts <- list(
     help = "Minimum reads for an allele to count as present when deriving GT [default %default]"
   ),
   make_option(
+    "--exclude_snp_names",
+    help = "SNPs to leave out (comma-separated or a one-column file)"
+  ),
+  make_option(
     "--overwrite",
     action = "store_true",
     default = FALSE,
@@ -77,6 +81,7 @@ invisible(
     biallelic = isTRUE(arg$biallelic),
     ploidy = arg$ploidy,
     gt_min_reads = arg$gt_min_reads,
+    exclude_snp_names = arg$exclude_snp_names,
     overwrite = isTRUE(arg$overwrite),
     verbose = isTRUE(arg$verbose)
   )

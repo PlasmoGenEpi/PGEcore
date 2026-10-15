@@ -39,7 +39,8 @@ sites); missing coded as \code{-1}.}
 
 \item{e2}{Probability of calling heterozygous loci homozygous.}
 
-\item{err_method}{\code{1}/\code{2} treat error rates as constants; \code{3} estimates them.}
+\item{err_method}{\code{1} fixes error rates; \code{2} redraws them uniformly each
+iteration; \code{3} estimates them.}
 
 \item{path}{Directory for MCMC output files.}
 
