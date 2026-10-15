@@ -132,7 +132,8 @@ relatedness, effective-COI, and convergence summaries. Requires \strong{moire},
 \subsection{Outputs}{
 \itemize{
 \item \strong{\code{coi_output}}: COI summary (\code{specimen_name}, \code{coi}, …).
-\item \strong{\code{he_output}}: Heterozygosity summary (\code{target_name}, \code{he}, …).
+\item \strong{\code{he_output}}: Heterozygosity summary (\code{target_name}, \code{sample_total},
+the number of specimens with a call at the locus, \code{he}, …).
 \item \strong{\code{allele_freq_output}}: Allele frequencies (\code{target_name}, \code{seq},
 \code{freq}, …).
 \item \strong{\code{relatedness_output}}: Within-host relatedness (\code{specimen_name},

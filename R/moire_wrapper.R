@@ -273,6 +273,22 @@ assert_moire_chains_have_draws <- function(mcmc_results) {
   invisible(NULL)
 }
 
+#' Number of specimens with a call at each locus
+#'
+#' @param moire_data Long-form table with `sample_id`, `locus` and `allele`.
+#' @return A tibble with `target_name` and `sample_total`, the number of
+#'   distinct specimens observed at that locus.
+#' @keywords internal
+moire_sample_totals <- function(moire_data) {
+  moire_data |>
+    dplyr::group_by(.data$locus) |>
+    dplyr::summarise(
+      sample_total = dplyr::n_distinct(.data$sample_id),
+      .groups = "drop"
+    ) |>
+    dplyr::rename(target_name = "locus")
+}
+
 #' Summarize MOIRE MCMC results and write TSV files
 #'
 #' @keywords internal
@@ -345,13 +361,7 @@ summarize_and_write_moire_results <- function(moire_object,
 
   allele_freq_summary <- rbind(allele_freq_summary, one_allele_loci)
 
-  target_name_count <- moire_object$moire_data |>
-    dplyr::select(-"sample_id") |>
-    dplyr::group_by(.data$locus) |>
-    dplyr::summarise(sample_total = dplyr::n(), .groups = "drop") |>
-    dplyr::rename(target_name = "locus")
-
-  he_summary <- target_name_count |>
+  he_summary <- moire_sample_totals(moire_object$moire_data) |>
     dplyr::full_join(he_summary, by = "target_name")
 
   readr::write_tsv(coi_summary, coi_output)
@@ -518,7 +528,8 @@ prepare_moire_acceptance_rates_output <- function(mcmc_results) {
 #' ## Outputs
 #'
 #' - **`coi_output`**: COI summary (`specimen_name`, `coi`, …).
-#' - **`he_output`**: Heterozygosity summary (`target_name`, `he`, …).
+#' - **`he_output`**: Heterozygosity summary (`target_name`, `sample_total`,
+#'   the number of specimens with a call at the locus, `he`, …).
 #' - **`allele_freq_output`**: Allele frequencies (`target_name`, `seq`,
 #'   `freq`, …).
 #' - **`relatedness_output`**: Within-host relatedness (`specimen_name`,

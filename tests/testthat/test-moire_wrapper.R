@@ -98,3 +98,14 @@ test_that("assert_moire_chains_have_draws passes intact chains and counts empty 
     "max_runtime"
   )
 })
+
+test_that("moire_sample_totals counts specimens, not alleles", {
+  moire_data <- tibble::tibble(
+    sample_id = c("s1", "s1", "s1", "s2", "s2", "s3"),
+    locus     = c("L1", "L1", "L2", "L1", "L2", "L2"),
+    allele    = c("a", "b", "x", "a", "y", "x")
+  )
+  totals <- moire_sample_totals(moire_data)
+  expect_equal(totals$sample_total[totals$target_name == "L1"], 2)
+  expect_equal(totals$sample_total[totals$target_name == "L2"], 3)
+})
