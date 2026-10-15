@@ -10,7 +10,8 @@ read_and_preprocess_snp_call(snp_calls)
 \item{snp_calls}{Path to an independent, collapsed SNP call TSV.}
 }
 \value{
-A data frame with \code{specimen_name}, \code{snp_name}, \code{seq_base}, \code{reads}.
+A data frame with \code{specimen_name}, \code{snp_name}, \code{ref_base},
+\code{seq_base}, \code{reads}.
 }
 \description{
 Read SNP call data for THEREALMcCOIL

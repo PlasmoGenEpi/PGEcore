@@ -10,7 +10,7 @@ opts <- list(
     "--snp_calls",
     type = "character",
     help = paste0(
-      "SNP calls TSV (specimen_name, snp_name, reads, seq_base, ...). ",
+      "SNP calls TSV (specimen_name, snp_name, reads, ref_base, seq_base, ...). ",
       "See vignette input-formats. Required."
     )
   ),
@@ -146,7 +146,8 @@ opts <- list(
     "--slaf_output",
     type = "character",
     help = paste0(
-      "Output SLAF TSV (variant, freq). Required."
+      "Output SLAF TSV (variant, snp_name, ref_base, seq_base, freq); one row ",
+      "per SNP for its non-reference allele. Required."
     )
   ),
   make_option(

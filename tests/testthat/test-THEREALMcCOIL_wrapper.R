@@ -31,12 +31,13 @@ test_that("read_and_preprocess_snp_call validates columns", {
   )
 })
 
-test_that("prep_input_categorical recodes major/minor/het/missing", {
+test_that("prep_input_categorical recodes ref/alt/het/missing", {
   df <- tibble::tibble(
-    specimen_name = c("S1", "S1", "S2", "S2", "S3"),
-    snp_name = c("L1", "L1", "L1", "L2", "L1"),
-    seq_base = c("A", "T", "A", "G", "T"),
-    reads = c(10L, 8L, 12L, 5L, 9L)
+    specimen_name = c("S1", "S1", "S2", "S2", "S3", "S1"),
+    snp_name = c("L1", "L1", "L1", "L2", "L1", "L2"),
+    ref_base = c("A", "A", "A", "C", "A", "C"),
+    seq_base = c("A", "T", "A", "G", "T", "C"),
+    reads = c(10L, 8L, 12L, 5L, 9L, 4L)
   )
   mat <- PGEcore:::prep_input_categorical(df)
   expect_true(is.data.frame(mat))
@@ -44,16 +45,18 @@ test_that("prep_input_categorical recodes major/minor/het/missing", {
   expect_true("L1" %in% colnames(mat))
   expect_true(all(as.matrix(mat) %in% c(-1, 0, 0.5, 1)))
   expect_equal(unname(mat["S1", "L1"]), 0.5)
-  expect_equal(unname(mat["S2", "L1"]), 1)
-  expect_equal(unname(mat["S3", "L1"]), 0)
+  expect_equal(unname(mat["S2", "L1"]), 0)
+  expect_equal(unname(mat["S3", "L1"]), 1)
   expect_equal(unname(mat["S2", "L2"]), 1)
-  expect_equal(unname(mat["S1", "L2"]), -1)
+  expect_equal(unname(mat["S1", "L2"]), 0)
+  expect_equal(unname(mat["S3", "L2"]), -1)
 })
 
 test_that("prep_input_prop returns paired allele count matrices", {
   df <- tibble::tibble(
     specimen_name = c("S1", "S1", "S2", "S2"),
     snp_name = c("L1", "L1", "L1", "L1"),
+    ref_base = "A",
     seq_base = c("A", "T", "A", "T"),
     reads = c(10L, 2L, 3L, 7L)
   )
@@ -69,6 +72,7 @@ test_that("prep_input_prop drops non-biallelic loci and indexes within locus", {
   df <- tibble::tibble(
     specimen_name = c("S1", "S1", "S1", "S1", "S2", "S2", "S2"),
     snp_name = c("L1", "L2", "L2", "L3", "L1", "L2", "L3"),
+    ref_base = c("A", "A", "A", "C", "A", "A", "C"),
     seq_base = c("A", "A", "T", "C", "A", "T", "G"),
     reads = c(5L, 10L, 2L, 4L, 6L, 8L, 3L)
   )
@@ -77,18 +81,18 @@ test_that("prep_input_prop drops non-biallelic loci and indexes within locus", {
     "1 monomorphic"
   )
   expect_setequal(colnames(mats$a1), c("L2", "L3"))
-  # Allele 1 is the first allele of that locus alphabetically, independent of
-  # how many alleles the other loci have.
-  expect_equal(as.numeric(mats$a1["S1", "L2"]), 10)
-  expect_equal(as.numeric(mats$a2["S1", "L2"]), 2)
-  expect_equal(as.numeric(mats$a1["S1", "L3"]), 4)
-  expect_equal(as.numeric(mats$a2["S2", "L3"]), 3)
+  # allele 1 is the non-reference base of each locus
+  expect_equal(as.numeric(mats$a1["S1", "L2"]), 2)
+  expect_equal(as.numeric(mats$a2["S1", "L2"]), 10)
+  expect_equal(as.numeric(mats$a2["S1", "L3"]), 4)
+  expect_equal(as.numeric(mats$a1["S2", "L3"]), 3)
 })
 
 test_that("filter_biallelic errors when no biallelic loci remain", {
   df <- tibble::tibble(
     specimen_name = c("S1", "S2"),
     snp_name = c("L1", "L1"),
+    ref_base = "A",
     seq_base = c("A", "A"),
     reads = c(5L, 6L)
   )
@@ -175,7 +179,8 @@ test_that("THEREALMcCOIL_wrapper short MCMC on example data", {
   slaf_df <- readr::read_tsv(slaf, show_col_types = FALSE)
   coi_df <- readr::read_tsv(coi, show_col_types = FALSE)
   convergence_df <- readr::read_tsv(convergence, show_col_types = FALSE)
-  expect_true(all(c("variant", "freq") %in% names(slaf_df)))
+  expect_true(all(c("variant", "snp_name", "ref_base", "seq_base", "freq") %in% names(slaf_df)))
+  expect_equal(slaf_df$variant, paste0(slaf_df$snp_name, ":", slaf_df$seq_base))
   expect_true(all(c("specimen_name", "coi") %in% names(coi_df)))
   expect_true(all(c("variable", "rhat", "ess_bulk") %in% names(convergence_df)))
   expect_gt(nrow(slaf_df), 0)

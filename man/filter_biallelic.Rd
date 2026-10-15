@@ -2,7 +2,7 @@
 % Please edit documentation in R/THEREALMcCOIL_wrapper.R
 \name{filter_biallelic}
 \alias{filter_biallelic}
-\title{Restrict SNP calls to biallelic loci for the proportional model}
+\title{Restrict SNP calls to biallelic loci with an observed reference base}
 \usage{
 filter_biallelic(df)
 }
@@ -10,12 +10,12 @@ filter_biallelic(df)
 \item{df}{Output of \code{read_and_preprocess_snp_call()}.}
 }
 \value{
-\code{df} filtered to biallelic loci only.
+\code{df} filtered to those loci.
 }
 \description{
-The proportional model represents each locus with exactly two alleles
-(\code{a1}/\code{a2}), so loci with any other number of alleles cannot be encoded
-correctly. Loci with exactly two distinct \code{seq_base} values are kept;
-monomorphic and multiallelic loci are dropped with a warning.
+Both McCOIL models represent a locus as a reference and one alternate
+allele. Loci are kept when exactly two distinct \code{seq_base} values are
+observed and one of them is \code{ref_base}; monomorphic and multiallelic loci,
+and loci whose reference base is never observed, are dropped with a warning.
 }
 \keyword{internal}
