@@ -10,7 +10,8 @@ prep_input_prop(df)
 \item{df}{Output of \code{read_and_preprocess_snp_call()}.}
 }
 \value{
-A list with \code{a1} and \code{a2} read-count matrices.
+A list with \code{a1} (non-reference allele) and \code{a2} (reference allele)
+read-count matrices.
 }
 \description{
 Format SNP calls for the McCOIL proportional model
