@@ -22,7 +22,8 @@ run_FreqEstimationModel(
 
 \item{threads}{Number of threads.}
 
-\item{seed}{Random seed.}
+\item{seed}{Integer seed forwarded to \code{mcmc_sampling_parallel()}, or \code{NULL}
+to draw one at random. See \code{\link[=fem_seed_args]{fem_seed_args()}}.}
 
 \item{n_chains}{Number of MCMC chains to run. At least two are needed to
 compute the Gelman-Rubin R-hat convergence diagnostic.}
