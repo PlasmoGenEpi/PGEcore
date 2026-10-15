@@ -28,7 +28,8 @@ dcifer_ibd_wrapper(
 
 \item{coi_table}{Optional path to COI table TSV. See \emph{Inputs}.}
 
-\item{allele_freq_table}{Optional path to allele-frequency TSV. See \emph{Inputs}.}
+\item{allele_freq_table}{Optional path to allele-frequency TSV. See \emph{Inputs}.
+Not used with \code{pop_name_col}.}
 
 \item{specimen_name_col, target_name_col, target_value_col}{Column names in
 the allele / COI / frequency tables.}
