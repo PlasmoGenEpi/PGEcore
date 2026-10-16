@@ -18,25 +18,30 @@ read_mlp_naive_aa_table <- function(aa_calls) {
 
   validate_required_columns(
     df_aa,
-    c("specimen_name", "gene", "gene_id", "aa_position", "reads", "aa"),
+    c("specimen_name", "gene_id", "aa_position", "reads", "aa"),
     "aa_calls"
   )
 
   rules <- validate::validator(
     is.character(specimen_name),
-    is.character(gene),
     is.character(gene_id),
     is.integer(aa_position),
     is.integer(reads),
     is.character(aa),
     !is.na(specimen_name),
-    !is.na(gene),
     !is.na(gene_id),
     !is.na(aa_position),
     !is.na(reads),
     !is.na(aa)
   )
   stop_on_validate_fails(df_aa, rules, "aa_calls")
+  if ("gene" %in% names(df_aa)) {
+    gene_rules <- validate::validator(
+      is.character(gene),
+      !is.na(gene)
+    )
+    stop_on_validate_fails(df_aa, gene_rules, "aa_calls")
+  }
 
   df_aa |>
     dplyr::group_by(.data$specimen_name, .data$gene_id, .data$aa_position) |>
@@ -300,7 +305,7 @@ build_naive_multilocus_calls_for_group <- function(aa_calls, group_df, wsaf_cut_
   if (nrow(aa_table_group_only_1_variable) > 0) {
     aa_table_group_only_1_variable_filt_variable <- aa_table_group_only_1_variable |>
       dplyr::filter(.data$n_aa != 1) |>
-      dplyr::group_by(.data$specimen_name, .data$gene, .data$gene_id, .data$aa_position) |>
+      dplyr::group_by(.data$specimen_name, .data$gene_id, .data$aa_position) |>
       dplyr::mutate(total_reads = sum(.data$reads)) |>
       dplyr::mutate(wsaf = .data$reads / .data$total_reads) |>
       dplyr::group_by(.data$specimen_name) |>
@@ -364,7 +369,7 @@ build_naive_multilocus_calls_for_group <- function(aa_calls, group_df, wsaf_cut_
     )
 
   aa_table_group_filt_dominant <- aa_table_group_filt |>
-    dplyr::group_by(.data$specimen_name, .data$gene, .data$gene_id, .data$aa_position) |>
+    dplyr::group_by(.data$specimen_name, .data$gene_id, .data$aa_position) |>
     dplyr::mutate(total_reads = sum(.data$reads)) |>
     dplyr::mutate(wsaf = .data$reads / .data$total_reads) |>
     dplyr::filter(.data$wsaf >= wsaf_cut_off) |>
@@ -372,7 +377,7 @@ build_naive_multilocus_calls_for_group <- function(aa_calls, group_df, wsaf_cut_
     dplyr::mutate(
       loci_called = dplyr::n_distinct(paste0(.data$gene_id, "-", .data$aa_position))
     ) |>
-    dplyr::group_by(.data$specimen_name, .data$gene, .data$gene_id, .data$aa_position) |>
+    dplyr::group_by(.data$specimen_name, .data$gene_id, .data$aa_position) |>
     dplyr::mutate(n_aa = dplyr::n_distinct(.data$aa)) |>
     dplyr::filter(
       all(.data$n_aa == 1),
@@ -412,8 +417,8 @@ build_naive_multilocus_calls_for_group <- function(aa_calls, group_df, wsaf_cut_
 #'
 #' ## Inputs
 #'
-#' - **`aa_calls`**: AA calls (`specimen_name`, `gene`, `gene_id`,
-#'   `aa_position`, `reads`, `aa`). See
+#' - **`aa_calls`**: AA calls (`specimen_name`, `gene_id`, `aa_position`,
+#'   `reads`, `aa`). `gene` is optional. See
 #'   `vignette("input-formats", package = "PGEcore")`.
 #' - **`loci_groups`**: Loci groups (`group_id`, `gene_id`, `aa_position`).
 #'   See the same vignette.
