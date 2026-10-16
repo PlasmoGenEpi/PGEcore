@@ -10,19 +10,14 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
                                     microhaps_intersected_with_loci_of_interest,
                                     ref_bed_by_loci_lookup,
                                     loci_of_interest_tab) {
-  all_loci <- tibble::tibble(
-    target_name = character(),
-    seq = character(),
-    gene = character(),
-    gene_id = character(),
-    aa_position = numeric(),
-    ref_codon = character(),
-    ref_aa = character(),
-    codon = character(),
-    aa = character()
-  )
+  all_loci <- NULL
   mat <- nucleotide_overlap_substitution_matrix()
   ref_lookup <- orient_ref_lookup_to_plus_strand(ref_bed_by_loci_lookup)
+  # Drop columns added during coverage / relative-coord bookkeeping; keep every
+  # column from the original loci-of-interest table (including optional ones).
+  locus_meta_drop <- c(
+    "rel_start", "rel_end", "covered_by_target", "intersected_loci_of_interest"
+  )
 
   for (row in seq_len(nrow(allele_table_unique_haps_tab))) {
     target <- allele_table_unique_haps_tab$target_name[row]
@@ -43,7 +38,6 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
       loci_of_interest_tab,
       "intersected_loci_of_interest"
     )
-    loci_for_hap <- tibble::tibble()
     for (loci_row in seq_len(nrow(loci_for_target))) {
       aln_pos <- get_aln_pos_per_real_pos(
         get_aligned_subject_from_overlap_align(overlap_align),
@@ -68,25 +62,50 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
         seq_aa <- Biostrings::translate(seq_codon, no.init.codon = TRUE)
       }
       ref_aa <- Biostrings::translate(ref_codon, no.init.codon = TRUE)
-      loci_for_hap <- dplyr::bind_rows(
-        loci_for_hap,
+      locus_meta <- loci_for_target[loci_row, , drop = FALSE] |>
+        dplyr::select(-dplyr::any_of(locus_meta_drop))
+      loci_for_hap <- dplyr::bind_cols(
         tibble::tibble(
           target_name = target,
           seq = allele_table_unique_haps_tab$seq[row],
-          gene = loci_for_target$gene[loci_row],
-          gene_id = loci_for_target$gene_id[loci_row],
-          aa_position = loci_for_target$aa_position[loci_row],
           ref_codon = as.character(ref_codon),
           ref_aa = as.character(ref_aa),
           codon = as.character(seq_codon),
           aa = as.character(seq_aa)
-        )
+        ),
+        locus_meta
       )
+      all_loci <- dplyr::bind_rows(all_loci, loci_for_hap)
     }
-    all_loci <- dplyr::bind_rows(all_loci, loci_for_hap)
+  }
+  if (is.null(all_loci)) {
+    return(tibble::tibble())
   }
   all_loci |>
     dplyr::mutate(aa_locus = paste0(.data$gene_id, ":", .data$aa_position))
+}
+
+#' Locus annotation columns to preserve when collapsing AA calls
+#'
+#' Keeps required locus identity columns plus any extra columns carried through
+#' from the original loci-of-interest table (for example `gene`, `name`).
+#'
+#' @param df Translated allele / AA call table.
+#' @return Character vector of column names.
+#' @keywords internal
+aa_locus_annotation_cols <- function(df) {
+  varying <- c(
+    "specimen_name", "target_name", "reads", "seq", "codon", "ref_codon",
+    "aa", "ref_aa", "best_target_name", "covered_by_target_names",
+    "reads_rank", "rel_start", "rel_end", "intersected_loci_of_interest",
+    "covered_by_target"
+  )
+  identity <- intersect(
+    c("gene", "gene_id", "aa_position", "aa_locus"),
+    names(df)
+  )
+  extras <- setdiff(names(df), c(varying, identity))
+  c(identity, extras)
 }
 
 #' Collapse overlapping-target amino-acid calls
@@ -97,33 +116,23 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
 #' @keywords internal
 collapse_aa_allele_table <- function(allele_table_to_filter,
                                      collapse_calls_by_summing = FALSE) {
+  locus_cols <- aa_locus_annotation_cols(allele_table_to_filter)
   if (isTRUE(collapse_calls_by_summing)) {
+    sum_keys <- c("specimen_name", locus_cols, "ref_aa", "aa")
     allele_table_to_filter |>
-      dplyr::group_by(
-        .data$specimen_name,
-        .data$gene,
-        .data$gene_id,
-        .data$aa_position,
-        .data$aa_locus,
-        .data$ref_aa,
-        .data$aa
-      ) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(sum_keys))) |>
       dplyr::summarise(
         reads = sum(.data$reads),
-        target_name = paste0(unique(sort(.data$target_name)), collapse = ",")
+        target_name = paste0(unique(sort(.data$target_name)), collapse = ","),
+        .groups = "drop"
       )
   } else {
+    winner_keys <- c("specimen_name", locus_cols, "ref_aa")
     winner <- allele_table_to_filter |>
       dplyr::group_by(
-        .data$specimen_name,
-        .data$gene,
-        .data$gene_id,
-        .data$aa_position,
-        .data$aa_locus,
-        .data$ref_aa,
-        .data$target_name
+        dplyr::across(dplyr::all_of(c(winner_keys, "target_name")))
       ) |>
-      dplyr::summarise(reads = sum(.data$reads)) |>
+      dplyr::summarise(reads = sum(.data$reads), .groups = "drop_last") |>
       dplyr::arrange(dplyr::desc(.data$reads)) |>
       dplyr::mutate(
         reads_rank = dplyr::row_number(),
@@ -140,27 +149,23 @@ collapse_aa_allele_table <- function(allele_table_to_filter,
     collapsed <- allele_table_to_filter |>
       dplyr::left_join(
         winner |> dplyr::ungroup() |> dplyr::select(-"reads"),
-        by = c(
-          "specimen_name", "gene", "gene_id", "aa_position", "aa_locus", "ref_aa"
-        )
+        by = winner_keys
       ) |>
       dplyr::filter(.data$target_name == .data$best_target_name) |>
       dplyr::select(-"seq")
 
+    final_keys <- c(
+      "specimen_name",
+      "target_name",
+      locus_cols,
+      "ref_aa",
+      "aa",
+      "best_target_name",
+      "covered_by_target_names"
+    )
     collapsed |>
-      dplyr::group_by(
-        .data$specimen_name,
-        .data$target_name,
-        .data$gene,
-        .data$gene_id,
-        .data$aa_position,
-        .data$aa_locus,
-        .data$ref_aa,
-        .data$aa,
-        .data$best_target_name,
-        .data$covered_by_target_names
-      ) |>
-      dplyr::summarise(reads = sum(.data$reads))
+      dplyr::group_by(dplyr::across(dplyr::all_of(final_keys))) |>
+      dplyr::summarise(reads = sum(.data$reads), .groups = "drop")
   }
 }
 
@@ -200,25 +205,29 @@ validate_translate_column_types <- function(ref_bed,
     is.character(`#chrom`),
     is.numeric(start),
     is.numeric(end),
-    is.character(name),
-    is.numeric(length),
-    is.character(strand),
-    is.character(gene),
-    is.numeric(aa_position),
     is.character(gene_id),
+    is.numeric(aa_position),
+    is.character(strand),
     !is.na(`#chrom`),
     !is.na(start),
     !is.na(end),
-    !is.na(name),
-    !is.na(length),
-    !is.na(strand),
-    !is.na(gene),
+    !is.na(gene_id),
     !is.na(aa_position),
-    !is.na(gene_id)
+    !is.na(strand)
   )
   msg <- warn_on_validate_fails(loci_of_interest, loci_rules, "loci_of_interest")
   if (!is.null(msg)) {
     warns <- c(warns, msg)
+  }
+  if ("gene" %in% names(loci_of_interest)) {
+    gene_rules <- validate::validator(
+      is.character(gene),
+      !is.na(gene)
+    )
+    msg <- warn_on_validate_fails(loci_of_interest, gene_rules, "loci_of_interest")
+    if (!is.null(msg)) {
+      warns <- c(warns, msg)
+    }
   }
 
   allele_rules <- validate::validator(
@@ -251,9 +260,11 @@ validate_translate_column_types <- function(ref_bed,
 #'   `vignette("input-formats", package = "PGEcore")`.
 #' - **`ref_bed`**: Panel BED with `ref_seq` (`#chrom`, `start`, `end`,
 #'   `target_name`, `length`, `strand`, `ref_seq`).
-#' - **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`, `name`,
-#'   `length`, `strand`, `gene`, `gene_id`, `aa_position`); each locus must have
-#'   `length == 3`.
+#' - **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`, `gene_id`,
+#'   `aa_position`, `strand`); each locus must span 3 bases (`end - start == 3`).
+#'   Column order in the file does not matter. `gene` is optional. Extra columns
+#'   from the input (for example `name`, `gene`) are carried through to the
+#'   outputs.
 #'
 #' ## Outputs
 #'
@@ -345,16 +356,12 @@ translate_loci_of_interest <- function(allele_table,
     allele_label
   )
   ref_bed <- as_input_tibble(ref_bed, read_ref_bed_with_seq_table, "ref_bed")
+  loci_required_cols <- c(
+    "#chrom", "start", "end", "gene_id", "aa_position", "strand"
+  )
   loci_reader <- function(path) {
     tab <- readr::read_tsv(path, col_names = TRUE, show_col_types = FALSE)
-    validate_required_columns(
-      tab,
-      c(
-        "#chrom", "start", "end", "name", "length", "strand",
-        "gene", "gene_id", "aa_position"
-      ),
-      path
-    )
+    validate_required_columns(tab, loci_required_cols, path)
     tab
   }
   if (is.character(loci_of_interest) && length(loci_of_interest) == 1L) {
@@ -371,10 +378,7 @@ translate_loci_of_interest <- function(allele_table,
     )
     validate_required_columns(
       loci_of_interest,
-      c(
-        "#chrom", "start", "end", "name", "length", "strand",
-        "gene", "gene_id", "aa_position"
-      ),
+      loci_required_cols,
       "loci_of_interest"
     )
   }
@@ -407,14 +411,14 @@ translate_loci_of_interest <- function(allele_table,
   }
 
   for (row in seq_len(nrow(loci_of_interest))) {
-    if (loci_of_interest$length[row] != 3) {
+    locus_span <- loci_of_interest$end[row] - loci_of_interest$start[row]
+    if (locus_span != 3) {
       warnings <- c(
         warnings,
         paste0(
-          "loci of interest must be of length 3, locus: ",
-          loci_of_interest$name[row],
-          " is length: ",
-          loci_of_interest$length[row]
+          "loci of interest must span 3 bases (end - start == 3), locus ",
+          loci_of_interest$gene_id[row], ":", loci_of_interest$aa_position[row],
+          " has end - start = ", locus_span
         )
       )
     }
@@ -473,24 +477,24 @@ translate_loci_of_interest <- function(allele_table,
       by = c("target_name", "seq")
     )
 
+  cover_group_cols <- c(
+    intersect(c("gene", "gene_id", "aa_position"), names(allele_table_out)),
+    "ref_aa"
+  )
   covered_by_samples <- allele_table_out |>
-    dplyr::group_by(
-      .data$gene,
-      .data$gene_id,
-      .data$aa_position,
-      .data$ref_aa
-    ) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(cover_group_cols))) |>
     dplyr::summarise(
       n_samples = dplyr::n_distinct(.data$specimen_name),
       .groups = "drop"
     ) |>
     dplyr::mutate(total_samples = dplyr::n_distinct(allele_table$specimen_name))
 
+  # Keep every column from the original loci table; join coverage by locus id.
+  loci_join_by <- c("gene_id", "aa_position")
+  covered_for_join <- covered_by_samples |>
+    dplyr::select(dplyr::all_of(loci_join_by), "ref_aa", "n_samples", "total_samples")
   loci_of_interest_out <- loci_of_interest |>
-    dplyr::left_join(
-      covered_by_samples,
-      by = c("gene", "aa_position", "gene_id")
-    )
+    dplyr::left_join(covered_for_join, by = loci_join_by)
 
   untranslateable_calls <- c("X")
   if (!isTRUE(output_stop_codons)) {
