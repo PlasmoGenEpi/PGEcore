@@ -24,3 +24,9 @@
   `drop_artifact_snps` (drop SNPs whose minor allele recurs in otherwise
   monoclonal specimens, such as PCR stutter) and `exclude_snp_names`; both act
   before SNPs are ranked.
+* `translate_loci_of_interest()` requires `#chrom`, `start`, `end`, `gene_id`,
+  `aa_position`, and `strand` (any column order). Codon span is checked with
+  `end - start == 3`. `name` and `length` are no longer required; `gene` is
+  optional. Extra input columns are carried through to the outputs.
+* `multilocus_prevfreq_naive()` no longer requires `gene` on AA calls; loci are
+  identified by `gene_id` (and `aa_position`). `gene` remains optional.

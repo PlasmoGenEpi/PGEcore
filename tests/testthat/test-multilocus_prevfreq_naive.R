@@ -105,3 +105,28 @@ test_that("multilocus_prevfreq_naive works on packaged example data", {
   expect_true(file.exists(tmp_sl))
   expect_equal(nrow(written), nrow(out))
 })
+
+test_that("multilocus_prevfreq_naive works without a gene column", {
+  aa_path <- system.file(
+    "extdata",
+    "example2_aa_calls.tsv",
+    package = "PGEcore"
+  )
+  groups_path <- system.file(
+    "extdata",
+    "example_loci_groups.tsv",
+    package = "PGEcore"
+  )
+  skip_if_not(nzchar(aa_path) && file.exists(aa_path))
+  skip_if_not(nzchar(groups_path) && file.exists(groups_path))
+
+  aa_no_gene <- tempfile(fileext = ".tsv")
+  on.exit(unlink(aa_no_gene), add = TRUE)
+  readr::read_tsv(aa_path, show_col_types = FALSE) |>
+    dplyr::select(-"gene") |>
+    readr::write_tsv(aa_no_gene)
+
+  with_gene <- multilocus_prevfreq_naive(aa_path, groups_path)
+  without_gene <- multilocus_prevfreq_naive(aa_no_gene, groups_path)
+  expect_equal(without_gene, with_gene)
+})
