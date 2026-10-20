@@ -16,7 +16,7 @@ opts <- list(
   ),
   make_option(
     "--loci_of_interest",
-    help = "Codon BED (#chrom, start, end, gene_id, aa_position, strand); end - start == 3. Column order does not matter. gene optional; extra columns are kept."
+    help = "Codon BED (#chrom, start, end, gene_id, aa_position, strand); end - start == 3. Column order does not matter; extra columns are kept."
   ),
   make_option(
     "--output_dir",

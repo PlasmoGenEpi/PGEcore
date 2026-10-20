@@ -13,11 +13,6 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
   all_loci <- NULL
   mat <- nucleotide_overlap_substitution_matrix()
   ref_lookup <- orient_ref_lookup_to_plus_strand(ref_bed_by_loci_lookup)
-  # Drop columns added during coverage / relative-coord bookkeeping; keep every
-  # column from the original loci-of-interest table (including optional ones).
-  locus_meta_drop <- c(
-    "rel_start", "rel_end", "covered_by_target", "intersected_loci_of_interest"
-  )
 
   for (row in seq_len(nrow(allele_table_unique_haps_tab))) {
     target <- allele_table_unique_haps_tab$target_name[row]
@@ -62,8 +57,13 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
         seq_aa <- Biostrings::translate(seq_codon, no.init.codon = TRUE)
       }
       ref_aa <- Biostrings::translate(ref_codon, no.init.codon = TRUE)
+      # Drop bookkeeping columns added by coverage / relative-coord helpers;
+      # keep every column from the original loci-of-interest table.
       locus_meta <- loci_for_target[loci_row, , drop = FALSE] |>
-        dplyr::select(-dplyr::any_of(locus_meta_drop))
+        dplyr::select(-dplyr::any_of(c(
+          "rel_start", "rel_end", "covered_by_target",
+          "intersected_loci_of_interest"
+        )))
       loci_for_hap <- dplyr::bind_cols(
         tibble::tibble(
           target_name = target,
@@ -88,7 +88,7 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
 #' Locus annotation columns to preserve when collapsing AA calls
 #'
 #' Keeps required locus identity columns plus any extra columns carried through
-#' from the original loci-of-interest table (for example `gene`, `name`).
+#' from the original loci-of-interest table.
 #'
 #' @param df Translated allele / AA call table.
 #' @return Character vector of column names.
@@ -101,7 +101,7 @@ aa_locus_annotation_cols <- function(df) {
     "covered_by_target"
   )
   identity <- intersect(
-    c("gene", "gene_id", "aa_position", "aa_locus"),
+    c("gene_id", "aa_position", "aa_locus"),
     names(df)
   )
   extras <- setdiff(names(df), c(varying, identity))
@@ -219,16 +219,6 @@ validate_translate_column_types <- function(ref_bed,
   if (!is.null(msg)) {
     warns <- c(warns, msg)
   }
-  if ("gene" %in% names(loci_of_interest)) {
-    gene_rules <- validate::validator(
-      is.character(gene),
-      !is.na(gene)
-    )
-    msg <- warn_on_validate_fails(loci_of_interest, gene_rules, "loci_of_interest")
-    if (!is.null(msg)) {
-      warns <- c(warns, msg)
-    }
-  }
 
   allele_rules <- validate::validator(
     is.character(specimen_name),
@@ -262,9 +252,8 @@ validate_translate_column_types <- function(ref_bed,
 #'   `target_name`, `length`, `strand`, `ref_seq`).
 #' - **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`, `gene_id`,
 #'   `aa_position`, `strand`); each locus must span 3 bases (`end - start == 3`).
-#'   Column order in the file does not matter. `gene` is optional. Extra columns
-#'   from the input (for example `name`, `gene`) are carried through to the
-#'   outputs.
+#'   Column order in the file does not matter. Extra input columns are carried
+#'   through to the outputs.
 #'
 #' ## Outputs
 #'
@@ -478,7 +467,7 @@ translate_loci_of_interest <- function(allele_table,
     )
 
   cover_group_cols <- c(
-    intersect(c("gene", "gene_id", "aa_position"), names(allele_table_out)),
+    intersect(c("gene_id", "aa_position"), names(allele_table_out)),
     "ref_aa"
   )
   covered_by_samples <- allele_table_out |>

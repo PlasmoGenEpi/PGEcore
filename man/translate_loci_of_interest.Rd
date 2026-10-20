@@ -60,9 +60,8 @@ translates it.
 \code{target_name}, \code{length}, \code{strand}, \code{ref_seq}).
 \item \strong{\code{loci_of_interest}}: Codon BED (\verb{#chrom}, \code{start}, \code{end}, \code{gene_id},
 \code{aa_position}, \code{strand}); each locus must span 3 bases (\code{end - start == 3}).
-Column order in the file does not matter. \code{gene} is optional. Extra columns
-from the input (for example \code{name}, \code{gene}) are carried through to the
-outputs.
+Column order in the file does not matter. Extra input columns are carried
+through to the outputs.
 }
 }
 

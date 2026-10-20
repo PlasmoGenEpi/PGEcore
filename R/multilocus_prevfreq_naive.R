@@ -35,13 +35,6 @@ read_mlp_naive_aa_table <- function(aa_calls) {
     !is.na(aa)
   )
   stop_on_validate_fails(df_aa, rules, "aa_calls")
-  if ("gene" %in% names(df_aa)) {
-    gene_rules <- validate::validator(
-      is.character(gene),
-      !is.na(gene)
-    )
-    stop_on_validate_fails(df_aa, gene_rules, "aa_calls")
-  }
 
   df_aa |>
     dplyr::group_by(.data$specimen_name, .data$gene_id, .data$aa_position) |>
@@ -418,7 +411,7 @@ build_naive_multilocus_calls_for_group <- function(aa_calls, group_df, wsaf_cut_
 #' ## Inputs
 #'
 #' - **`aa_calls`**: AA calls (`specimen_name`, `gene_id`, `aa_position`,
-#'   `reads`, `aa`). `gene` is optional. See
+#'   `reads`, `aa`). See
 #'   `vignette("input-formats", package = "PGEcore")`.
 #' - **`loci_groups`**: Loci groups (`group_id`, `gene_id`, `aa_position`).
 #'   See the same vignette.

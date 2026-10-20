@@ -42,7 +42,7 @@ samples). Prevalence and frequency are then estimated with \code{wsaf_prop} or
 \subsection{Inputs}{
 \itemize{
 \item \strong{\code{aa_calls}}: AA calls (\code{specimen_name}, \code{gene_id},
-\code{aa_position}, \code{reads}, \code{aa}). \code{gene} is optional. See
+\code{aa_position}, \code{reads}, \code{aa}). See
 \code{vignette("input-formats", package = "PGEcore")}.
 \item \strong{\code{loci_groups}}: Loci groups (\code{group_id}, \code{gene_id}, \code{aa_position}).
 See the same vignette.
