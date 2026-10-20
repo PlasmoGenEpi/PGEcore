@@ -60,7 +60,7 @@ parallel helpers (<strong>foreach</strong>, <strong>doMC</strong>, <strong>plyr<
 <span>  <span class="va">loci_groups</span>,</span>
 <span>  <span class="va">mlaf_output</span>,</span>
 <span>  threads <span class="op">=</span> <span class="fl">1L</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_chains <span class="op">=</span> <span class="fl">3L</span>,</span>
 <span>  no_traces_preburnin <span class="op">=</span> <span class="fl">10000L</span>,</span>
 <span>  moi_max <span class="op">=</span> <span class="fl">8L</span>,</span>
@@ -95,7 +95,9 @@ parallel helpers (<strong>foreach</strong>, <strong>doMC</strong>, <strong>plyr<
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Random seed.</p></dd>
+<dd><p>Integer seed for reproducible sampling. <code>NULL</code> (the default)
+draws a random seed. The seed used is written to
+<code>convergence_summary_output</code>.</p></dd>
 
 
 <dt id="arg-n-chains">n_chains<a class="anchor" aria-label="anchor" href="#arg-n-chains"></a></dt>
@@ -128,7 +130,7 @@ diagnostics. See <em>Outputs</em>.</p></dd>
 
 <dt id="arg-convergence-summary-output">convergence_summary_output<a class="anchor" aria-label="anchor" href="#arg-convergence-summary-output"></a></dt>
 <dd><p>Output TSV path for the per-group
-run-level convergence summary. See <em>Outputs</em>.</p></dd>
+run-level convergence summary, including the <code>seed</code> used. See <em>Outputs</em>.</p></dd>
 
 </dl></div>
     <div class="section level2">

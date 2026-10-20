@@ -34,7 +34,9 @@ run_FreqEstimationModel(
 
 - seed:
 
-  Random seed.
+  Integer seed forwarded to `mcmc_sampling_parallel()`, or `NULL` to
+  draw one at random. See
+  [`fem_seed_args()`](https://plasmogenepi.github.io/PGEcore/reference/fem_seed_args.md).
 
 - n_chains:
 

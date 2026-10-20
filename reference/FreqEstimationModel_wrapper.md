@@ -14,7 +14,7 @@ FreqEstimationModel_wrapper(
   loci_groups,
   mlaf_output,
   threads = 1L,
-  seed = 1L,
+  seed = NULL,
   n_chains = 3L,
   no_traces_preburnin = 10000L,
   moi_max = 8L,
@@ -48,7 +48,8 @@ FreqEstimationModel_wrapper(
 
 - seed:
 
-  Random seed.
+  Integer seed for reproducible sampling. `NULL` (the default) draws a
+  random seed. The seed used is written to `convergence_summary_output`.
 
 - n_chains:
 
@@ -80,8 +81,8 @@ FreqEstimationModel_wrapper(
 
 - convergence_summary_output:
 
-  Output TSV path for the per-group run-level convergence summary. See
-  *Outputs*.
+  Output TSV path for the per-group run-level convergence summary,
+  including the `seed` used. See *Outputs*.
 
 ## Value
 
