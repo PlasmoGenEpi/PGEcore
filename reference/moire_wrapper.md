@@ -188,7 +188,9 @@ Invisibly, the MOIRE MCMC result object.
 
 - **`coi_output`**: COI summary (`specimen_name`, `coi`, …).
 
-- **`he_output`**: Heterozygosity summary (`target_name`, `he`, …).
+- **`he_output`**: Heterozygosity summary (`target_name`,
+  `sample_total`, the number of specimens with a call at the locus,
+  `he`, …).
 
 - **`allele_freq_output`**: Allele frequencies (`target_name`, `seq`,
   `freq`, …).
