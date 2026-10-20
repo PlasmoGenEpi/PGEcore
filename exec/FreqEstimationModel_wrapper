@@ -36,8 +36,11 @@ opts <- list(
   make_option(
     "--seed",
     type = "integer",
-    help = "Random number seed. Optional.",
-    default = 1
+    default = NULL,
+    help = paste0(
+      "Integer seed for reproducible sampling. If omitted, a random seed is ",
+      "drawn; the seed used is written to --convergence_summary_output. Optional."
+    )
   ),
   make_option(
     "--n_chains",
