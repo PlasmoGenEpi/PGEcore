@@ -26,7 +26,8 @@
   before SNPs are ranked.
 * `translate_loci_of_interest()` requires `#chrom`, `start`, `end`, `gene_id`,
   `aa_position`, and `strand` (any column order). Codon span is checked with
-  `end - start == 3`. `name` and `length` are no longer required. Extra input
-  columns are carried through to the outputs.
+  `end - start == 3`. `name` and `length` are no longer required. Haplotype and
+  AA outputs keep extra annotation columns such as `gene`, but not BED interval
+  fields (`#chrom`, `start`, `end`, `name`, `length`, `strand`).
 * `multilocus_prevfreq_naive()` identifies loci by `gene_id` and `aa_position`
   and no longer requires a `gene` column on AA calls.

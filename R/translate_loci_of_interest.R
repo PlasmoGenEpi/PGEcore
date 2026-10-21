@@ -57,10 +57,12 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
         seq_aa <- Biostrings::translate(seq_codon, no.init.codon = TRUE)
       }
       ref_aa <- Biostrings::translate(ref_codon, no.init.codon = TRUE)
-      # Drop bookkeeping columns added by coverage / relative-coord helpers;
-      # keep every column from the original loci-of-interest table.
+      # Keep locus identity and any extra annotation columns (for example
+      # `gene`). Drop BED interval fields and coverage bookkeeping so haplotype
+      # / AA outputs stay the previous schema.
       locus_meta <- loci_for_target[loci_row, , drop = FALSE] |>
         dplyr::select(-dplyr::any_of(c(
+          "#chrom", "start", "end", "name", "length", "strand",
           "rel_start", "rel_end", "covered_by_target",
           "intersected_loci_of_interest"
         )))
@@ -82,7 +84,11 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
     return(tibble::tibble())
   }
   all_loci |>
-    dplyr::mutate(aa_locus = paste0(.data$gene_id, ":", .data$aa_position))
+    dplyr::mutate(aa_locus = paste0(.data$gene_id, ":", .data$aa_position)) |>
+    dplyr::relocate(dplyr::any_of(c(
+      "target_name", "seq", "gene", "gene_id", "aa_position",
+      "ref_codon", "ref_aa", "codon", "aa", "aa_locus"
+    )))
 }
 
 #' Locus annotation columns to preserve when collapsing AA calls
@@ -252,8 +258,9 @@ validate_translate_column_types <- function(ref_bed,
 #'   `target_name`, `length`, `strand`, `ref_seq`).
 #' - **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`, `gene_id`,
 #'   `aa_position`, `strand`); each locus must span 3 bases (`end - start == 3`).
-#'   Column order in the file does not matter. Extra input columns are carried
-#'   through to the outputs.
+#'   Column order in the file does not matter. BED interval columns are not
+#'   copied onto haplotype / AA outputs; extra annotation columns (for example
+#'   `gene`) are. The coverage table keeps the original loci columns.
 #'
 #' ## Outputs
 #'

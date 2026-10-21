@@ -60,8 +60,9 @@ translates it.
 \code{target_name}, \code{length}, \code{strand}, \code{ref_seq}).
 \item \strong{\code{loci_of_interest}}: Codon BED (\verb{#chrom}, \code{start}, \code{end}, \code{gene_id},
 \code{aa_position}, \code{strand}); each locus must span 3 bases (\code{end - start == 3}).
-Column order in the file does not matter. Extra input columns are carried
-through to the outputs.
+Column order in the file does not matter. BED interval columns are not
+copied onto haplotype / AA outputs; extra annotation columns (for example
+\code{gene}) are. The coverage table keeps the original loci columns.
 }
 }
 
