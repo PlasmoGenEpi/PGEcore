@@ -1,5 +1,8 @@
 #' Read SNP call data for THEREALMcCOIL
 #'
+#' Validates the required columns and keeps only biallelic loci with an
+#' observed reference base (see [filter_biallelic()]).
+#'
 #' @param snp_calls Path to an independent, collapsed SNP call TSV.
 #' @return A data frame with `specimen_name`, `snp_name`, `ref_base`,
 #'   `seq_base`, `reads`.
@@ -12,14 +15,15 @@ read_and_preprocess_snp_call <- function(snp_calls) {
   )
   validate_required_columns(df_snp_call, required_cols, "SNP data")
   df_snp_call |>
-    dplyr::select(dplyr::all_of(required_cols))
+    dplyr::select(dplyr::all_of(required_cols)) |>
+    filter_biallelic()
 }
 
 #' Reference and alternate allele of each biallelic SNP
 #'
 #' Both McCOIL models estimate the frequency of the non-reference allele.
 #'
-#' @param df Output of [filter_biallelic()].
+#' @param df Output of `read_and_preprocess_snp_call()`.
 #' @return A tibble with `snp_name`, `ref_base` and `alt_base`.
 #' @keywords internal
 mccoil_alt_alleles <- function(df) {
@@ -36,7 +40,6 @@ mccoil_alt_alleles <- function(df) {
 #'   where `1` is homozygous non-reference and `0` homozygous reference.
 #' @keywords internal
 prep_input_categorical <- function(df) {
-  df <- filter_biallelic(df)
   df_recode <- df |>
     dplyr::mutate(allele_idx = dplyr::if_else(.data$seq_base == .data$ref_base, 0, 1)) |>
     dplyr::select("specimen_name", "snp_name", "allele_idx") |>
@@ -71,7 +74,7 @@ prep_input_categorical <- function(df) {
 #' observed and one of them is `ref_base`; monomorphic and multiallelic loci,
 #' and loci whose reference base is never observed, are dropped with a warning.
 #'
-#' @param df Output of `read_and_preprocess_snp_call()`.
+#' @param df SNP calls with `snp_name`, `ref_base`, `seq_base` and `reads`.
 #' @return `df` filtered to those loci.
 #' @keywords internal
 filter_biallelic <- function(df) {
@@ -132,8 +135,6 @@ filter_biallelic <- function(df) {
 #'   read-count matrices.
 #' @keywords internal
 prep_input_prop <- function(df) {
-  df <- filter_biallelic(df)
-
   df_with_allele_idx <- df |>
     dplyr::mutate(
       allele_idx = dplyr::if_else(.data$seq_base == .data$ref_base, 2L, 1L)
@@ -296,7 +297,7 @@ run_mccoil_chain <- function(mccoil_input,
 #' Windows, where forking is unavailable, they run sequentially. Each chain
 #' seeds itself, so results are identical either way.
 #'
-#' @param df Preprocessed SNP calls.
+#' @param df Output of `read_and_preprocess_snp_call()`.
 #' @param model `"categorical"` or `"proportional"`.
 #' @param work_dir Directory for McCOIL temp traces (typically under
 #'   `tempdir()`).
@@ -630,7 +631,7 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
   # Fail before the MCMC runs rather than after, when diagnostics are written.
   check_suggested_pkg("posterior", "MCMC convergence diagnostics")
 
-  df <- filter_biallelic(read_and_preprocess_snp_call(snp_calls))
+  df <- read_and_preprocess_snp_call(snp_calls)
   work_dir <- tempfile("McCOIL_")
   dir.create(work_dir)
   on.exit(clean_up_mccoil(work_dir), add = TRUE)

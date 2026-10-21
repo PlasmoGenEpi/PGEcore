@@ -7,7 +7,7 @@
 filter_biallelic(df)
 }
 \arguments{
-\item{df}{Output of \code{read_and_preprocess_snp_call()}.}
+\item{df}{SNP calls with \code{snp_name}, \code{ref_base}, \code{seq_base} and \code{reads}.}
 }
 \value{
 \code{df} filtered to those loci.

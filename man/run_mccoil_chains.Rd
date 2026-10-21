@@ -24,7 +24,7 @@ run_mccoil_chains(
 )
 }
 \arguments{
-\item{df}{Preprocessed SNP calls.}
+\item{df}{Output of \code{read_and_preprocess_snp_call()}.}
 
 \item{model}{\code{"categorical"} or \code{"proportional"}.}
 

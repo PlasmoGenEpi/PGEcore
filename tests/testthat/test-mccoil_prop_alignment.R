@@ -41,23 +41,21 @@ test_that("both models index the non-reference allele", {
   expect_equal(cat_in["s1", "B"], 0)
 })
 
-test_that("both models drop multiallelic loci", {
+test_that("filter_biallelic drops multiallelic loci for both models", {
   df <- rbind(make_calls(), data.frame(
     specimen_name = "s2", snp_name = "A", ref_base = "A", seq_base = "C", reads = 5L
   ))
-  expect_warning(cat_in <- prep_input_categorical(df), "1 multiallelic")
-  expect_identical(colnames(cat_in), "B")
-  expect_warning(inp <- prep_input_prop(df), "1 multiallelic")
-  expect_identical(colnames(inp$a1), "B")
+  expect_warning(df <- filter_biallelic(df), "1 multiallelic")
+  expect_identical(colnames(prep_input_categorical(df)), "B")
+  expect_identical(colnames(prep_input_prop(df)$a1), "B")
 })
 
-test_that("both models drop loci whose reference base is absent", {
+test_that("filter_biallelic drops loci whose reference base is absent", {
   df <- make_calls()
   df$ref_base[df$snp_name == "B"] <- "T"
-  expect_warning(cat_in <- prep_input_categorical(df), "reference base was never observed: B")
-  expect_identical(colnames(cat_in), "A")
-  expect_warning(inp <- prep_input_prop(df), "reference base was never observed: B")
-  expect_identical(colnames(inp$a1), "A")
+  expect_warning(df <- filter_biallelic(df), "reference base was never observed: B")
+  expect_identical(colnames(prep_input_categorical(df)), "A")
+  expect_identical(colnames(prep_input_prop(df)$a1), "A")
 })
 
 test_that("ref_base must be consistent within a SNP", {

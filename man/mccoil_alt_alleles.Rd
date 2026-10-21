@@ -7,7 +7,7 @@
 mccoil_alt_alleles(df)
 }
 \arguments{
-\item{df}{Output of \code{\link[=filter_biallelic]{filter_biallelic()}}.}
+\item{df}{Output of \code{read_and_preprocess_snp_call()}.}
 }
 \value{
 A tibble with \code{snp_name}, \code{ref_base} and \code{alt_base}.

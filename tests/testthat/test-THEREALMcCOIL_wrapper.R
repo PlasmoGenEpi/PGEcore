@@ -68,7 +68,7 @@ test_that("prep_input_prop returns paired allele count matrices", {
   expect_equal(as.numeric(mats$a1["S1", "L1"] + mats$a2["S1", "L1"]), 12)
 })
 
-test_that("prep_input_prop drops non-biallelic loci and indexes within locus", {
+test_that("filter_biallelic drops monomorphic loci and prep_input_prop indexes within locus", {
   df <- tibble::tibble(
     specimen_name = c("S1", "S1", "S1", "S1", "S2", "S2", "S2"),
     snp_name = c("L1", "L2", "L2", "L3", "L1", "L2", "L3"),
@@ -76,10 +76,8 @@ test_that("prep_input_prop drops non-biallelic loci and indexes within locus", {
     seq_base = c("A", "A", "T", "C", "A", "T", "G"),
     reads = c(5L, 10L, 2L, 4L, 6L, 8L, 3L)
   )
-  expect_warning(
-    mats <- PGEcore:::prep_input_prop(df),
-    "1 monomorphic"
-  )
+  expect_warning(df <- PGEcore:::filter_biallelic(df), "1 monomorphic")
+  mats <- PGEcore:::prep_input_prop(df)
   expect_setequal(colnames(mats$a1), c("L2", "L3"))
   # allele 1 is the non-reference base of each locus
   expect_equal(as.numeric(mats$a1["S1", "L2"]), 2)
@@ -144,7 +142,7 @@ test_that("THEREALMcCOIL_wrapper short MCMC on example data", {
     package = "PGEcore"
   )
   skip_if_not(nzchar(path) && file.exists(path))
-  df <- PGEcore:::read_and_preprocess_snp_call(path)
+  df <- suppressWarnings(PGEcore:::read_and_preprocess_snp_call(path))
   cat_in <- PGEcore:::prep_input_categorical(df)
   skip_if(
     nrow(cat_in) <= 10 || ncol(cat_in) <= 10,
@@ -198,7 +196,7 @@ test_that("THEREALMcCOIL_wrapper is reproducible for a given seed", {
     package = "PGEcore"
   )
   skip_if_not(nzchar(path) && file.exists(path))
-  df <- PGEcore:::read_and_preprocess_snp_call(path)
+  df <- suppressWarnings(PGEcore:::read_and_preprocess_snp_call(path))
   cat_in <- PGEcore:::prep_input_categorical(df)
   skip_if(
     nrow(cat_in) <= 10 || ncol(cat_in) <= 10,
