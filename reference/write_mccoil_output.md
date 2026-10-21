@@ -17,7 +17,7 @@ write_mccoil_output(df_formated, slaf_path, coi_path)
 
 - slaf_path:
 
-  SLAF TSV path (`variant`, `freq`).
+  SLAF TSV path (`variant`, `snp_name`, `ref_base`, `seq_base`, `freq`).
 
 - coi_path:
 

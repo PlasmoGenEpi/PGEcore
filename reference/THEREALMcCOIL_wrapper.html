@@ -173,14 +173,19 @@ outputs).</p>
 <h3 id="inputs">Inputs<a class="anchor" aria-label="anchor" href="#inputs"></a></h3>
 
 <ul><li><p><strong><code>snp_calls</code></strong>: SNP-calls TSV (at least <code>specimen_name</code>, <code>snp_name</code>,
-<code>reads</code>, <code>seq_base</code>; typically also <code>target_name</code>, <code>pos</code>, <code>he</code>). See
-<code><a href="../articles/input-formats.html">vignette("input-formats", package = "PGEcore")</a></code>.</p></li>
+<code>reads</code>, <code>ref_base</code>, <code>seq_base</code>; typically also <code>target_name</code>, <code>pos</code>,
+<code>he</code>). See <code><a href="../articles/input-formats.html">vignette("input-formats", package = "PGEcore")</a></code>.</p></li>
 </ul></div>
 
 <div class="section">
 <h3 id="outputs">Outputs<a class="anchor" aria-label="anchor" href="#outputs"></a></h3>
 
-<ul><li><p><strong><code>slaf_output</code></strong>: Single-locus allele frequencies (<code>variant</code>, <code>freq</code>).</p></li>
+<ul><li><p><strong><code>slaf_output</code></strong>: Single-locus allele frequencies (<code>variant</code>, <code>snp_name</code>,
+<code>ref_base</code>, <code>seq_base</code>, <code>freq</code>). One row per SNP giving the frequency of
+its non-reference allele, with <code>variant</code> written as <code>snp_name:seq_base</code>.
+The reference allele's frequency is <code>1 - freq</code>. Both models use only
+biallelic SNPs whose reference base is observed; other SNPs are dropped
+with a warning.</p></li>
 <li><p><strong><code>coi_output</code></strong>: COI estimates (<code>specimen_name</code>, <code>coi</code>).</p></li>
 </ul><p>Both are posterior medians over the post-burn-in draws of all chains.</p><ul><li><p><strong><code>convergence_output</code></strong>: MCMC diagnostics (<code>variable</code>, <code>mean</code>, <code>median</code>,
 <code>sd</code>, <code>q5</code>, <code>q95</code>, <code>rhat</code>, <code>ess_bulk</code>, <code>ess_tail</code>).</p></li>

@@ -17,4 +17,5 @@ prep_input_prop(df)
 
 ## Value
 
-A list with `a1` and `a2` read-count matrices.
+A list with `a1` (non-reference allele) and `a2` (reference allele)
+read-count matrices.

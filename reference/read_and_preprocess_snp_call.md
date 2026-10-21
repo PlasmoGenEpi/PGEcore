@@ -1,6 +1,8 @@
 # Read SNP call data for THEREALMcCOIL
 
-Read SNP call data for THEREALMcCOIL
+Validates the required columns and keeps only biallelic loci with an
+observed reference base (see
+[`filter_biallelic()`](https://plasmogenepi.github.io/PGEcore/reference/filter_biallelic.md)).
 
 ## Usage
 
@@ -16,4 +18,5 @@ read_and_preprocess_snp_call(snp_calls)
 
 ## Value
 
-A data frame with `specimen_name`, `snp_name`, `seq_base`, `reads`.
+A data frame with `specimen_name`, `snp_name`, `ref_base`, `seq_base`,
+`reads`.

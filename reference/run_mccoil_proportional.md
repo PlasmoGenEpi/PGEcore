@@ -42,7 +42,7 @@ run_mccoil_proportional(
 
 - burnin:
 
-  Burn-in iterations discarded when summarising.
+  Burn-in iterations discarded when summarizing.
 
 - M0:
 

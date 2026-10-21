@@ -17,4 +17,5 @@ prep_input_categorical(df)
 
 ## Value
 
-A data frame (samples x sites) of scores `1` / `0` / `0.5` / `-1`.
+A data frame (samples x sites) of scores `1` / `0` / `0.5` / `-1`, where
+`1` is homozygous non-reference and `0` homozygous reference.

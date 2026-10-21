@@ -1,9 +1,10 @@
-# Restrict SNP calls to biallelic loci for the proportional model
+# Restrict SNP calls to biallelic loci with an observed reference base
 
-The proportional model represents each locus with exactly two alleles
-(`a1`/`a2`), so loci with any other number of alleles cannot be encoded
-correctly. Loci with exactly two distinct `seq_base` values are kept;
-monomorphic and multiallelic loci are dropped with a warning.
+Both McCOIL models represent a locus as a reference and one alternate
+allele. Loci are kept when exactly two distinct `seq_base` values are
+observed and one of them is `ref_base`; monomorphic and multiallelic
+loci, and loci whose reference base is never observed, are dropped with
+a warning.
 
 ## Usage
 
@@ -15,9 +16,8 @@ filter_biallelic(df)
 
 - df:
 
-  Output of
-  [`read_and_preprocess_snp_call()`](https://plasmogenepi.github.io/PGEcore/reference/read_and_preprocess_snp_call.md).
+  SNP calls with `snp_name`, `ref_base`, `seq_base` and `reads`.
 
 ## Value
 
-`df` filtered to biallelic loci only.
+`df` filtered to those loci.

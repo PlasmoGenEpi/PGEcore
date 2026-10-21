@@ -120,13 +120,18 @@ outputs).
 ### Inputs
 
 - **`snp_calls`**: SNP-calls TSV (at least `specimen_name`, `snp_name`,
-  `reads`, `seq_base`; typically also `target_name`, `pos`, `he`). See
+  `reads`, `ref_base`, `seq_base`; typically also `target_name`, `pos`,
+  `he`). See
   [`vignette("input-formats", package = "PGEcore")`](https://plasmogenepi.github.io/PGEcore/articles/input-formats.md).
 
 ### Outputs
 
 - **`slaf_output`**: Single-locus allele frequencies (`variant`,
-  `freq`).
+  `snp_name`, `ref_base`, `seq_base`, `freq`). One row per SNP giving
+  the frequency of its non-reference allele, with `variant` written as
+  `snp_name:seq_base`. The reference allele's frequency is `1 - freq`.
+  Both models use only biallelic SNPs whose reference base is observed;
+  other SNPs are dropped with a warning.
 
 - **`coi_output`**: COI estimates (`specimen_name`, `coi`).
 

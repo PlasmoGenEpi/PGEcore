@@ -33,7 +33,8 @@ run_mccoil_chains(
 
 - df:
 
-  Preprocessed SNP calls.
+  Output of
+  [`read_and_preprocess_snp_call()`](https://plasmogenepi.github.io/PGEcore/reference/read_and_preprocess_snp_call.md).
 
 - model:
 
