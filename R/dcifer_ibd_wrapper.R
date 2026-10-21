@@ -62,12 +62,46 @@ create_dcifer_allele_freq_input <- function(allele_freq_path,
     )
   }
 
-  dcifer::formatAfreq(
+  afreq <- dcifer::formatAfreq(
     allele_freqs,
     lvar = "target_name",
     avar = "target_value",
     fvar = "freq"
   )
+  # dcifer indexes frequencies by allele position, so loci and alleles must
+  # follow the order of the formatted allele list
+  loci <- names(allele_list[[1]])
+  afreq <- afreq[loci]
+  for (locus in loci) {
+    afreq[[locus]] <- afreq[[locus]][names(allele_list[[1]][[locus]])]
+  }
+  afreq
+}
+
+#' Alternative hypothesis side for a relatedness null value
+#'
+#' @param rnull Relatedness null.
+#' @return `"right"` for a null of 0, `"left"` for 1, otherwise `"two-sided"`.
+#' @keywords internal
+dcifer_test_side <- function(rnull) {
+  if (rnull == 0) {
+    "right"
+  } else if (rnull == 1) {
+    "left"
+  } else {
+    "two-sided"
+  }
+}
+
+#' Split pair indices into one non-empty chunk per worker
+#'
+#' @param total_pairs Number of sample pairs.
+#' @param total_cores Number of workers.
+#' @return A list of integer index vectors covering `seq_len(total_pairs)`
+#'   exactly once.
+#' @keywords internal
+dcifer_pair_chunks <- function(total_pairs, total_cores) {
+  Filter(length, parallel::splitIndices(total_pairs, total_cores))
 }
 
 #' Read specimen metadata for population-specific Dcifer runs
@@ -179,13 +213,7 @@ run_ibdpair <- function(dsmp,
   afreq <- lapply(afreq, log)
   nloc <- length(afreq)
 
-  if (identical(rnull, 0L)) {
-    side <- "right"
-  } else if (identical(rnull, 1L)) {
-    side <- "left"
-  } else {
-    side <- "two-sided"
-  }
+  side <- dcifer_test_side(rnull)
 
   if (is.null(sample_pairs)) {
     sample_pairs_matrix <- utils::combn(names(dsmp), 2)
@@ -211,15 +239,13 @@ run_ibdpair <- function(dsmp,
     cl <- parallel::getDefaultCluster()
   }
 
+  chunks <- dcifer_pair_chunks(nrow(sample_pairs), total_cores)
   res <- foreach::foreach(
-    i = 1:total_cores,
+    idx = chunks,
     .combine = rbind,
     .packages = c("dcifer", "foreach", "iterators")
   ) %dopar% {
-    total_pairs <- nrow(sample_pairs)
-    begin_idx <- floor(((i - 1) * total_pairs / total_cores) + 1)
-    end_idx <- floor((i * total_pairs / total_cores))
-    pairs <- sample_pairs[begin_idx:end_idx, ]
+    pairs <- sample_pairs[idx, ]
     foreach::foreach(
       pair = iterators::iter(pairs, by = "row"),
       .combine = rbind,
@@ -293,13 +319,7 @@ run_ibdestm <- function(dsmp,
     )
   }
 
-  if (identical(rnull, 0L)) {
-    side <- "right"
-  } else if (identical(rnull, 1L)) {
-    side <- "left"
-  } else {
-    side <- "two-sided"
-  }
+  side <- dcifer_test_side(rnull)
 
   if (is.null(total_cores)) {
     total_cores <- parallelly::availableCores() - 1
@@ -316,15 +336,13 @@ run_ibdestm <- function(dsmp,
     cl <- parallel::getDefaultCluster()
   }
 
+  chunks <- dcifer_pair_chunks(nrow(sample_pairs), total_cores)
   res <- foreach::foreach(
-    i = 1:total_cores,
+    idx = chunks,
     .combine = rbind,
     .packages = c("dcifer", "foreach", "iterators")
   ) %dopar% {
-    total_pairs <- nrow(sample_pairs)
-    begin_idx <- floor(((i - 1) * total_pairs / total_cores) + 1)
-    end_idx <- floor((i * total_pairs / total_cores))
-    pairs <- sample_pairs[begin_idx:end_idx, ]
+    pairs <- sample_pairs[idx, ]
     foreach::foreach(
       pair = iterators::iter(pairs, by = "row"),
       .combine = rbind,
@@ -391,13 +409,14 @@ run_dcifer_bypop <- function(allele_table_path,
   for (pop_oi in pops) {
     alleles_filtered <- alleles_w_specimen_meta |>
       dplyr::filter(.data$population == pop_oi)
-    pop_coi <- coi[unique(alleles_filtered$specimen_name)]
     pop_alleles <- dcifer::formatDat(
       alleles_filtered,
       svar = "specimen_name",
       lvar = "target_name",
       avar = "target_value"
     )
+    # calcAfreq() pairs COI with specimens by position
+    pop_coi <- coi[names(pop_alleles)]
     allele_freq_lists[[pop_oi]] <- dcifer::calcAfreq(
       pop_alleles,
       pop_coi,
@@ -536,6 +555,7 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 #' @param relatedness_output Path for relatedness TSV. See *Outputs*.
 #' @param coi_table Optional path to COI table TSV. See *Inputs*.
 #' @param allele_freq_table Optional path to allele-frequency TSV. See *Inputs*.
+#'   Not used with `pop_name_col`.
 #' @param specimen_name_col,target_name_col,target_value_col Column names in
 #'   the allele / COI / frequency tables.
 #' @param specimen_metadata Optional metadata TSV. See *Inputs*.
@@ -579,6 +599,13 @@ dcifer_ibd_wrapper <- function(allele_table,
       call. = FALSE
     )
   }
+  if (!is.null(allele_freq_table) && !is.null(pop_name_col)) {
+    stop(
+      "--allele_freq_table cannot be used with --pop_name_col: allele ",
+      "frequencies are estimated per population from the allele table",
+      call. = FALSE
+    )
+  }
 
   allele_tbl <- create_dcifer_allele_table_input(
     allele_table,
@@ -595,7 +622,6 @@ dcifer_ibd_wrapper <- function(allele_table,
 
   if (is.null(coi_table)) {
     coi <- dcifer::getCOI(dcifer_alleles)
-    names(coi) <- stringr::str_split_i(names(coi), "\\.", 1)
   } else {
     coi <- create_dcifer_coi_input(
       coi_table,
