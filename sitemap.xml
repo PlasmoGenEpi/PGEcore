@@ -65,7 +65,9 @@
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/create_snpslice_loci_group_input.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/dcifer_allele_freq_mean.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/dcifer_ibd_wrapper.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/dcifer_pair_chunks.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/dcifer_slaf_wrapper.html</loc></url>
+<url><loc>https://plasmogenepi.github.io/PGEcore/reference/dcifer_test_side.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/derive_gds_path.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/derive_gt.html</loc></url>
 <url><loc>https://plasmogenepi.github.io/PGEcore/reference/drop_null_args.html</loc></url>

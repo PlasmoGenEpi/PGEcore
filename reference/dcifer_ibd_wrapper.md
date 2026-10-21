@@ -42,7 +42,8 @@ dcifer_ibd_wrapper(
 
 - allele_freq_table:
 
-  Optional path to allele-frequency TSV. See *Inputs*.
+  Optional path to allele-frequency TSV. See *Inputs*. Not used with
+  `pop_name_col`.
 
 - specimen_name_col, target_name_col, target_value_col:
 
