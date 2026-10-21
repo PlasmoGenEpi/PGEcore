@@ -9,7 +9,8 @@ write_mccoil_output(df_formated, slaf_path, coi_path)
 \arguments{
 \item{df_formated}{List from \code{format_mccoil_output()}.}
 
-\item{slaf_path}{SLAF TSV path (\code{variant}, \code{freq}).}
+\item{slaf_path}{SLAF TSV path (\code{variant}, \code{snp_name}, \code{ref_base},
+\code{seq_base}, \code{freq}).}
 
 \item{coi_path}{COI TSV path (\code{specimen_name}, \code{coi}).}
 }

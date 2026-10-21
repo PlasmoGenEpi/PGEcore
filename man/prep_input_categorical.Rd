@@ -10,7 +10,8 @@ prep_input_categorical(df)
 \item{df}{Output of \code{read_and_preprocess_snp_call()}.}
 }
 \value{
-A data frame (samples x sites) of scores \code{1} / \code{0} / \code{0.5} / \code{-1}.
+A data frame (samples x sites) of scores \code{1} / \code{0} / \code{0.5} / \code{-1},
+where \code{1} is homozygous non-reference and \code{0} homozygous reference.
 }
 \description{
 Format SNP calls for the McCOIL categorical model

@@ -4,15 +4,20 @@
 \alias{format_mccoil_output}
 \title{Format pooled McCOIL draws into PGE COI and SLAF tables}
 \usage{
-format_mccoil_output(draws)
+format_mccoil_output(draws, alleles)
 }
 \arguments{
 \item{draws}{Output of \code{\link[=mccoil_draws]{mccoil_draws()}}.}
+
+\item{alleles}{Output of \code{\link[=mccoil_alt_alleles]{mccoil_alt_alleles()}}.}
 }
 \value{
-A list with \code{slaf} and \code{coi} tibbles.
+A list with \code{slaf} (\code{variant}, \code{snp_name}, \code{ref_base}, \code{seq_base},
+\code{freq}) and \code{coi} tibbles.
 }
 \description{
 Estimates are posterior medians over the post-burn-in draws of all chains.
+Each SLAF row is the non-reference allele of one SNP, named
+\code{snp_name:seq_base} in \code{variant}.
 }
 \keyword{internal}

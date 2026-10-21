@@ -1,36 +1,47 @@
 #' Read SNP call data for THEREALMcCOIL
 #'
+#' Validates the required columns and keeps only biallelic loci with an
+#' observed reference base (see [filter_biallelic()]).
+#'
 #' @param snp_calls Path to an independent, collapsed SNP call TSV.
-#' @return A data frame with `specimen_name`, `snp_name`, `seq_base`, `reads`.
+#' @return A data frame with `specimen_name`, `snp_name`, `ref_base`,
+#'   `seq_base`, `reads`.
 #' @keywords internal
 read_and_preprocess_snp_call <- function(snp_calls) {
-  required_cols <- c("specimen_name", "snp_name", "reads", "seq_base")
+  required_cols <- c("specimen_name", "snp_name", "reads", "ref_base", "seq_base")
   df_snp_call <- readr::read_tsv(
     snp_calls,
     col_types = readr::cols(specimen_name = readr::col_character())
   )
   validate_required_columns(df_snp_call, required_cols, "SNP data")
   df_snp_call |>
-    dplyr::select(dplyr::all_of(required_cols))
+    dplyr::select(dplyr::all_of(required_cols)) |>
+    filter_biallelic()
+}
+
+#' Reference and alternate allele of each biallelic SNP
+#'
+#' Both McCOIL models estimate the frequency of the non-reference allele.
+#'
+#' @param df Output of `read_and_preprocess_snp_call()`.
+#' @return A tibble with `snp_name`, `ref_base` and `alt_base`.
+#' @keywords internal
+mccoil_alt_alleles <- function(df) {
+  df |>
+    dplyr::filter(.data$seq_base != .data$ref_base) |>
+    dplyr::distinct(.data$snp_name, .data$ref_base, alt_base = .data$seq_base) |>
+    dplyr::arrange(.data$snp_name)
 }
 
 #' Format SNP calls for the McCOIL categorical model
 #'
 #' @param df Output of `read_and_preprocess_snp_call()`.
-#' @return A data frame (samples x sites) of scores `1` / `0` / `0.5` / `-1`.
+#' @return A data frame (samples x sites) of scores `1` / `0` / `0.5` / `-1`,
+#'   where `1` is homozygous non-reference and `0` homozygous reference.
 #' @keywords internal
 prep_input_categorical <- function(df) {
-  major_allele <- df |>
-    dplyr::group_by(.data$snp_name, .data$seq_base) |>
-    dplyr::summarize(total = sum(.data$reads), .groups = "keep") |>
-    dplyr::group_by(.data$snp_name) |>
-    dplyr::slice_max(.data$total, n = 1, with_ties = FALSE) |>
-    dplyr::select("snp_name", "seq_base") |>
-    dplyr::rename(major_allele = "seq_base")
-
   df_recode <- df |>
-    dplyr::left_join(major_allele, by = "snp_name") |>
-    dplyr::mutate(allele_idx = dplyr::if_else(.data$seq_base == .data$major_allele, 1, 0)) |>
+    dplyr::mutate(allele_idx = dplyr::if_else(.data$seq_base == .data$ref_base, 0, 1)) |>
     dplyr::select("specimen_name", "snp_name", "allele_idx") |>
     dplyr::group_by(.data$specimen_name, .data$snp_name) |>
     dplyr::summarise(
@@ -56,64 +67,78 @@ prep_input_categorical <- function(df) {
   df_mat
 }
 
-#' Restrict SNP calls to biallelic loci for the proportional model
+#' Restrict SNP calls to biallelic loci with an observed reference base
 #'
-#' The proportional model represents each locus with exactly two alleles
-#' (`a1`/`a2`), so loci with any other number of alleles cannot be encoded
-#' correctly. Loci with exactly two distinct `seq_base` values are kept;
-#' monomorphic and multiallelic loci are dropped with a warning.
+#' Both McCOIL models represent a locus as a reference and one alternate
+#' allele. Loci are kept when exactly two distinct `seq_base` values are
+#' observed and one of them is `ref_base`; monomorphic and multiallelic loci,
+#' and loci whose reference base is never observed, are dropped with a warning.
 #'
-#' @param df Output of `read_and_preprocess_snp_call()`.
-#' @return `df` filtered to biallelic loci only.
+#' @param df SNP calls with `snp_name`, `ref_base`, `seq_base` and `reads`.
+#' @return `df` filtered to those loci.
 #' @keywords internal
 filter_biallelic <- function(df) {
-  allele_counts <- df |>
-    dplyr::distinct(.data$snp_name, .data$seq_base) |>
-    dplyr::count(.data$snp_name, name = "n_alleles")
-
-  n_mono <- sum(allele_counts$n_alleles < 2)
-  n_multi <- sum(allele_counts$n_alleles > 2)
-  if (n_mono > 0 || n_multi > 0) {
-    warning(
-      "Dropping non-biallelic loci for the proportional model: ",
-      n_mono, " monomorphic, ", n_multi, " multiallelic. ",
-      "The proportional model supports only biallelic loci.",
+  refs <- dplyr::distinct(df, .data$snp_name, .data$ref_base)
+  multi_ref <- unique(refs$snp_name[duplicated(refs$snp_name)])
+  if (length(multi_ref) > 0) {
+    stop(
+      "ref_base differs between rows of the same SNP: ",
+      paste(multi_ref, collapse = ", "),
       call. = FALSE
     )
   }
 
-  biallelic_loci <- allele_counts |>
-    dplyr::filter(.data$n_alleles == 2) |>
-    dplyr::pull("snp_name")
-  if (length(biallelic_loci) == 0) {
+  loci <- df |>
+    dplyr::distinct(.data$snp_name, .data$ref_base, .data$seq_base) |>
+    dplyr::group_by(.data$snp_name) |>
+    dplyr::summarise(
+      n_alleles = dplyr::n(),
+      has_ref = any(.data$seq_base == .data$ref_base),
+      .groups = "drop"
+    )
+
+  n_mono <- sum(loci$n_alleles < 2)
+  n_multi <- sum(loci$n_alleles > 2)
+  n_no_ref <- sum(loci$n_alleles == 2 & !loci$has_ref)
+  if (n_mono > 0 || n_multi > 0) {
+    warning(
+      "Dropping non-biallelic loci: ", n_mono, " monomorphic, ", n_multi,
+      " multiallelic. McCOIL supports only biallelic loci.",
+      call. = FALSE
+    )
+  }
+  if (n_no_ref > 0) {
+    warning(
+      "Dropping ", n_no_ref, " biallelic loci whose reference base was never ",
+      "observed: ",
+      paste(loci$snp_name[loci$n_alleles == 2 & !loci$has_ref], collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  keep <- loci$snp_name[loci$n_alleles == 2 & loci$has_ref]
+  if (length(keep) == 0) {
     stop(
-      "No biallelic loci remain after filtering; the proportional model ",
+      "No biallelic loci with an observed reference base remain; McCOIL ",
       "cannot be run on this input.",
       call. = FALSE
     )
   }
 
-  dplyr::filter(df, .data$snp_name %in% biallelic_loci)
+  dplyr::filter(df, .data$snp_name %in% keep)
 }
 
 #' Format SNP calls for the McCOIL proportional model
 #'
 #' @param df Output of `read_and_preprocess_snp_call()`.
-#' @return A list with `a1` and `a2` read-count matrices.
+#' @return A list with `a1` (non-reference allele) and `a2` (reference allele)
+#'   read-count matrices.
 #' @keywords internal
 prep_input_prop <- function(df) {
-  df <- filter_biallelic(df)
-
-  # Assign the two alleles of each locus to index 1 or 2 within that locus, so
-  # the assignment cannot depend on the number of alleles seen at other loci.
-  allele_map <- df |>
-    dplyr::distinct(.data$snp_name, .data$seq_base) |>
-    dplyr::arrange(.data$snp_name, .data$seq_base) |>
-    dplyr::group_by(.data$snp_name) |>
-    dplyr::mutate(allele_idx = dplyr::row_number()) |>
-    dplyr::ungroup()
   df_with_allele_idx <- df |>
-    dplyr::left_join(allele_map, by = c("snp_name", "seq_base"))
+    dplyr::mutate(
+      allele_idx = dplyr::if_else(.data$seq_base == .data$ref_base, 2L, 1L)
+    )
 
   df_allele1 <- df_with_allele_idx |>
     dplyr::filter(.data$allele_idx == 1) |>
@@ -272,7 +297,7 @@ run_mccoil_chain <- function(mccoil_input,
 #' Windows, where forking is unavailable, they run sequentially. Each chain
 #' seeds itself, so results are identical either way.
 #'
-#' @param df Preprocessed SNP calls.
+#' @param df Output of `read_and_preprocess_snp_call()`.
 #' @param model `"categorical"` or `"proportional"`.
 #' @param work_dir Directory for McCOIL temp traces (typically under
 #'   `tempdir()`).
@@ -437,15 +462,23 @@ prepare_mccoil_convergence_output <- function(draws) {
 #' Format pooled McCOIL draws into PGE COI and SLAF tables
 #'
 #' Estimates are posterior medians over the post-burn-in draws of all chains.
+#' Each SLAF row is the non-reference allele of one SNP, named
+#' `snp_name:seq_base` in `variant`.
 #'
 #' @param draws Output of [mccoil_draws()].
-#' @return A list with `slaf` and `coi` tibbles.
+#' @param alleles Output of [mccoil_alt_alleles()].
+#' @return A list with `slaf` (`variant`, `snp_name`, `ref_base`, `seq_base`,
+#'   `freq`) and `coi` tibbles.
 #' @keywords internal
-format_mccoil_output <- function(draws) {
+format_mccoil_output <- function(draws, alleles) {
   med <- apply(draws$draws, 3, stats::median)
+  idx <- match(draws$freq_names, alleles$snp_name)
   list(
     slaf = tibble::tibble(
-      variant = draws$freq_names,
+      variant = paste0(draws$freq_names, ":", alleles$alt_base[idx]),
+      snp_name = draws$freq_names,
+      ref_base = alleles$ref_base[idx],
+      seq_base = alleles$alt_base[idx],
       freq = unname(med[paste0("freq[", draws$freq_names, "]")])
     ),
     coi = tibble::tibble(
@@ -458,7 +491,8 @@ format_mccoil_output <- function(draws) {
 #' Write formatted McCOIL output
 #'
 #' @param df_formated List from `format_mccoil_output()`.
-#' @param slaf_path SLAF TSV path (`variant`, `freq`).
+#' @param slaf_path SLAF TSV path (`variant`, `snp_name`, `ref_base`,
+#'   `seq_base`, `freq`).
 #' @param coi_path COI TSV path (`specimen_name`, `coi`).
 #' @keywords internal
 write_mccoil_output <- function(df_formated, slaf_path, coi_path) {
@@ -495,12 +529,17 @@ mccoil_blank <- function(x) {
 #' ## Inputs
 #'
 #' - **`snp_calls`**: SNP-calls TSV (at least `specimen_name`, `snp_name`,
-#'   `reads`, `seq_base`; typically also `target_name`, `pos`, `he`). See
-#'   `vignette("input-formats", package = "PGEcore")`.
+#'   `reads`, `ref_base`, `seq_base`; typically also `target_name`, `pos`,
+#'   `he`). See `vignette("input-formats", package = "PGEcore")`.
 #'
 #' ## Outputs
 #'
-#' - **`slaf_output`**: Single-locus allele frequencies (`variant`, `freq`).
+#' - **`slaf_output`**: Single-locus allele frequencies (`variant`, `snp_name`,
+#'   `ref_base`, `seq_base`, `freq`). One row per SNP giving the frequency of
+#'   its non-reference allele, with `variant` written as `snp_name:seq_base`.
+#'   The reference allele's frequency is `1 - freq`. Both models use only
+#'   biallelic SNPs whose reference base is observed; other SNPs are dropped
+#'   with a warning.
 #' - **`coi_output`**: COI estimates (`specimen_name`, `coi`).
 #'
 #' Both are posterior medians over the post-burn-in draws of all chains.
@@ -622,7 +661,7 @@ THEREALMcCOIL_wrapper <- function(snp_calls,
     totalrun = totalrun,
     burnin = burnin
   )
-  df_formated <- format_mccoil_output(draws)
+  df_formated <- format_mccoil_output(draws, mccoil_alt_alleles(df))
   write_mccoil_output(df_formated, slaf_output, coi_output)
 
   convergence <- prepare_mccoil_convergence_output(draws)

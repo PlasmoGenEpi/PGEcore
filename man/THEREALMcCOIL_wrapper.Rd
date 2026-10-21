@@ -85,14 +85,19 @@ single-locus allele frequencies. Compiled C routines (\code{McCOIL_categorical},
 \subsection{Inputs}{
 \itemize{
 \item \strong{\code{snp_calls}}: SNP-calls TSV (at least \code{specimen_name}, \code{snp_name},
-\code{reads}, \code{seq_base}; typically also \code{target_name}, \code{pos}, \code{he}). See
-\code{vignette("input-formats", package = "PGEcore")}.
+\code{reads}, \code{ref_base}, \code{seq_base}; typically also \code{target_name}, \code{pos},
+\code{he}). See \code{vignette("input-formats", package = "PGEcore")}.
 }
 }
 
 \subsection{Outputs}{
 \itemize{
-\item \strong{\code{slaf_output}}: Single-locus allele frequencies (\code{variant}, \code{freq}).
+\item \strong{\code{slaf_output}}: Single-locus allele frequencies (\code{variant}, \code{snp_name},
+\code{ref_base}, \code{seq_base}, \code{freq}). One row per SNP giving the frequency of
+its non-reference allele, with \code{variant} written as \code{snp_name:seq_base}.
+The reference allele's frequency is \code{1 - freq}. Both models use only
+biallelic SNPs whose reference base is observed; other SNPs are dropped
+with a warning.
 \item \strong{\code{coi_output}}: COI estimates (\code{specimen_name}, \code{coi}).
 }
 

@@ -26,7 +26,7 @@ missing locus.}
 
 \item{totalrun}{Total MCMC iterations.}
 
-\item{burnin}{Burn-in iterations discarded when summarising.}
+\item{burnin}{Burn-in iterations discarded when summarizing.}
 
 \item{M0}{Starting COI for every sample.}
 

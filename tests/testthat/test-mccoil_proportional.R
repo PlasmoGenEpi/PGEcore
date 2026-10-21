@@ -19,7 +19,7 @@ make_prop_snp_calls <- function(seed = 5) {
       }
       rows[[length(rows) + 1]] <- data.frame(
         specimen_name = paste0("s", i), snp_name = paste0("l", j),
-        seq_base = c("A", "T"), reads = c(a, b)
+        ref_base = "A", seq_base = c("A", "T"), reads = c(a, b)
       )
     }
   }
