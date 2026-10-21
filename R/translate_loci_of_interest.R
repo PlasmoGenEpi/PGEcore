@@ -4,12 +4,15 @@
 #' @param microhaps_intersected_with_loci_of_interest Targets covering loci.
 #' @param ref_bed_by_loci_lookup Named list of one-row ref_bed tibbles.
 #' @param loci_of_interest_tab Loci-of-interest table.
+#' @param extra_loci_columns Extra loci-of-interest columns to copy onto each
+#'   haplotype row, in addition to `gene_id` and `aa_position`.
 #' @return Tibble of codon/AA calls per haplotype.
 #' @keywords internal
 translate_microhap_seqs <- function(allele_table_unique_haps_tab,
                                     microhaps_intersected_with_loci_of_interest,
                                     ref_bed_by_loci_lookup,
-                                    loci_of_interest_tab) {
+                                    loci_of_interest_tab,
+                                    extra_loci_columns = character(0)) {
   all_loci <- NULL
   mat <- nucleotide_overlap_substitution_matrix()
   ref_lookup <- orient_ref_lookup_to_plus_strand(ref_bed_by_loci_lookup)
@@ -57,15 +60,9 @@ translate_microhap_seqs <- function(allele_table_unique_haps_tab,
         seq_aa <- Biostrings::translate(seq_codon, no.init.codon = TRUE)
       }
       ref_aa <- Biostrings::translate(ref_codon, no.init.codon = TRUE)
-      # Keep locus identity and any extra annotation columns (for example
-      # `gene`). Drop BED interval fields and coverage bookkeeping so haplotype
-      # / AA outputs stay the previous schema.
+      locus_keep <- unique(c("gene_id", "aa_position", extra_loci_columns))
       locus_meta <- loci_for_target[loci_row, , drop = FALSE] |>
-        dplyr::select(-dplyr::any_of(c(
-          "#chrom", "start", "end", "name", "length", "strand",
-          "rel_start", "rel_end", "covered_by_target",
-          "intersected_loci_of_interest"
-        )))
+        dplyr::select(dplyr::all_of(locus_keep))
       loci_for_hap <- dplyr::bind_cols(
         tibble::tibble(
           target_name = target,
@@ -258,9 +255,9 @@ validate_translate_column_types <- function(ref_bed,
 #'   `target_name`, `length`, `strand`, `ref_seq`).
 #' - **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`, `gene_id`,
 #'   `aa_position`, `strand`); each locus must span 3 bases (`end - start == 3`).
-#'   Column order in the file does not matter. BED interval columns are not
-#'   copied onto haplotype / AA outputs; extra annotation columns (for example
-#'   `gene`) are. The coverage table keeps the original loci columns.
+#'   Column order in the file does not matter. Use `extra_loci_columns` to copy
+#'   additional loci columns (for example `gene`) onto haplotype / AA outputs.
+#'   The coverage table always keeps the original loci columns.
 #'
 #' ## Outputs
 #'
@@ -303,6 +300,10 @@ validate_translate_column_types <- function(ref_bed,
 #'   `output_dir`.
 #' @param output_stop_codons If `FALSE` (default), treat `*` as untranslatable
 #'   (along with `X`).
+#' @param extra_loci_columns Optional comma-separated names, path to a
+#'   one-column TSV, or character vector of extra loci-of-interest columns to
+#'   copy onto haplotype and AA outputs. `gene_id` and `aa_position` are always
+#'   included. Default: none.
 #' @param collapse_calls_by_summing If `TRUE`, sum reads across overlapping
 #'   targets; otherwise keep the target with the highest read count.
 #'
@@ -321,6 +322,7 @@ translate_loci_of_interest <- function(allele_table,
                                        select_specimen_names = NULL,
                                        overwrite_dir = FALSE,
                                        output_stop_codons = FALSE,
+                                       extra_loci_columns = NULL,
                                        collapse_calls_by_summing = FALSE) {
   options(dplyr.summarise.inform = FALSE)
   options(readr.show_col_types = FALSE)
@@ -329,6 +331,8 @@ translate_loci_of_interest <- function(allele_table,
 
   select_targets <- parse_name_list_arg(select_target_names)
   select_specs <- parse_name_list_arg(select_specimen_names)
+  extra_cols <- trimws(parse_name_list_arg(extra_loci_columns))
+  extra_cols <- extra_cols[nzchar(extra_cols)]
 
   allele_label <- if (is.character(allele_table) && length(allele_table) == 1L) {
     allele_table
@@ -390,6 +394,16 @@ translate_loci_of_interest <- function(allele_table,
     warnings,
     validate_translate_column_types(ref_bed, loci_of_interest, allele_table)
   )
+  missing_extra <- setdiff(extra_cols, names(loci_of_interest))
+  if (length(missing_extra) > 0) {
+    warnings <- c(
+      warnings,
+      paste0(
+        "extra_loci_columns not found in loci_of_interest: ",
+        paste(missing_extra, collapse = ", ")
+      )
+    )
+  }
 
   if (length(select_targets) > 0) {
     missing_sel_tars <- setdiff(select_targets, ref_bed$target_name)
@@ -462,7 +476,8 @@ translate_loci_of_interest <- function(allele_table,
     allele_table_unique_haps,
     microhaps_with_loci,
     ref_bed_by_loci,
-    loci_of_interest
+    loci_of_interest,
+    extra_cols
   )
 
   allele_table_out <- allele_table |>

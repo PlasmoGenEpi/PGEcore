@@ -8,7 +8,8 @@ translate_microhap_seqs(
   allele_table_unique_haps_tab,
   microhaps_intersected_with_loci_of_interest,
   ref_bed_by_loci_lookup,
-  loci_of_interest_tab
+  loci_of_interest_tab,
+  extra_loci_columns = character(0)
 )
 }
 \arguments{
@@ -19,6 +20,9 @@ translate_microhap_seqs(
 \item{ref_bed_by_loci_lookup}{Named list of one-row ref_bed tibbles.}
 
 \item{loci_of_interest_tab}{Loci-of-interest table.}
+
+\item{extra_loci_columns}{Extra loci-of-interest columns to copy onto each
+haplotype row, in addition to \code{gene_id} and \code{aa_position}.}
 }
 \value{
 Tibble of codon/AA calls per haplotype.
