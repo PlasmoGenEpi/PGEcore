@@ -77,8 +77,8 @@ create_dcifer_coi_input <- function(coi_path,
   specimen_incoi_notinallele <- setdiff(coi$specimen_name, names(allele_list))
   if (length(specimen_incoi_notinallele) > 0) {
     warning(
-      "The following specimen IDs appear in the allele table and not in the ",
-      "COI table: ",
+      "The following specimen IDs appear in the COI table and not in the ",
+      "allele table: ",
       paste(specimen_incoi_notinallele, collapse = " "),
       call. = FALSE
     )

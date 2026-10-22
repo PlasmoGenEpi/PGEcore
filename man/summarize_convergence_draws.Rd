@@ -8,14 +8,14 @@ summarize_convergence_draws(draws)
 }
 \arguments{
 \item{draws}{A \code{draws} object (for example from
-\code{\link[posterior:draws_array]{posterior::as_draws_array()}}).}
+\code{\link[posterior:as_draws_array]{posterior::as_draws_array()}}).}
 }
 \value{
 A data frame with one row per parameter and the columns \code{variable},
 \code{mean}, \code{median}, \code{sd}, \code{q5}, \code{q95}, \code{rhat}, \code{ess_bulk}, and \code{ess_tail}.
 }
 \description{
-Keeps the subset of \code{\link[posterior:draws_summary]{posterior::summarise_draws()}} columns reported by the
+Keeps the subset of \code{\link[posterior:summarise_draws]{posterior::summarise_draws()}} columns reported by the
 MCMC wrappers, so convergence tables share one schema across tools.
 }
 \keyword{internal}

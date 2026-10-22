@@ -1,4 +1,4 @@
-# PGEcore
+# PGEcore <img src="man/figures/logo.png" align="left" height="139" alt="PGEcore logo" />
 
 An R package for malaria genomics analysis. PGEcore does two things:
 
@@ -128,7 +128,7 @@ Full column notes and which tools consume each format: vignette **`input-formats
 | `FreqEstimationModel_wrapper` | Wrapper | `FreqEstimationModel`, `posterior` (+ helpers) |
 | `IDM_wrapper` | Vendored algorithm | `Rmpfr`, `openxlsx` |
 | `MultiLociBiallelicModel_wrapper` | Vendored algorithm | `variantstring` |
-| `THEREALMcCOIL_wrapper` | Vendored C (`src/`) | `posterior` |
+| `THEREALMcCOIL_wrapper` | C (`src/`) | `posterior` |
 
 Use the name in the first column from R (`library(PGEcore); moire_wrapper(...)`)
 or from the CLI (`moire_wrapper ...`). A few wrappers also expose an
