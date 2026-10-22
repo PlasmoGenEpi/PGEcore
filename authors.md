@@ -35,7 +35,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/PlasmoGenEpi/PGEcore/blob/develop/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/PlasmoGenEpi/PGEcore/blob/main/DESCRIPTION)
 
 Murie K, Hubbard A, Hathaway N, Ruybal Pesantez S, Amaya-Romero J,
 Murphy M, Verity R, Gotthold Z, Guo B, Simkin A, Greenhouse B,
