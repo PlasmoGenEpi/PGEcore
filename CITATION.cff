@@ -37,5 +37,5 @@ authors:
   given-names: "Amy"
   orcid: "https://orcid.org/0000-0001-6320-3575"
 title: "PGEcore"
-version: 0.1.0
+version: 0.2.0
 url: "https://github.com/PlasmoGenEpi/PGEcore"
