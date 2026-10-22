@@ -16,7 +16,15 @@ opts <- list(
   ),
   make_option(
     "--loci_of_interest",
-    help = "Codon BED (#chrom, start, end, name, length, strand, gene, gene_id, aa_position); length == 3."
+    help = "Codon BED (#chrom, start, end, gene_id, aa_position, strand); end - start == 3. Column order does not matter."
+  ),
+  make_option(
+    "--extra_loci_columns",
+    help = paste(
+      "Comma-separated extra loci-of-interest columns to copy onto haplotype",
+      "and AA outputs (for example gene). gene_id and aa_position are always",
+      "included. Optional."
+    )
   ),
   make_option(
     "--output_dir",
@@ -79,6 +87,7 @@ invisible(
     select_specimen_names = arg$select_specimen_names,
     overwrite_dir = isTRUE(arg$overwrite_dir),
     output_stop_codons = isTRUE(arg$output_stop_codons),
+    extra_loci_columns = arg$extra_loci_columns,
     collapse_calls_by_summing = isTRUE(arg$collapse_calls_by_summing)
   )
 )

@@ -13,6 +13,7 @@ translate_loci_of_interest(
   select_specimen_names = NULL,
   overwrite_dir = FALSE,
   output_stop_codons = FALSE,
+  extra_loci_columns = NULL,
   collapse_calls_by_summing = FALSE
 )
 }
@@ -37,6 +38,11 @@ one-column TSV, or character vector of specimens to keep.}
 \item{output_stop_codons}{If \code{FALSE} (default), treat \code{*} as untranslatable
 (along with \code{X}).}
 
+\item{extra_loci_columns}{Optional comma-separated names, path to a
+one-column TSV, or character vector of extra loci-of-interest columns to
+copy onto haplotype and AA outputs. \code{gene_id} and \code{aa_position} are always
+included. Default: none.}
+
 \item{collapse_calls_by_summing}{If \code{TRUE}, sum reads across overlapping
 targets; otherwise keep the target with the highest read count.}
 }
@@ -58,9 +64,11 @@ translates it.
 \code{vignette("input-formats", package = "PGEcore")}.
 \item \strong{\code{ref_bed}}: Panel BED with \code{ref_seq} (\verb{#chrom}, \code{start}, \code{end},
 \code{target_name}, \code{length}, \code{strand}, \code{ref_seq}).
-\item \strong{\code{loci_of_interest}}: Codon BED (\verb{#chrom}, \code{start}, \code{end}, \code{name},
-\code{length}, \code{strand}, \code{gene}, \code{gene_id}, \code{aa_position}); each locus must have
-\code{length == 3}.
+\item \strong{\code{loci_of_interest}}: Codon BED (\verb{#chrom}, \code{start}, \code{end}, \code{gene_id},
+\code{aa_position}, \code{strand}); each locus must span 3 bases (\code{end - start == 3}).
+Column order in the file does not matter. Use \code{extra_loci_columns} to copy
+additional loci columns (for example \code{gene}) onto haplotype / AA outputs.
+The coverage table always keeps the original loci columns.
 }
 }
 

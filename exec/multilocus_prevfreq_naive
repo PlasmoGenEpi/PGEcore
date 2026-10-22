@@ -9,7 +9,7 @@ opts <- list(
   make_option(
     "--aa_calls",
     type = "character",
-    help = "AA calls TSV (specimen_name, gene, gene_id, aa_position, reads, aa). See vignette input-formats."
+    help = "AA calls TSV (specimen_name, gene_id, aa_position, reads, aa). See vignette input-formats."
   ),
   make_option(
     "--loci_groups",
