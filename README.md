@@ -1,4 +1,4 @@
-# PGEcore
+# PGEcore <img src="man/figures/logo.png" align="left" height="139" alt="PGEcore logo" />
 
 An R package for malaria genomics analysis. PGEcore does two things:
 

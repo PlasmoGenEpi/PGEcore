@@ -1,0 +1,49 @@
+.navbar > .container {
+  align-items: center;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.navbar-brand img {
+  display: block;
+  height: 32px;
+  width: auto;
+  margin: 0;
+}
+
+.navbar .nav-text {
+  display: flex;
+  align-items: center;
+}
+
+/* Keep the large logo on the homepage only. */
+.page-header img.logo {
+  display: none;
+}
+
+.template-home .page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.template-home .page-header img.logo {
+  display: block;
+  float: none;
+  width: 120px;
+  height: auto;
+  margin: 0;
+}
+
+.template-home .page-header h1 {
+  margin: 0;
+  flex: 1;
+}
