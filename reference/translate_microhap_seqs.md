@@ -9,7 +9,8 @@ translate_microhap_seqs(
   allele_table_unique_haps_tab,
   microhaps_intersected_with_loci_of_interest,
   ref_bed_by_loci_lookup,
-  loci_of_interest_tab
+  loci_of_interest_tab,
+  extra_loci_columns = character(0)
 )
 ```
 
@@ -30,6 +31,11 @@ translate_microhap_seqs(
 - loci_of_interest_tab:
 
   Loci-of-interest table.
+
+- extra_loci_columns:
+
+  Extra loci-of-interest columns to copy onto each haplotype row, in
+  addition to `gene_id` and `aa_position`.
 
 ## Value
 

@@ -60,6 +60,7 @@ translates it.</p>
 <span>  select_specimen_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite_dir <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  output_stop_codons <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  extra_loci_columns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  collapse_calls_by_summing <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -104,6 +105,13 @@ one-column TSV, or character vector of specimens to keep.</p></dd>
 (along with <code>X</code>).</p></dd>
 
 
+<dt id="arg-extra-loci-columns">extra_loci_columns<a class="anchor" aria-label="anchor" href="#arg-extra-loci-columns"></a></dt>
+<dd><p>Optional comma-separated names, path to a
+one-column TSV, or character vector of extra loci-of-interest columns to
+copy onto haplotype and AA outputs. <code>gene_id</code> and <code>aa_position</code> are always
+included. Default: none.</p></dd>
+
+
 <dt id="arg-collapse-calls-by-summing">collapse_calls_by_summing<a class="anchor" aria-label="anchor" href="#arg-collapse-calls-by-summing"></a></dt>
 <dd><p>If <code>TRUE</code>, sum reads across overlapping
 targets; otherwise keep the target with the highest read count.</p></dd>
@@ -126,9 +134,11 @@ targets; otherwise keep the target with the highest read count.</p></dd>
 <code><a href="../articles/input-formats.html">vignette("input-formats", package = "PGEcore")</a></code>.</p></li>
 <li><p><strong><code>ref_bed</code></strong>: Panel BED with <code>ref_seq</code> (<code>#chrom</code>, <code>start</code>, <code>end</code>,
 <code>target_name</code>, <code>length</code>, <code>strand</code>, <code>ref_seq</code>).</p></li>
-<li><p><strong><code>loci_of_interest</code></strong>: Codon BED (<code>#chrom</code>, <code>start</code>, <code>end</code>, <code>name</code>,
-<code>length</code>, <code>strand</code>, <code>gene</code>, <code>gene_id</code>, <code>aa_position</code>); each locus must have
-<code>length == 3</code>.</p></li>
+<li><p><strong><code>loci_of_interest</code></strong>: Codon BED (<code>#chrom</code>, <code>start</code>, <code>end</code>, <code>gene_id</code>,
+<code>aa_position</code>, <code>strand</code>); each locus must span 3 bases (<code>end - start == 3</code>).
+Column order in the file does not matter. Use <code>extra_loci_columns</code> to copy
+additional loci columns (for example <code>gene</code>) onto haplotype / AA outputs.
+The coverage table always keeps the original loci columns.</p></li>
 </ul></div>
 
 <div class="section">

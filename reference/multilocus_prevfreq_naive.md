@@ -55,8 +55,8 @@ A tibble of multilocus prevalence and frequency estimates.
 
 ### Inputs
 
-- **`aa_calls`**: AA calls (`specimen_name`, `gene`, `gene_id`,
-  `aa_position`, `reads`, `aa`). See
+- **`aa_calls`**: AA calls (`specimen_name`, `gene_id`, `aa_position`,
+  `reads`, `aa`). See
   [`vignette("input-formats", package = "PGEcore")`](https://plasmogenepi.github.io/PGEcore/articles/input-formats.md).
 
 - **`loci_groups`**: Loci groups (`group_id`, `gene_id`, `aa_position`).

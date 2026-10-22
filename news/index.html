@@ -51,6 +51,10 @@
 <li>McCOIL error-rate proposals used a variance as the standard deviation; fixed. <code>err_method = 2</code> now refreshes its likelihoods after each redraw. The wrapper rejects <code>err_method = 2</code>, and any <code>err_method</code> other than 1 for the proportional model.</li>
 <li>
 <code><a href="../reference/filter_to_highest_diversity_independent_snp_call.html">filter_to_highest_diversity_independent_snp_call()</a></code> gains <code>drop_artifact_snps</code> (drop SNPs whose minor allele recurs in otherwise monoclonal specimens, such as PCR stutter) and <code>exclude_snp_names</code>; both act before SNPs are ranked.</li>
+<li>
+<code><a href="../reference/translate_loci_of_interest.html">translate_loci_of_interest()</a></code> requires <code>#chrom</code>, <code>start</code>, <code>end</code>, <code>gene_id</code>, <code>aa_position</code>, and <code>strand</code> (any column order). Codon span is checked with <code>end - start == 3</code>. <code>name</code> and <code>length</code> are no longer required. Extra loci columns such as <code>gene</code> are copied onto haplotype / AA outputs only when listed in <code>extra_loci_columns</code>.</li>
+<li>
+<code><a href="../reference/multilocus_prevfreq_naive.html">multilocus_prevfreq_naive()</a></code> identifies loci by <code>gene_id</code> and <code>aa_position</code> and no longer requires a <code>gene</code> column on AA calls.</li>
 </ul></div>
   </main></div>
 

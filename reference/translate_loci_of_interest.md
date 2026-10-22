@@ -16,6 +16,7 @@ translate_loci_of_interest(
   select_specimen_names = NULL,
   overwrite_dir = FALSE,
   output_stop_codons = FALSE,
+  extra_loci_columns = NULL,
   collapse_calls_by_summing = FALSE
 )
 ```
@@ -56,6 +57,13 @@ translate_loci_of_interest(
 
   If `FALSE` (default), treat `*` as untranslatable (along with `X`).
 
+- extra_loci_columns:
+
+  Optional comma-separated names, path to a one-column TSV, or character
+  vector of extra loci-of-interest columns to copy onto haplotype and AA
+  outputs. `gene_id` and `aa_position` are always included. Default:
+  none.
+
 - collapse_calls_by_summing:
 
   If `TRUE`, sum reads across overlapping targets; otherwise keep the
@@ -78,9 +86,12 @@ A named list with `loci_of_interest_for_target_for_microhap`,
 - **`ref_bed`**: Panel BED with `ref_seq` (`#chrom`, `start`, `end`,
   `target_name`, `length`, `strand`, `ref_seq`).
 
-- **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`, `name`,
-  `length`, `strand`, `gene`, `gene_id`, `aa_position`); each locus must
-  have `length == 3`.
+- **`loci_of_interest`**: Codon BED (`#chrom`, `start`, `end`,
+  `gene_id`, `aa_position`, `strand`); each locus must span 3 bases
+  (`end - start == 3`). Column order in the file does not matter. Use
+  `extra_loci_columns` to copy additional loci columns (for example
+  `gene`) onto haplotype / AA outputs. The coverage table always keeps
+  the original loci columns.
 
 ### Outputs
 
