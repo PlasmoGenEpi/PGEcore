@@ -1,5 +1,10 @@
 # PGEcore 0.1.0
 
+* `filter_allele_table()` and `filter_aa_calls()` drop rows below a minimum
+  read count and/or within-sample allele frequency (WSAF). Allele tables group
+  WSAF by `specimen_name` and `target_name`; AA calls group by `specimen_name`,
+  `gene_id`, and `aa_position`. Thresholds are applied independently to the
+  original WSAF (not renormalized after dropping rows). Extra columns are kept.
 * R package for malaria genomics analysis (`R/`, `exec/`, `tests/`,
   `inst/extdata/`, `vignettes/`).
 * Dual interface: R API and command-line tools with matching flags and shared

@@ -88,8 +88,9 @@ Rscript exec/THEREALMcCOIL_wrapper \
 **Columns:** `specimen_name`, `target_name`, `seq`, `reads`
 
 **Example:** `example_allele_table.tsv`  
-**Used by:** `estimate_coi_naive`, `dcifer_slaf_wrapper`, `moire_wrapper`,
-`malariaem_wrapper`, `allele_per_locus_summary`, `per_locus_popgen_summary`, …
+**Used by:** `filter_allele_table`, `estimate_coi_naive`, `dcifer_slaf_wrapper`,
+`moire_wrapper`, `malariaem_wrapper`, `allele_per_locus_summary`,
+`per_locus_popgen_summary`, …
 
 ```{r}
 readr::read_tsv(
@@ -111,8 +112,9 @@ Rscript exec/dcifer_slaf_wrapper \
 Often also: `target_name`, `aa_locus`, `gene`, `ref_aa`
 
 **Example:** `example_aa_calls.tsv`  
-**Used by:** `estimate_allele_frequency_naive`, `estimate_allele_prevalence_naive`,
-`filter_biallelic_calls`, `multilocus_prevfreq_*`, `snpslice_wrapper`, …
+**Used by:** `filter_aa_calls`, `estimate_allele_frequency_naive`,
+`estimate_allele_prevalence_naive`, `filter_biallelic_calls`,
+`multilocus_prevfreq_*`, `snpslice_wrapper`, …
 
 ```{r}
 readr::read_tsv(

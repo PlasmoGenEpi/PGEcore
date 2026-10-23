@@ -107,6 +107,8 @@ Full column notes and which tools consume each format: vignette **`input-formats
 | `allele_per_locus_summary` | Pure R | — |
 | `coiaf_wrapper` | Wrapper | `coiaf` |
 | `filter_biallelic_calls` | Pure R | — |
+| `filter_allele_table` | Pure R | — |
+| `filter_aa_calls` | Pure R | — |
 | `filter_to_highest_diversity_independent_snp_call` | Pure R | — |
 | `slaf_from_mhaps_freqs` | Pure R | — |
 | `slaf_from_stave_mlaf` | Wrapper | `variantstring` |
