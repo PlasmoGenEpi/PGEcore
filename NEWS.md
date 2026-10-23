@@ -1,5 +1,9 @@
 # PGEcore 0.1.0
 
+* `filter_allele_table()` drops alleles below a minimum read count and/or
+  within-sample allele frequency (WSAF). Thresholds are applied independently
+  to the original WSAF (not renormalized after dropping alleles). Extra columns
+  are kept.
 * R package for malaria genomics analysis (`R/`, `exec/`, `tests/`,
   `inst/extdata/`, `vignettes/`).
 * Dual interface: R API and command-line tools with matching flags and shared
