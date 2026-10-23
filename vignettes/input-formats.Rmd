@@ -112,8 +112,9 @@ Rscript exec/dcifer_slaf_wrapper \
 Often also: `target_name`, `aa_locus`, `gene`, `ref_aa`
 
 **Example:** `example_aa_calls.tsv`  
-**Used by:** `estimate_allele_frequency_naive`, `estimate_allele_prevalence_naive`,
-`filter_biallelic_calls`, `multilocus_prevfreq_*`, `snpslice_wrapper`, …
+**Used by:** `filter_aa_calls`, `estimate_allele_frequency_naive`,
+`estimate_allele_prevalence_naive`, `filter_biallelic_calls`,
+`multilocus_prevfreq_*`, `snpslice_wrapper`, …
 
 ```{r}
 readr::read_tsv(

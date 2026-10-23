@@ -88,70 +88,25 @@ filter_allele_table <- function(allele_table,
                                 min_wsaf = NULL,
                                 overwrite = FALSE) {
   options(dplyr.summarise.inform = FALSE)
-
-  if (length(min_reads) == 1L && is.na(min_reads)) {
-    min_reads <- NULL
-  }
-  if (length(min_wsaf) == 1L && is.na(min_wsaf)) {
-    min_wsaf <- NULL
-  }
-
-  if (!is.null(min_reads) && (!is.numeric(min_reads) || min_reads < 0)) {
-    stop("`min_reads` must be >= 0.", call. = FALSE)
-  }
-  if (!is.null(min_wsaf) && (!is.numeric(min_wsaf) || min_wsaf < 0 || min_wsaf > 1)) {
-    stop("`min_wsaf` must be between 0 and 1 inclusive.", call. = FALSE)
-  }
-
-  if (is.character(allele_table) && length(allele_table) == 1L) {
-    if (!file.exists(allele_table)) {
-      stop(allele_table, " does not exist", call. = FALSE)
-    }
-    allele_table <- read_mhap_allele_table(allele_table)
-  } else if (is.data.frame(allele_table)) {
-    allele_table <- tibble::as_tibble(allele_table)
-  } else {
-    stop("`allele_table` must be a file path or a data frame.", call. = FALSE)
-  }
+  thresholds <- normalize_read_wsaf_thresholds(min_reads, min_wsaf)
+  allele_table <- as_input_tibble(
+    allele_table,
+    read_mhap_allele_table,
+    "allele_table"
+  )
   validate_allele_table_for_filter(allele_table, "allele_table")
-
   stop_if_output_exists(output, overwrite)
 
-  filtered <- allele_table |>
-    dplyr::group_by(.data$specimen_name, .data$target_name) |>
-    dplyr::mutate(
-      total_reads = sum(.data$reads, na.rm = TRUE),
-      wsaf = dplyr::if_else(
-        .data$total_reads > 0,
-        .data$reads / .data$total_reads,
-        NA_real_
-      )
-    ) |>
-    dplyr::ungroup()
-
-  if (!is.null(min_reads)) {
-    filtered <- dplyr::filter(filtered, .data$reads >= min_reads)
-  }
-  if (!is.null(min_wsaf)) {
-    filtered <- dplyr::filter(
-      filtered,
-      !is.na(.data$wsaf),
-      .data$wsaf >= min_wsaf
-    )
-  }
-
-  filtered <- dplyr::select(filtered, -c("total_reads", "wsaf"))
-
-  if (nrow(filtered) == 0) {
-    stop(
-      "All alleles were removed by the read-count / WSAF filters.",
-      call. = FALSE
-    )
-  }
+  filtered <- filter_by_reads_and_wsaf(
+    allele_table,
+    group_cols = c("specimen_name", "target_name"),
+    min_reads = thresholds$min_reads,
+    min_wsaf = thresholds$min_wsaf,
+    empty_message = "All alleles were removed by the read-count / WSAF filters."
+  )
 
   if (!is.null(output)) {
     readr::write_tsv(filtered, output)
   }
-
   filtered
 }

@@ -35,6 +35,7 @@ reference:
     contents:
       - filter_biallelic_calls
       - filter_allele_table
+      - filter_aa_calls
       - filter_to_highest_diversity_independent_snp_call
       - slaf_from_mhaps_freqs
       - slaf_from_stave_mlaf
