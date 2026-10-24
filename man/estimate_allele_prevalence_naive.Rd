@@ -2,11 +2,12 @@
 % Please edit documentation in R/estimate_allele_prevalence_naive.R
 \name{estimate_allele_prevalence_naive}
 \alias{estimate_allele_prevalence_naive}
-\title{Estimate allele prevalence naively from AA or microhaplotype calls}
+\title{Estimate allele or observed-genotype prevalence from AA or microhaplotype calls}
 \usage{
 estimate_allele_prevalence_naive(
   aa_calls = NULL,
   allele_table = NULL,
+  method = "allele",
   output = NULL
 )
 }
@@ -15,17 +16,40 @@ estimate_allele_prevalence_naive(
 
 \item{allele_table}{Optional path to an allele table TSV. See \emph{Inputs}.}
 
+\item{method}{\code{"allele"} (default): each mixed infection counts toward every
+allele it carries (allele prevalence). \code{"genotype"}: each specimen counts
+once as its observed allele combination (observed genotype prevalence).}
+
 \item{output}{Optional output TSV path. Default for the CLI is
 \code{prevalence.tsv}.}
 }
 \value{
-A tibble of allele prevalences. For amino acid input: \code{variant},
+A tibble of prevalences. For amino acid input: \code{variant},
 \code{prev}, \code{sample_count}, \code{sample_total}. For microhaplotype input:
 \code{target_name}, \code{seq}, \code{prev}, \code{sample_count}, \code{sample_total}.
 }
 \description{
-Exactly one of \code{aa_calls} or \code{allele_table} must be provided. Prevalence is the
-fraction of specimens carrying each allele at a locus.
+Exactly one of \code{aa_calls} or \code{allele_table} must be provided. The two
+methods count mixed infections differently.
+
+\strong{\code{allele}} (default) is \emph{allele prevalence}: the fraction of specimens in
+which each allele is detected. A mixed infection counts toward \strong{every}
+allele it carries, so prevalences at a locus can sum to more than 1
+(Hastings and Smith 2008; \emph{Malaria Journal} 7:130).
+
+\strong{\code{genotype}} is \emph{observed genotype prevalence}: each specimen counts
+\strong{once}, as the full set of alleles detected at that locus. Mixed
+infections are written with \code{/} (\code{A/B}, \code{K/T}, \code{CVMNK/CVIET}). Prevalences
+at a locus sum to 1.
+
+Example — three specimens at one locus (monoclonal A, mixed A and B,
+monoclonal B):
+
+\tabular{lllll}{
+\code{method} \tab A \tab A/B \tab B \tab sum \cr
+\code{allele} \tab 2/3 \tab — \tab 2/3 \tab 4/3 \cr
+\code{genotype} \tab 1/3 \tab 1/3 \tab 1/3 \tab 1 \cr
+}
 }
 \details{
 \subsection{Inputs}{
@@ -40,9 +64,11 @@ fraction of specimens carrying each allele at a locus.
 \subsection{Outputs}{
 \itemize{
 \item \strong{\code{output}} (optional): Prevalence TSV. For AA input: \code{variant}, \code{prev},
-\code{sample_count}, \code{sample_total}. For microhaplotype input: \code{target_name},
-\code{seq}, \code{prev}, \code{sample_count}, \code{sample_total}. If \code{NULL}, results are
-returned without writing a file.
+\code{sample_count}, \code{sample_total} (\code{variant} is STAVE
+\code{gene_id:aa_position:aa}; mixed genotypes use \code{aa} like \code{C/R}). For
+microhaplotype input: \code{target_name}, \code{seq}, \code{prev}, \code{sample_count},
+\code{sample_total} (mixed genotypes join sequences with \code{/}). If \code{NULL},
+results are returned without writing a file.
 }
 }
 
@@ -52,11 +78,20 @@ returned without writing a file.
   aa_calls = "aa_calls.tsv",
   output = "prevalence.tsv"
 )
+estimate_allele_prevalence_naive(
+  aa_calls = "aa_calls.tsv",
+  method = "genotype",
+  output = "genotype_prevalence.tsv"
+)
 }\if{html}{\out{</div>}}
 
 \if{html}{\out{<div class="sourceCode bash">}}\preformatted{Rscript exec/estimate_allele_prevalence_naive \\
   --aa_calls aa_calls.tsv \\
   --output prevalence.tsv
+Rscript exec/estimate_allele_prevalence_naive \\
+  --aa_calls aa_calls.tsv \\
+  --method genotype \\
+  --output genotype_prevalence.tsv
 }\if{html}{\out{</div>}}
 }
 }
@@ -66,7 +101,13 @@ aa_path <- system.file(
   package = "PGEcore"
 )
 estimate_allele_prevalence_naive(aa_calls = aa_path)
+estimate_allele_prevalence_naive(aa_calls = aa_path, method = "genotype")
 
+}
+\references{
+Hastings IM, Smith TA (2008). MalHaploFreq: A computer programme for
+estimating malaria haplotype frequencies from blood samples.
+\emph{Malaria Journal} 7: 130.
 }
 \seealso{
 \code{vignette("input-formats", package = "PGEcore")}
