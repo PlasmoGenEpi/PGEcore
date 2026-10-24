@@ -195,7 +195,7 @@ readr::read_tsv(
 | COI per specimen | `specimen_name`, `coi` | `estimate_coi_naive`, McCOIL, snpslice, … |
 | COI distribution | `coi`, `n`, `proportion` | `count_samples_by_coi` |
 | Allele frequency | `variant`, `freq` (sometimes counts) | naive AF, McCOIL SLAF, … |
-| Prevalence | `variant`, `prev`, … | `estimate_allele_prevalence_naive` |
+| Prevalence | `variant`, `prev`, … | `estimate_allele_prevalence_naive` (`method = "allele"`: one row per allele, mixed infections count toward each allele; `method = "genotype"`: one row per observed combination, mixed alleles joined with `/`) |
 
 When you add a new tool, reuse these layouts whenever possible so downstream
 steps do not need format converters.

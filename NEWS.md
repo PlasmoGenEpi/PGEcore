@@ -1,5 +1,9 @@
 # PGEcore 0.1.0
 
+* `estimate_allele_prevalence_naive()` can report observed genotype prevalence
+  (`method = "genotype"`): each specimen counts once as the alleles detected
+  at that locus (mixed calls joined with `/`). The default `method = "allele"`
+  is unchanged (a mixed infection counts toward every allele it carries).
 * R package for malaria genomics analysis (`R/`, `exec/`, `tests/`,
   `inst/extdata/`, `vignettes/`).
 * Dual interface: R API and command-line tools with matching flags and shared

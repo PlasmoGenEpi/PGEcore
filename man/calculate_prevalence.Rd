@@ -15,6 +15,8 @@ A tibble with \code{target_name}, \code{variant}, \code{prev}, \code{sample_coun
 \code{sample_total}.
 }
 \description{
-Calculate allele prevalence
+Presence-based allele prevalence: the fraction of specimens at a locus in
+which each allele is detected. A mixed infection contributes to every allele
+it carries, so prevalences at a locus can sum to more than 1.
 }
 \keyword{internal}
