@@ -1,6 +1,6 @@
 Package: PGEcore
 Title: Malaria Genomics Analysis Tools
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
     person("Kathryn", "Murie", role = c("aut", "cre"),
            email = "kathryn.murie@ucsf.edu",
