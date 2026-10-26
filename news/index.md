@@ -1,15 +1,7 @@
 # Changelog
 
-## PGEcore 0.1.0
+## PGEcore 0.2.0
 
-- R package for malaria genomics analysis (`R/`, `exec/`, `tests/`,
-  `inst/extdata/`, `vignettes/`).
-- Dual interface: R API and command-line tools with matching flags and
-  shared TSV formats.
-- Vignettes: `getting-started` and `input-formats`.
-- Specialised analysis packages remain **Suggests** — installing PGEcore
-  does not pull them in.
-- `THEREALMcCOIL` C is compiled at install time from `src/`.
 - `THEREALMcCOIL_wrapper(model = "proportional")` gives each sample one
   set of strain proportions shared by all its loci, estimates read
   noise, and treats minor alleles below the detection limit as censored.
@@ -36,3 +28,22 @@
 - [`multilocus_prevfreq_naive()`](https://plasmogenepi.github.io/PGEcore/reference/multilocus_prevfreq_naive.md)
   identifies loci by `gene_id` and `aa_position` and no longer requires
   a `gene` column on AA calls.
+- [`snpslice_wrapper()`](https://plasmogenepi.github.io/PGEcore/reference/snpslice_wrapper.md)
+  reports `coi_mean` and `freq_mean`, defaults to the multinomial model,
+  always deduplicates identical haplotype calls, and treats loci groups
+  as optional.
+- [`dcifer_ibd_wrapper()`](https://plasmogenepi.github.io/PGEcore/reference/dcifer_ibd_wrapper.md)
+  `sample_total` counts samples rather than alleles.
+- Documentation site uses the PGEcore logo in the navbar and on the
+  homepage.
+
+## PGEcore 0.1.0
+
+- R package for malaria genomics analysis (`R/`, `exec/`, `tests/`,
+  `inst/extdata/`, `vignettes/`).
+- Dual interface: R API and command-line tools with matching flags and
+  shared TSV formats.
+- Vignettes: `getting-started` and `input-formats`.
+- Specialised analysis packages remain **Suggests** — installing PGEcore
+  does not pull them in.
+- `THEREALMcCOIL` C is compiled at install time from `src/`.

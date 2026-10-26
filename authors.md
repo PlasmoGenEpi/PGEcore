@@ -35,17 +35,17 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/PlasmoGenEpi/PGEcore/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/PlasmoGenEpi/PGEcore/blob/develop/DESCRIPTION)
 
 Murie K, Hubbard A, Hathaway N, Ruybal Pesantez S, Amaya-Romero J,
 Murphy M, Verity R, Gotthold Z, Guo B, Simkin A, Greenhouse B,
 Wesolowski A (2026). *PGEcore: Malaria Genomics Analysis Tools*. R
-package version 0.1.0, <https://github.com/PlasmoGenEpi/PGEcore>.
+package version 0.2.0, <https://github.com/PlasmoGenEpi/PGEcore>.
 
     @Manual{,
       title = {PGEcore: Malaria Genomics Analysis Tools},
       author = {Kathryn Murie and Alfred Hubbard and Nicholas Hathaway and Shazia {Ruybal Pesantez} and Jorge Eduardo Amaya-Romero and Max Murphy and Robert Verity and Zoe Gotthold and Bing Guo and Alfred Simkin and Bryan Greenhouse and Amy Wesolowski},
       year = {2026},
-      note = {R package version 0.1.0},
+      note = {R package version 0.2.0},
       url = {https://github.com/PlasmoGenEpi/PGEcore},
     }
