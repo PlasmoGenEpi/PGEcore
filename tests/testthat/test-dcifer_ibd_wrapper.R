@@ -164,3 +164,33 @@ test_that("estm_mmax and estm_equalr are passed to ibdEstM", {
   expect_no_error(run(estm_equalr = TRUE))
   expect_error(run(estm_mmax = 7), "not supported")
 })
+
+test_that("run_ibdestm gives per-strain-pair confidence limits", {
+  skip_if_not_installed("dcifer")
+  skip_if_not_installed("foreach")
+  skip_if_not_installed("doParallel")
+  skip_if_not_installed("parallelly")
+  skip_if_not_installed("iterators")
+  skip_if_not_installed("checkmate")
+  set.seed(321)
+  coi <- dcifer::getCOI(dcifer::dsmp, lrank = 2)
+  afreq <- dcifer::calcAfreq(dcifer::dsmp, coi, tol = 1e-5)
+  smp <- names(dcifer::dsmp)[c(21, 17)]
+  pairs <- tibble::tibble(sample_a = smp[1], sample_b = smp[2])
+  run <- function(...) {
+    run_ibdestm(
+      dcifer::dsmp, coi, afreq, sample_pairs = pairs, confint = TRUE,
+      total_cores = 1L, ...
+    )
+  }
+  for (res in list(run(), run(equalr = TRUE))) {
+    expect_true(all(res$CI_lower <= res$CI_upper))
+    expect_true(all(res$CI_lower <= res$estimate + 1e-8))
+    expect_true(all(res$CI_upper >= res$estimate - 1e-8))
+    expect_equal(length(unique(res$p_value)), 1)
+  }
+  # limits differ across strain pairs when M > 1 and rs are unequal
+  res <- run()
+  expect_gt(nrow(res), 1)
+  expect_gt(length(unique(res$CI_lower)), 1)
+})

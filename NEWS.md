@@ -3,6 +3,9 @@
 * `dcifer_ibd_wrapper()` gains `coi_lrank` (`lrank` for `dcifer::getCOI()`),
   `estm_mmax` and `estm_equalr` (`Mmax` and `equalr` for `dcifer::ibdEstM()`,
   with `Mmax` limited to 6).
+* `dcifer_ibd_wrapper(use_estm = TRUE)` now reports `CI_lower` and `CI_upper`
+  separately for each strain pair (the range of that pair's relatedness over
+  the joint confidence region) instead of one range across all pairs.
 * `THEREALMcCOIL_wrapper(model = "proportional")` gives each sample one set of
   strain proportions shared by all its loci, estimates read noise, and treats
   minor alleles below the detection limit as censored. The `epsilon`

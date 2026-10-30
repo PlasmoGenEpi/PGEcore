@@ -369,15 +369,28 @@ run_ibdestm <- function(dsmp,
         nloc = nloc
       )
       estimate <- rxy$rhat
-      tibble::tibble(
+      out <- tibble::tibble(
         sample_a = sample_a,
         sample_b = sample_b,
         estimate = estimate,
         strain_pair = seq_along(estimate),
-        p_value = rxy$pval,
-        CI_lower = range(rxy$confreg)[1],
-        CI_upper = range(rxy$confreg)[2]
+        p_value = rxy$pval
       )
+      if (!is.null(rxy$confreg)) {
+        # confreg is a joint region: one row per strain pair (ordered like
+        # the sorted estimates) and one column per grid point inside the
+        # region. With equalr = TRUE it is a plain vector shared by all
+        # strain pairs.
+        confreg <- rxy$confreg
+        if (!is.matrix(confreg)) {
+          confreg <- matrix(confreg, nrow = 1)[
+            rep(1, length(estimate)), , drop = FALSE
+          ]
+        }
+        out$CI_lower <- apply(confreg, 1, min)
+        out$CI_upper <- apply(confreg, 1, max)
+      }
+      out
     }
   }
   parallel::stopCluster(cl)
