@@ -16,7 +16,10 @@ dcifer_ibd_wrapper(
   pop_name_col = NULL,
   rnull = 0,
   alpha = 0.05,
+  coi_lrank = 2,
   use_estm = FALSE,
+  estm_mmax = 6,
+  estm_equalr = FALSE,
   threads = 1L,
   verbose = FALSE
 )
@@ -42,8 +45,17 @@ the allele / COI / frequency tables.}
 
 \item{alpha}{Significance level.}
 
+\item{coi_lrank}{\code{lrank} argument of \code{dcifer::getCOI()}. Ignored
+when \code{coi_table} is provided.}
+
 \item{use_estm}{If \code{TRUE}, use \code{dcifer::ibdEstM()} instead of
 \code{dcifer::ibdPair()}.}
+
+\item{estm_mmax, estm_equalr}{\code{Mmax} and \code{equalr} arguments of
+\code{dcifer::ibdEstM()}. \code{estm_mmax} is the maximum number of related strain
+pairs to evaluate (at most 6) and \code{estm_equalr} assumes the same
+relatedness for all related strain pairs. Ignored
+unless \code{use_estm = TRUE}.}
 
 \item{threads}{Number of parallel workers.}
 

@@ -12,6 +12,8 @@ run_dcifer_bypop(
   target_name_col = "target_name",
   target_value_col = "seq",
   use_estm = FALSE,
+  Mmax = 6,
+  equalr = FALSE,
   ...
 )
 }

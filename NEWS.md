@@ -1,5 +1,8 @@
 # PGEcore 0.2.0
 
+* `dcifer_ibd_wrapper()` gains `coi_lrank` (`lrank` for `dcifer::getCOI()`),
+  `estm_mmax` and `estm_equalr` (`Mmax` and `equalr` for `dcifer::ibdEstM()`,
+  with `Mmax` limited to 6).
 * `THEREALMcCOIL_wrapper(model = "proportional")` gives each sample one set of
   strain proportions shared by all its loci, estimates read noise, and treats
   minor alleles below the detection limit as censored. The `epsilon`

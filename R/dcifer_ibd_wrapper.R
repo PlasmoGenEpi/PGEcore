@@ -298,6 +298,8 @@ run_ibdestm <- function(dsmp,
                         confint = FALSE,
                         rnull = 0,
                         alpha = 0.05,
+                        Mmax = 6,
+                        equalr = FALSE,
                         total_cores = NULL,
                         verbose = FALSE) {
   check_suggested_pkgs(
@@ -354,13 +356,13 @@ run_ibdestm <- function(dsmp,
         list(dsmp[[sample_a]], dsmp[[sample_b]]),
         c(coi[sample_a], coi[sample_b]),
         afreq,
-        Mmax = 6,
+        Mmax = Mmax,
         pval = pval,
         confreg = confint,
         rnull = rnull,
         side = side,
         alpha = alpha,
-        equalr = FALSE,
+        equalr = equalr,
         freqlog = TRUE,
         nrs = nrs,
         revals = revals,
@@ -393,6 +395,8 @@ run_dcifer_bypop <- function(allele_table_path,
                              target_name_col = "target_name",
                              target_value_col = "seq",
                              use_estm = FALSE,
+                             Mmax = 6,
+                             equalr = FALSE,
                              ...) {
   allele_table <- create_dcifer_allele_table_input(
     allele_table_path,
@@ -427,6 +431,8 @@ run_dcifer_bypop <- function(allele_table_path,
         pop_alleles,
         pop_coi,
         allele_freq_lists[[pop_oi]],
+        Mmax = Mmax,
+        equalr = equalr,
         ...
       )
     } else {
@@ -481,6 +487,8 @@ run_dcifer_bypop <- function(allele_table_path,
           pop_combo_coi,
           pop_combo_af,
           sample_pairs = sample_pairs,
+          Mmax = Mmax,
+          equalr = equalr,
           ...
         )
       } else {
@@ -562,8 +570,15 @@ write_dcifer_ibd_output <- function(dcifer_results, out_path) {
 #' @param pop_name_col Optional population column in metadata.
 #' @param rnull Relatedness null for hypothesis testing.
 #' @param alpha Significance level.
+#' @param coi_lrank `lrank` argument of `dcifer::getCOI()`. Ignored 
+#'   when `coi_table` is provided.
 #' @param use_estm If `TRUE`, use `dcifer::ibdEstM()` instead of
 #'   `dcifer::ibdPair()`.
+#' @param estm_mmax,estm_equalr `Mmax` and `equalr` arguments of
+#'   `dcifer::ibdEstM()`. `estm_mmax` is the maximum number of related strain
+#'   pairs to evaluate (at most 6) and `estm_equalr` assumes the same
+#'   relatedness for all related strain pairs. Ignored 
+#'   unless `use_estm = TRUE`.
 #' @param threads Number of parallel workers.
 #' @param verbose Print parallel worker output.
 #'
@@ -584,7 +599,10 @@ dcifer_ibd_wrapper <- function(allele_table,
                                pop_name_col = NULL,
                                rnull = 0,
                                alpha = 0.05,
+                               coi_lrank = 2,
                                use_estm = FALSE,
+                               estm_mmax = 6,
+                               estm_equalr = FALSE,
                                threads = 1L,
                                verbose = FALSE) {
   check_suggested_pkg("dcifer", "IBD relatedness via dcifer_ibd_wrapper()")
@@ -592,6 +610,29 @@ dcifer_ibd_wrapper <- function(allele_table,
     c("foreach", "iterators", "doParallel", "parallelly"),
     "parallel IBD estimation via dcifer_ibd_wrapper()"
   )
+  check_suggested_pkg("checkmate", "dcifer_ibd_wrapper() input validation")
+
+  checkmate::assert_count(coi_lrank, positive = TRUE)
+  checkmate::assert_count(estm_mmax, positive = TRUE)
+  checkmate::assert_flag(estm_equalr)
+  if (estm_mmax > 6) {
+    stop(
+      "--estm_mmax > 6 is not supported (got ", estm_mmax, ")",
+      call. = FALSE
+    )
+  }
+  if (!is.null(coi_table) && coi_lrank != 2) {
+    warning(
+      "--coi_lrank is ignored because --coi_table was provided",
+      call. = FALSE
+    )
+  }
+  if (!use_estm && (estm_mmax != 6 || estm_equalr)) {
+    warning(
+      "--estm_mmax and --estm_equalr are ignored without --use_estm",
+      call. = FALSE
+    )
+  }
 
   if (is.null(allele_table) || is.null(relatedness_output)) {
     stop(
@@ -621,7 +662,7 @@ dcifer_ibd_wrapper <- function(allele_table,
   )
 
   if (is.null(coi_table)) {
-    coi <- dcifer::getCOI(dcifer_alleles)
+    coi <- dcifer::getCOI(dcifer_alleles, lrank = coi_lrank)
   } else {
     coi <- create_dcifer_coi_input(
       coi_table,
@@ -664,6 +705,8 @@ dcifer_ibd_wrapper <- function(allele_table,
         confint = TRUE,
         rnull = rnull,
         alpha = alpha,
+        Mmax = estm_mmax,
+        equalr = estm_equalr,
         total_cores = threads,
         verbose = verbose
       )
@@ -688,6 +731,8 @@ dcifer_ibd_wrapper <- function(allele_table,
       target_name_col = target_name_col,
       target_value_col = target_value_col,
       use_estm = isTRUE(use_estm),
+      Mmax = estm_mmax,
+      equalr = estm_equalr,
       confint = TRUE,
       rnull = rnull,
       alpha = alpha,

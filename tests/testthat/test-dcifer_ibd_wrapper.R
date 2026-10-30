@@ -140,3 +140,27 @@ test_that("a single pair over several workers is reported once", {
   )
   expect_equal(nrow(res), 1)
 })
+
+test_that("estm_mmax and estm_equalr are passed to ibdEstM", {
+  skip_if_not_installed("dcifer")
+  skip_if_not_installed("foreach")
+  skip_if_not_installed("doParallel")
+  skip_if_not_installed("parallelly")
+  skip_if_not_installed("iterators")
+  skip_if_not_installed("checkmate")
+  d <- tempfile(); dir.create(d)
+  on.exit(unlink(d, recursive = TRUE), add = TRUE)
+  readr::write_tsv(make_dcifer_table(), file.path(d, "a.tsv"))
+  run <- function(...) {
+    dcifer_ibd_wrapper(
+      allele_table = file.path(d, "a.tsv"),
+      relatedness_output = file.path(d, "o.tsv"),
+      use_estm = TRUE,
+      threads = 1L,
+      ...
+    )
+  }
+  expect_lte(max(run(estm_mmax = 1)$strain_pair), 1)
+  expect_no_error(run(estm_equalr = TRUE))
+  expect_error(run(estm_mmax = 7), "not supported")
+})

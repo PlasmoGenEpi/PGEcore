@@ -133,10 +133,6 @@ weights each haplotype by its consensus support, which counters the
 dictionary over-parameterisation that inflates \code{coi}. \code{coi_chain_mean}
 is the mean of \code{coi} over all chains, as Ju et al. (2024) report COI.
 }
-
-Strains with identical haplotypes are always merged in every chain before
-any of these are computed, so a specimen assigned two copies of the same
-haplotype counts it once, as in Ju et al. (2024).
 }
 
 \subsection{Running}{
