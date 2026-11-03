@@ -33,10 +33,14 @@ export(snp_calls_to_vcf)
 export(snpslice_wrapper)
 export(translate_loci_of_interest)
 export(vcf_to_snp_calls)
-importFrom(optparse,OptionParser)
-importFrom(optparse,make_option)
-importFrom(optparse,parse_args)
-importFrom(rlang,":=")
-importFrom(rlang,.data)
+importFrom(optparse,
+  OptionParser,
+  make_option,
+  parse_args
+)
+importFrom(rlang,
+  ":=",
+  .data
+)
 importFrom(stats,median)
 useDynLib(PGEcore, .registration = TRUE)

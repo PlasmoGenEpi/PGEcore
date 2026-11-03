@@ -6,6 +6,8 @@
 \alias{PGEcore-package}
 \title{PGEcore: Malaria Genomics Analysis Tools}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Provides R functions and command-line interfaces for malaria genomics analysis. Wraps existing specialised tools behind a consistent interface and shared TSV formats, and adds extra helpers such as naive complexity of infection (COI), allele frequency and prevalence estimators, filters, and format converters. Suitable for interactive use, scripting, or as a shared library in workflow pipelines. Thin wrappers do not install their specialised dependencies; those must be installed separately when needed.
 }
 \seealso{
@@ -22,6 +24,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Kathryn Murie \email{kathryn.murie@ucsf.edu} (\href{https://orcid.org/0009-0008-9612-2016}{ORCID})
   \item Alfred Hubbard (\href{https://orcid.org/0000-0003-4917-7272}{ORCID})
   \item Nicholas Hathaway (\href{https://orcid.org/0000-0001-9639-2894}{ORCID})
   \item Shazia Ruybal Pesantez (\href{https://orcid.org/0000-0002-0495-179X}{ORCID})

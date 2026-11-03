@@ -74,10 +74,37 @@ opts <- list(
     help = "alpha value to use for hypothesis testing. Optional."
   ),
   make_option(
+    "--coi_lrank",
+    type = "integer",
+    default = 2,
+    help = paste0(
+      "`lrank` argument of `dcifer::getCOI`. Ignored if ",
+      "--coi_table is provided. Optional."
+    )
+  ),
+  make_option(
     "--use_estm",
     action = "store_true",
     default = FALSE,
     help = "Use `dcifer::ibdEstM` in place of `dcifer::ibdPair`"
+  ),
+  make_option(
+    "--estm_mmax",
+    type = "integer",
+    default = 6,
+    help = paste0(
+      "`Mmax` argument of `dcifer::ibdEstM`: maximum number of related ",
+      "strain pairs to evaluate (at most 6). Requires --use_estm. Optional."
+    )
+  ),
+  make_option(
+    "--estm_equalr",
+    action = "store_true",
+    default = FALSE,
+    help = paste0(
+      "`equalr` argument of `dcifer::ibdEstM`: assume equal relatedness for ",
+      "all related strain pairs. Requires --use_estm. Optional."
+    )
   ),
   make_option(
     "--threads",
@@ -121,7 +148,10 @@ invisible(
     pop_name_col = arg$pop_name_col,
     rnull = arg$rnull,
     alpha = arg$alpha,
+    coi_lrank = arg$coi_lrank,
     use_estm = isTRUE(arg$use_estm),
+    estm_mmax = arg$estm_mmax,
+    estm_equalr = isTRUE(arg$estm_equalr),
     threads = arg$threads,
     verbose = isTRUE(arg$verbose) || isTRUE(arg$v)
   )

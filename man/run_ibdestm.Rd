@@ -13,6 +13,8 @@ run_ibdestm(
   confint = FALSE,
   rnull = 0,
   alpha = 0.05,
+  Mmax = 6,
+  equalr = FALSE,
   total_cores = NULL,
   verbose = FALSE
 )
